@@ -1,7 +1,11 @@
 import express from "express";
 import User from "../models/User.js";
 import Incident from "../models/Incident.js";
-import { authMiddleware, requireAdminOnly, requireSuperAdmin } from "../middleware/auth.js";
+import {
+  authMiddleware,
+  requireAdminOnly,
+  requireSuperAdmin,
+} from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -35,7 +39,6 @@ router.patch("/:id/promote", authMiddleware, requireAdminOnly, async (req, res) 
 
     await user.save();
     res.json({ message: "Promoted", roles: user.roles });
-
   } catch {
     res.status(500).json({ error: "Server error" });
   }
@@ -45,8 +48,9 @@ router.patch("/:id/promote", authMiddleware, requireAdminOnly, async (req, res) 
 router.patch("/:id/demote", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    user.roles = user.roles.filter(r => r !== "admin");
+    user.roles = user.roles.filter((r) => r !== "admin");
     await user.save();
 
     res.json({ message: "Demoted", roles: user.roles });
@@ -55,13 +59,23 @@ router.patch("/:id/demote", authMiddleware, requireSuperAdmin, async (req, res) 
   }
 });
 
-/* DELETE USER (SUPERADMIN ONLY) */
+/* DELETE USER (SUPERADMIN ONLY + SELF-PROTECT) */
 router.delete("/:id", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
-    await Incident.deleteMany({ userId: req.params.id });
+    // 🚨 Prevent superadmin from deleting themselves
+    if (req.user.id.toString() === req.params.id) {
+      return res
+        .status(400)
+        .json({ message: "You cannot delete your own account" });
+    }
 
-    res.json({ message: "User deleted" });
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    await Incident.deleteMany({ userId: user._id });
+    await user.deleteOne();
+
+    res.json({ message: "User deleted successfully" });
   } catch {
     res.status(500).json({ error: "Server error" });
   }
