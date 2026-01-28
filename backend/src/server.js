@@ -27,7 +27,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/upload", uploadRoutes);
 
-// ❌ REMOVED (These caused server crash)
+
 // app.use("/api/groups", groupsRoutes);
 // app.use("/api/groups", groupRoutes);
 

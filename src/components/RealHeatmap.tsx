@@ -1,8 +1,8 @@
-// src/components/RealHeatmap.tsx
 import { useEffect, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
+import { motion } from "framer-motion";
 
 const API_BASE = "http://localhost:4000/api";
 
@@ -11,12 +11,8 @@ export default function RealHeatmap() {
   const [heatLayer, setHeatLayer] = useState<any>(null);
 
   useEffect(() => {
-    // Prevent rendering before container exists
     const container = document.getElementById("real-heatmap");
-    if (!container) return;
-
-    // If map already exists (React strict mode), clean the existing one
-    if (map) return;
+    if (!container || map) return;
 
     const newMap = L.map("real-heatmap", {
       center: [31.25, 75.70],
@@ -25,7 +21,6 @@ export default function RealHeatmap() {
       preferCanvas: true,
     });
 
-    // Add base map layer
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "&copy; OpenStreetMap contributors",
     }).addTo(newMap);
@@ -33,11 +28,10 @@ export default function RealHeatmap() {
     setMap(newMap);
 
     return () => {
-      newMap.remove(); // 🔥 Clean up map on unmount
+      newMap.remove();
     };
   }, []);
 
-  // Load heatmap points
   useEffect(() => {
     if (!map) return;
 
@@ -46,24 +40,17 @@ export default function RealHeatmap() {
         const res = await fetch(`${API_BASE}/incidents/coords/all`);
         const data = await res.json();
 
-        if (!Array.isArray(data) || data.length === 0) return;
-
         const heatPoints = data
           .filter((i) => i.latitude && i.longitude)
           .map((i) => [i.latitude, i.longitude, 0.5]);
 
-        // Remove old heat layer
-        if (heatLayer) {
-          map.removeLayer(heatLayer);
-        }
+        if (heatLayer) map.removeLayer(heatLayer);
 
-        // Add new heat layer
-        // @ts-ignore leaflet.heat has no TS types
+        // @ts-ignore
         const newHeatLayer = L.heatLayer(heatPoints, {
           radius: 35,
           blur: 20,
           maxZoom: 15,
-          max: 1.0,
         }).addTo(map);
 
         setHeatLayer(newHeatLayer);
@@ -76,21 +63,19 @@ export default function RealHeatmap() {
   }, [map]);
 
   return (
-    <div
-      id="real-heatmap"
-      className="
-        w-full 
-        h-64 
-        rounded-lg 
-        shadow 
-        border 
-        overflow-hidden 
-        relative 
-        z-0
-      "
-      style={{
-        position: "relative", // 🔥 prevents layering over modal
-      }}
-    ></div>
+    <motion.div
+      className="relative"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.6 }}
+    >
+      {/* Pulse overlay */}
+      <div className="absolute inset-0 rounded-lg bg-blue-500/10 animate-pulse pointer-events-none z-10" />
+
+      <div
+        id="real-heatmap"
+        className="w-full h-64 rounded-lg shadow border overflow-hidden relative z-0"
+      />
+    </motion.div>
   );
 }

@@ -21,3 +21,4 @@ incidentSchema.pre("save", function(next){
 });
 
 export default mongoose.model("Incident", incidentSchema);
+

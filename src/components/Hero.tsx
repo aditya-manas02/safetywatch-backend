@@ -1,9 +1,26 @@
 import { useEffect, useState } from "react";
 import { Activity, Map } from "lucide-react";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+
+function AnimatedCounter({ value }: { value: number }) {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (latest) => Math.round(latest));
+
+  useEffect(() => {
+    const controls = animate(count, value, {
+      duration: 1.2,
+      ease: "easeOut",
+    });
+
+    return controls.stop;
+  }, [value, count]);
+
+  return <motion.span>{rounded}</motion.span>;
+}
 
 export default function Hero({
   onReportClick,
-  onViewReports,   // ⭐ Added callback for scrolling
+  onViewReports,
 }: any) {
   const [stats, setStats] = useState<any>(null);
   const [latest, setLatest] = useState<any[]>([]);
@@ -15,7 +32,6 @@ export default function Hero({
 
   async function loadData() {
     try {
-      // ⭐ Correct backend public stats endpoint
       const statsRes = await fetch("http://localhost:4000/api/stats/public");
       const statsJson = await statsRes.json();
 
@@ -32,107 +48,128 @@ export default function Hero({
   }
 
   return (
-    <section className="container mx-auto flex flex-col lg:flex-row items-center py-20 px-6 gap-10">
+    <section className="hero-bg">
+      <div className="container mx-auto flex flex-col lg:flex-row items-center py-28 px-6 gap-16">
 
-      {/* LEFT SIDE */}
-      <div className="flex-1">
-        <p className="inline-block px-4 py-1 rounded-full bg-blue-50 text-blue-600 text-sm mb-4">
-          Community Safety Platform
-        </p>
+        {/* LEFT SIDE */}
+        <motion.div
+          className="flex-1"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="inline-block px-4 py-1 rounded-full bg-blue-100 text-blue-700 text-sm mb-6">
+            Community Safety Platform
+          </span>
 
-        <h1 className="text-5xl font-black leading-tight mb-6">
-          Keep your neighborhood <span className="text-blue-600">safe</span> & informed
-        </h1>
+          <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
+            Keep your neighborhood{" "}
+            <span className="text-blue-600">safe</span>
+            <br />
+            and <span className="text-blue-600">informed</span>
+          </h1>
 
-        <p className="text-lg text-gray-600 mb-6">
-          Report incidents, receive alerts, and collaborate with your community.
-        </p>
+          <p className="text-lg text-gray-600 mb-10 max-w-xl">
+            Report incidents, receive alerts, and collaborate with your
+            community in real time — all from one trusted platform.
+          </p>
 
-        <div className="flex gap-4">
-          <button
-            onClick={onReportClick}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
-          >
-            Report an Incident
-          </button>
+          <div className="flex flex-wrap gap-6">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={onReportClick}
+              className="cta-primary px-9 py-4 bg-blue-600 text-white rounded-full text-base font-semibold"
+            >
+              Report an Incident
+            </motion.button>
 
-          <button
-            onClick={onViewReports}          // ⭐ FIX — now scrolls!
-            className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-100"
-          >
-            View Recent Reports
-          </button>
-        </div>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={onViewReports}
+              className="px-9 py-4 rounded-full border border-gray-300 bg-white text-gray-700"
+            >
+              View Recent Reports
+            </motion.button>
+          </div>
+        </motion.div>
+
+        {/* RIGHT SIDE */}
+        <motion.div
+          className="flex-1"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          <div className="dashboard-panel p-10">
+
+            <p className="text-center text-xs tracking-widest text-gray-500 mb-8">
+              LIVE OVERVIEW
+            </p>
+
+            {loading ? (
+              <p className="text-center text-gray-500">Loading...</p>
+            ) : (
+              <>
+                {/* 🔢 ANIMATED STATS */}
+                <div className="grid grid-cols-3 text-center mb-10">
+                  <div>
+                    <p className="text-4xl font-extrabold text-blue-600">
+                      <AnimatedCounter value={stats?.totalIncidents ?? 0} />
+                    </p>
+                    <p className="text-xs text-gray-500">Total</p>
+                  </div>
+
+                  <div>
+                    <p className="text-4xl font-extrabold text-amber-500">
+                      <AnimatedCounter value={stats?.pending ?? 0} />
+                    </p>
+                    <p className="text-xs text-gray-500">Active</p>
+                  </div>
+
+                  <div>
+                    <p className="text-4xl font-extrabold text-green-600">
+                      <AnimatedCounter value={stats?.approved ?? 0} />
+                    </p>
+                    <p className="text-xs text-gray-500">Approved</p>
+                  </div>
+                </div>
+
+                {/* HEATMAP PREVIEW */}
+                <div className="bg-white rounded-xl h-28 flex items-center justify-center border mb-8">
+                  <Map className="h-8 w-8 text-blue-600" />
+                  <p className="ml-3 text-sm text-gray-600">
+                    Community heatmap preview
+                  </p>
+                </div>
+
+                {/* RECENT ACTIVITY */}
+                <p className="text-xs tracking-widest text-gray-500 mb-4">
+                  RECENT ACTIVITY
+                </p>
+
+                <ul className="space-y-3">
+                  {latest.map((inc) => (
+                    <li
+                      key={inc._id}
+                      className="flex items-center gap-3 bg-white p-4 rounded-xl border"
+                    >
+                      <Activity className="text-blue-600 h-4 w-4" />
+                      <div>
+                        <p className="font-semibold text-sm">{inc.title}</p>
+                        <p className="text-xs text-gray-500">
+                          {inc.type} • {inc.location}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        </motion.div>
       </div>
-
-      {/* RIGHT SIDE — LIVE CARD */}
-      <div className="flex-1">
-        <div className="rounded-2xl shadow-xl border border-white/30 p-8 bg-gradient-to-br from-blue-50 to-cyan-50">
-
-          <h4 className="text-center text-xs text-gray-500 tracking-widest mb-3">
-            LIVE OVERVIEW
-          </h4>
-
-          {loading ? (
-            <p className="text-center text-gray-500">Loading...</p>
-          ) : (
-            <>
-              {/* Stats Row */}
-              <div className="grid grid-cols-3 text-center mb-6">
-                <div>
-                  <p className="text-3xl font-bold text-blue-700">
-                    {stats?.totalIncidents ?? 0}
-                  </p>
-                  <p className="text-xs text-gray-500">Total</p>
-                </div>
-
-                <div>
-                  <p className="text-3xl font-bold text-amber-600">
-                    {stats?.pending ?? 0}
-                  </p>
-                  <p className="text-xs text-gray-500">Active</p>
-                </div>
-
-                <div>
-                  <p className="text-3xl font-bold text-green-600">
-                    {stats?.approved ?? 0}
-                  </p>
-                  <p className="text-xs text-gray-500">Approved</p>
-                </div>
-              </div>
-
-              {/* Heatmap Preview */}
-              <div className="bg-white rounded-xl h-28 flex items-center justify-center border mb-6">
-                <Map className="h-8 w-8 text-blue-600" />
-                <p className="ml-3 text-sm text-gray-600">Community heatmap preview</p>
-              </div>
-
-              {/* Recent Activity */}
-              <h5 className="text-xs text-gray-500 tracking-widest mb-2">
-                RECENT ACTIVITY
-              </h5>
-
-              <ul className="space-y-2">
-                {latest.map((inc) => (
-                  <li
-                    key={inc._id}
-                    className="flex items-center gap-3 bg-white p-3 rounded-lg border"
-                  >
-                    <Activity className="text-blue-600 h-4 w-4" />
-                    <div>
-                      <p className="font-medium text-sm">{inc.title}</p>
-                      <p className="text-xs text-gray-500">
-                        {inc.type} • {inc.location}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
-      </div>
-
     </section>
   );
 }
