@@ -1,0 +1,13 @@
+#root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.card {
+  padding: 0;
+}
+
+.read-the-docs {
+  display: none;
+}
