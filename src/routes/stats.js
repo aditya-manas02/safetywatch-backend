@@ -52,6 +52,31 @@ router.get("/", authMiddleware, requireAdminOnly, async (req, res) => {
     const rejected = await Incident.countDocuments({ status: "rejected" });
     const totalUsers = await User.countDocuments();
 
+    // --- BREAKDOWN BY DAY (Last 7 Days) ---
+    const incidentsByDay = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        
+        const nextD = new Date(d);
+        nextD.setDate(d.getDate() + 1);
+
+        const count = await Incident.countDocuments({
+            createdAt: { $gte: d, $lt: nextD }
+        });
+
+        incidentsByDay.push({
+            date: d.toLocaleDateString('en-US', { weekday: 'short' }),
+            count
+        });
+    }
+
+    // --- TYPE DISTRIBUTION ---
+    const typeDistribution = await Incident.aggregate([
+        { $group: { _id: "$type", value: { $sum: 1 } } }
+    ]).then(res => res.map(r => ({ name: r._id, value: r.value })));
+
     res.json({
       totalIncidents,
       pending,
@@ -62,6 +87,8 @@ router.get("/", authMiddleware, requireAdminOnly, async (req, res) => {
       incidentsThisWeek,
       incidentsToday,
       mostCommonType,
+      incidentsByDay,
+      typeDistribution
     });
 
   } catch (err) {
