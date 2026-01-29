@@ -39,7 +39,7 @@ router.get("/", authMiddleware, async (req, res) => {
     }).sort({ createdAt: -1 });
 
     res.json(incidents);
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ message: "Error fetching incidents" });
   }
 });
@@ -51,7 +51,7 @@ router.get("/public", async (req, res) => {
       createdAt: -1,
     });
     res.json(list);
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ message: "Error loading public incidents" });
   }
 });
@@ -64,7 +64,7 @@ router.get("/latest", async (req, res) => {
       .limit(3);
 
     res.json(items);
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ message: "Error fetching latest incidents" });
   }
 });
@@ -78,7 +78,7 @@ router.get("/coords/all", async (req, res) => {
     );
 
     res.json(coords);
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ message: "Error fetching heatmap coords" });
   }
 });
@@ -97,7 +97,7 @@ router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) =
       return res.status(404).json({ message: "Incident not found" });
 
     res.json(updated);
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ message: "Error updating status" });
   }
 });
@@ -107,7 +107,7 @@ router.delete("/:id", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
     await Incident.findByIdAndDelete(req.params.id);
     res.json({ message: "Deleted successfully" });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ message: "Error deleting incident" });
   }
 });
@@ -120,7 +120,7 @@ router.get("/stats/public", async (req, res) => {
     const approved = await Incident.countDocuments({ status: "approved" });
 
     res.json({ total, active, approved });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ message: "Error loading stats" });
   }
 });

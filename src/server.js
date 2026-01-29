@@ -2,6 +2,8 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import bodyParser from "body-parser";
 
 import authRoutes from "./routes/auth.js";
@@ -13,19 +15,25 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 dotenv.config();
 const app = express();
 
-/* ----------------------- CORS (FIXED) ----------------------- */
+/* ----------------------- SECURITY ----------------------- */
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later."
+});
+app.use(limiter);
+
+/* ----------------------- CORS ----------------------- */
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://safetywatch.vercel.app",
-    ],
+    origin: process.env.FRONTEND_URL || ["http://localhost:5173", "http://localhost:8080", "https://safetywatch.vercel.app"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
-
 
 // IMPORTANT: handle preflight
 app.options("*", cors());
@@ -62,3 +70,5 @@ mongoose
     console.error("Mongo DB connection error:", err);
     process.exit(1);
   });
+
+  
