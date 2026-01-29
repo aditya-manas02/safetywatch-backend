@@ -31,11 +31,7 @@ const supportMessageSchema = new mongoose.Schema({
     type: String,
     enum: ["unread", "read", "resolved"],
     default: "unread"
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
-});
+}, { timestamps: true });
 
 export default mongoose.model("SupportMessage", supportMessageSchema);
