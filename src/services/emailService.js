@@ -13,14 +13,25 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Verify connection configuration on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("SMTP Connection Error:", error);
+  } else {
+    console.log("SMTP Server is ready to take our messages");
+  }
+});
+
 /**
  * Send a password reset email with a system-generated password.
  */
 export const sendPasswordResetEmail = async (email, newPassword) => {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn("SMTP credentials missing. Email not sent.");
+    console.error("CRITICAL: SMTP credentials missing in .env (SMTP_USER/SMTP_PASS). Email skipped.");
     return false;
   }
+  
+  console.log(`Attempting to send reset email to: ${email}...`);
 
   const mailOptions = {
     from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
