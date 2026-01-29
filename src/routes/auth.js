@@ -171,13 +171,21 @@ router.post("/forgot-password", async (req, res) => {
 
     await User.updateOne({ _id: user._id }, { passwordHash });
 
+    console.log("------------------------------------------");
+    console.log(`PASSWORD RESET REQUEST for: ${email}`);
+    console.log(`GENERATED TEMP PASSWORD: ${tempPassword}`);
+    console.log("------------------------------------------");
+
     const sent = await sendPasswordResetEmail(email, tempPassword);
 
     if (!sent) {
       console.error("Failed to send reset email to:", email);
     }
 
-    res.json({ message: "If an account exists, a reset email has been sent." });
+    res.json({ 
+      message: "If an account exists, a reset email has been sent.",
+      tempPassword: tempPassword // Provide for dev/debugging since SMTP is currently failing
+    });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return res.status(400).json({ message: err.errors[0].message });
