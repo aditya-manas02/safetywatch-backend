@@ -10,9 +10,7 @@ const incidentSchema = new mongoose.Schema({
   longitude: { type: Number, default: null },
   status: { type: String, enum: ["pending","approved","rejected"], default: "pending" },
   imageUrl: { type: String, default: null },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+}, { timestamps: true });
 
 
 
