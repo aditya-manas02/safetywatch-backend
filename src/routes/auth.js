@@ -1,9 +1,4 @@
-import express from "express";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
-import dotenv from "dotenv";
-import { z } from "zod";
+import { sendPasswordResetEmail } from "../services/emailService.js";
 
 dotenv.config();
 const router = express.Router();
@@ -23,10 +18,16 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
 /* -------------------------------------------------
    BROWSER-SAFE GET ROUTES (DEBUG / TEST ONLY)
 -------------------------------------------------- */
-// ... (omitted for brevity, keep existing debug routes)
+router.get("/test", (req, res) => {
+  res.json({ message: "Auth route is working" });
+});
 
 /* -------------------------------------------------
    HELPERS
@@ -43,6 +44,10 @@ function signToken(user) {
       expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     }
   );
+}
+
+function generateTempPassword() {
+  return Math.random().toString(36).slice(-8).toUpperCase();
 }
 
 /* -------------------------------------------------
@@ -137,6 +142,40 @@ router.post("/login", async (req, res) => {
     res.status(500).json({
       message: "Server error",
     });
+  }
+});
+
+/* -------------------------------------------------
+   FORGOT PASSWORD
+-------------------------------------------------- */
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Industry best practice: don't reveal if user exists
+      return res.json({ message: "If an account exists, a reset email has been sent." });
+    }
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    user.passwordHash = passwordHash;
+    await user.save();
+
+    const sent = await sendPasswordResetEmail(email, tempPassword);
+
+    if (!sent) {
+      console.error("Failed to send reset email to:", email);
+    }
+
+    res.json({ message: "If an account exists, a reset email has been sent." });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: err.errors[0].message });
+    }
+    res.status(500).json({ message: "Server error" });
   }
 });
 
