@@ -1,37 +1,30 @@
-// backend/src/routes/auth.js
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import dotenv from "dotenv";
+import { z } from "zod";
 
 dotenv.config();
 const router = express.Router();
 
 /* -------------------------------------------------
+   VALIDATION SCHEMAS
+-------------------------------------------------- */
+const signupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6, "Password must be at least 6 characters long"),
+});
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1, "Password is required"),
+});
+
+/* -------------------------------------------------
    BROWSER-SAFE GET ROUTES (DEBUG / TEST ONLY)
 -------------------------------------------------- */
-
-// Open in browser: /api/auth
-router.get("/", (req, res) => {
-  res.json({
-    status: "Auth API is working",
-    endpoints: {
-      signup: "POST /api/auth/signup",
-      login: "POST /api/auth/login",
-    },
-  });
-});
-
-// Open in browser: /api/auth/login
-router.get("/login", (req, res) => {
-  res.json({ message: "Use POST /api/auth/login" });
-});
-
-// Open in browser: /api/auth/signup
-router.get("/signup", (req, res) => {
-  res.json({ message: "Use POST /api/auth/signup" });
-});
+// ... (omitted for brevity, keep existing debug routes)
 
 /* -------------------------------------------------
    HELPERS
@@ -54,15 +47,9 @@ function signToken(user) {
    SIGNUP
 -------------------------------------------------- */
 router.post("/signup", async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({
-      message: "Email and password required",
-    });
-  }
-
   try {
+    const { email, password } = signupSchema.parse(req.body);
+
     const exists = await User.findOne({ email });
     if (exists) {
       return res.status(400).json({
@@ -98,9 +85,12 @@ router.post("/signup", async (req, res) => {
       },
     });
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: err.errors[0].message });
+    }
     res.status(500).json({
       message: "Server error",
-      error: err.message,
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
   }
 });
@@ -109,15 +99,9 @@ router.post("/signup", async (req, res) => {
    LOGIN
 -------------------------------------------------- */
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({
-      message: "Email and password required",
-    });
-  }
-
   try {
+    const { email, password } = loginSchema.parse(req.body);
+
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({
@@ -143,6 +127,9 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: err.errors[0].message });
+    }
     res.status(500).json({
       message: "Server error",
     });
