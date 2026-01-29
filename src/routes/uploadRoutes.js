@@ -32,7 +32,7 @@ router.post("/", authMiddleware, upload.single("image"), async (req, res) => {
 
   } catch (err) {
     console.error("Image Upload Error:", err);
-    return res.status(500).json({ error: "Upload failed" });
+    return res.status(500).json({ message: "Upload failed", details: err.message });
   }
 });
 
