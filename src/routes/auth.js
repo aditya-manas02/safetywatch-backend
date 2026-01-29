@@ -13,6 +13,8 @@ const router = express.Router();
 -------------------------------------------------- */
 const signupSchema = z.object({
   email: z.string().email(),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  phone: z.string().optional(),
   password: z.string().min(6, "Password must be at least 6 characters long"),
 });
 
@@ -48,7 +50,7 @@ function signToken(user) {
 -------------------------------------------------- */
 router.post("/signup", async (req, res) => {
   try {
-    const { email, password } = signupSchema.parse(req.body);
+    const { email, password, name, phone } = signupSchema.parse(req.body);
 
     const exists = await User.findOne({ email });
     if (exists) {
@@ -70,6 +72,8 @@ router.post("/signup", async (req, res) => {
 
     const user = await User.create({
       email,
+      name,
+      phone,
       passwordHash,
       roles,
     });
