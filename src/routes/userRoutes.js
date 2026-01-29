@@ -6,6 +6,7 @@ import {
   requireAdminOnly,
   requireSuperAdmin,
 } from "../middleware/auth.js";
+import { logAudit } from "../utils/auditLogger.js";
 
 const router = express.Router();
 
@@ -65,6 +66,7 @@ router.patch("/:id/promote", authMiddleware, requireAdminOnly, async (req, res) 
     if (!user.roles.includes("admin")) user.roles.push("admin");
 
     await user.save();
+    await logAudit(req, "Promoted user to admin", "user", req.params.id, user.email);
     res.json({ message: "Promoted", roles: user.roles });
   } catch {
     res.status(500).json({ error: "Server error" });
@@ -79,7 +81,7 @@ router.patch("/:id/demote", authMiddleware, requireSuperAdmin, async (req, res) 
 
     user.roles = user.roles.filter((r) => r !== "admin");
     await user.save();
-
+    await logAudit(req, "Demoted admin to user", "user", req.params.id, user.email);
     res.json({ message: "Demoted", roles: user.roles });
   } catch {
     res.status(500).json({ error: "Server error" });
@@ -102,8 +104,20 @@ router.delete("/:id", authMiddleware, requireSuperAdmin, async (req, res) => {
     await Incident.deleteMany({ userId: user._id });
     await user.deleteOne();
 
+    await logAudit(req, "Deleted user profile and contributions", "user", req.params.id, user.email);
     res.json({ message: "User deleted successfully" });
   } catch {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/* GET AUDIT LOGS (Admin Only) */
+router.get("/audit/logs", authMiddleware, requireAdminOnly, async (req, res) => {
+  try {
+    const AuditLog = (await import("../models/AuditLog.js")).default;
+    const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(100);
+    res.json(logs);
+  } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
 });

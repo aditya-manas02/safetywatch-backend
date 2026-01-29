@@ -1,6 +1,7 @@
 import express from "express";
 import Incident from "../models/Incident.js";
 import { authMiddleware, requireAdminOnly } from "../middleware/auth.js";
+import { logAudit } from "../utils/auditLogger.js";
 
 const router = express.Router();
 
@@ -97,6 +98,7 @@ router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) 
       { status: status }
     );
 
+    await logAudit(req, `Bulk updated ${updated.modifiedCount} incidents to ${status}`, "system", null, ids.join(", "));
     res.json({ message: `Bulk updated ${updated.modifiedCount} incidents` });
   } catch (_err) {
     res.status(500).json({ message: "Error in bulk update" });
@@ -115,6 +117,7 @@ router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) =
     if (!updated)
       return res.status(404).json({ message: "Incident not found" });
 
+    await logAudit(req, `Changed status to ${req.body.status}`, "incident", req.params.id);
     res.json(updated);
   } catch (_err) {
     res.status(500).json({ message: "Error updating status" });
@@ -124,7 +127,10 @@ router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) =
 /* ---------------- DELETE INCIDENT ---------------- */
 router.delete("/:id", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
-    await Incident.findByIdAndDelete(req.params.id);
+    const deleted = await Incident.findByIdAndDelete(req.params.id);
+    if (deleted) {
+      await logAudit(req, "Deleted incident", "incident", req.params.id, deleted.title);
+    }
     res.json({ message: "Deleted successfully" });
   } catch (_err) {
     res.status(500).json({ message: "Error deleting incident" });
