@@ -84,6 +84,25 @@ router.get("/coords/all", async (req, res) => {
 });
 
 
+/* --------- BULK UPDATE STATUS (ADMIN ONLY) ---------- */
+router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) => {
+  try {
+    const { ids, status } = req.body;
+    if (!Array.isArray(ids) || !status) {
+      return res.status(400).json({ message: "Invalid request data" });
+    }
+
+    const updated = await Incident.updateMany(
+      { _id: { $in: ids } },
+      { status: status }
+    );
+
+    res.json({ message: `Bulk updated ${updated.modifiedCount} incidents` });
+  } catch (_err) {
+    res.status(500).json({ message: "Error in bulk update" });
+  }
+});
+
 /* --------- UPDATE STATUS (ADMIN ONLY) ---------- */
 router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
