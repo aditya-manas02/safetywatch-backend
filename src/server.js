@@ -68,7 +68,10 @@ mongoose
   })
   .catch((err) => {
     console.error("Mongo DB connection error:", err);
-    process.exit(1);
+    console.error("MONGO_URI exists:", !!MONGO_URI);
+    console.error("Error details:", err.message);
+    // Give time for logs to flush before exiting
+    setTimeout(() => process.exit(1), 1000);
   });
 
   
