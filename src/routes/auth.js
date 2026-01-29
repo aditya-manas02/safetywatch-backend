@@ -103,9 +103,10 @@ router.post("/signup", async (req, res) => {
     if (err instanceof z.ZodError) {
       return res.status(400).json({ message: err.errors[0].message });
     }
+    console.error("Signup Error:", err);
     res.status(500).json({
-      message: "Server error",
-      error: process.env.NODE_ENV === "development" ? err.message : undefined,
+      message: "Server error during signup",
+      details: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
   }
 });
@@ -145,8 +146,9 @@ router.post("/login", async (req, res) => {
     if (err instanceof z.ZodError) {
       return res.status(400).json({ message: err.errors[0].message });
     }
+    console.error("Login Error:", err);
     res.status(500).json({
-      message: "Server error",
+      message: "Server error during login",
     });
   }
 });
@@ -181,7 +183,11 @@ router.post("/forgot-password", async (req, res) => {
     if (err instanceof z.ZodError) {
       return res.status(400).json({ message: err.errors[0].message });
     }
-    res.status(500).json({ message: "Server error" });
+    console.error("Forgot Password Error:", err);
+    res.status(500).json({ 
+      message: "Server error during password reset",
+      details: err.message
+    });
   }
 });
 
