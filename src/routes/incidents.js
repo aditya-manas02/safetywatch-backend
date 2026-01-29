@@ -22,8 +22,13 @@ router.post("/", authMiddleware, async (req, res) => {
 
     res.status(201).json(incident);
   } catch (err) {
-    console.error("Create Incident Error:", err);
-    res.status(500).json({ message: "Error creating incident" });
+    console.error("Create Incident Error Details:", {
+      message: err.message,
+      stack: err.stack,
+      body: req.body,
+      user: req.user
+    });
+    res.status(500).json({ message: "Error creating incident", details: err.message });
   }
 });
 
