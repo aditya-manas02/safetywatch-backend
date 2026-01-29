@@ -11,6 +11,7 @@ import incidentRoutes from "./routes/incidents.js";
 import userRoutes from "./routes/userRoutes.js";
 import statsRoutes from "./routes/stats.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import supportRoutes from "./routes/supportRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -54,6 +55,7 @@ app.use("/api/incidents", incidentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/support", supportRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ status: "ok", message: "SafetyWatch API running" });
