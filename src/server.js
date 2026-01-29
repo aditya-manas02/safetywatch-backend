@@ -39,9 +39,14 @@ app.use(
 app.options("*", cors());
 
 /* ----------------------- BODY ----------------------- */
-app.use(bodyParser.json());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+/* ----------------------- LOGGING ------------------------ */
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
 /* ----------------------- ROUTES --------------------------- */
 app.use("/api/auth", authRoutes);
@@ -51,7 +56,22 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/upload", uploadRoutes);
 
 app.get("/", (req, res) => {
-  res.send("SafetyWatch API running");
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running" });
+});
+
+/* ----------------------- ERROR HANDLING ------------------- */
+// Handle 404
+app.use((req, res) => {
+  res.status(404).json({ message: `Route ${req.method} ${req.url} not found` });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    message: err.message || "Internal Server Error",
+    error: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
 });
 
 /* ----------------------- DATABASE ------------------------- */
