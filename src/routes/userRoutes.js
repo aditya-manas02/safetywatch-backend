@@ -9,6 +9,33 @@ import {
 
 const router = express.Router();
 
+/* UPDATE USER PROFILE (Self) */
+router.patch("/profile", authMiddleware, async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+
+    await user.save();
+
+    res.json({
+      message: "Profile updated",
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        roles: user.roles,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 /* GET ALL USERS (Admin) */
 router.get("/", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
