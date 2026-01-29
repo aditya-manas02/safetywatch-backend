@@ -169,8 +169,7 @@ router.post("/forgot-password", async (req, res) => {
     const tempPassword = generateTempPassword();
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-    user.passwordHash = passwordHash;
-    await user.save();
+    await User.updateOne({ _id: user._id }, { passwordHash });
 
     const sent = await sendPasswordResetEmail(email, tempPassword);
 
