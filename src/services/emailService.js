@@ -13,11 +13,10 @@ export const transporter = nodemailer.createTransport({
     rejectUnauthorized: false,
     servername: "smtp.gmail.com"
   },
-  pool: true,
-  maxConnections: 5,
-  connectionTimeout: 60000,
-  greetingTimeout: 60000,
-  socketTimeout: 60000,
+  pool: false, // Disable pooling to prevent stuck idle connections
+  connectionTimeout: 10000, // Reduced from 60s to fail fast
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
   logger: true,
   debug: true,
 });
