@@ -40,7 +40,7 @@ router.get("/", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
     const messages = await SupportMessage.find().sort({ createdAt: -1 });
     res.json(messages);
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -62,7 +62,7 @@ router.patch("/:id", authMiddleware, requireAdminOnly, async (req, res) => {
     if (!updated) return res.status(404).json({ message: "Message not found" });
 
     res.json(updated);
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -73,7 +73,7 @@ router.delete("/:id", authMiddleware, requireAdminOnly, async (req, res) => {
     const deleted = await SupportMessage.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Message not found" });
     res.json({ message: "Message deleted" });
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });

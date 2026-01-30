@@ -32,7 +32,7 @@ router.patch("/profile", authMiddleware, async (req, res) => {
         roles: user.roles,
       },
     });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -117,7 +117,7 @@ router.get("/audit/logs", authMiddleware, requireAdminOnly, async (req, res) => 
     const AuditLog = (await import("../models/AuditLog.js")).default;
     const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(100);
     res.json(logs);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Server error" });
   }
 });

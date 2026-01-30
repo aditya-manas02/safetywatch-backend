@@ -1,0 +1,36 @@
+
+> safetywatch-backend@1.0.0 lint
+> eslint .
+
+
+D:\safe-neighborhood-watch-main11\backend\src\middleware\auth.js
+  34:12  error  '_err' is defined but never used  no-unused-vars
+
+D:\safe-neighborhood-watch-main11\backend\src\routes\incidents.js
+   48:12  error  '_err' is defined but never used  no-unused-vars
+   60:12  error  '_err' is defined but never used  no-unused-vars
+   73:12  error  '_err' is defined but never used  no-unused-vars
+   87:12  error  '_err' is defined but never used  no-unused-vars
+  108:12  error  '_err' is defined but never used  no-unused-vars
+  127:12  error  '_err' is defined but never used  no-unused-vars
+  140:12  error  '_err' is defined but never used  no-unused-vars
+  153:12  error  '_err' is defined but never used  no-unused-vars
+
+D:\safe-neighborhood-watch-main11\backend\src\routes\supportRoutes.js
+  43:12  error  'err' is defined but never used  no-unused-vars
+  65:12  error  'err' is defined but never used  no-unused-vars
+  76:12  error  'err' is defined but never used  no-unused-vars
+
+D:\safe-neighborhood-watch-main11\backend\src\routes\userRoutes.js
+   35:12  error  'err' is defined but never used  no-unused-vars
+  120:12  error  'err' is defined but never used  no-unused-vars
+
+D:\safe-neighborhood-watch-main11\backend\src\server.js
+   7:8   error  'bodyParser' is defined but never used                                  no-unused-vars
+  71:25  error  'next' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+D:\safe-neighborhood-watch-main11\backend\src\services\emailService.js
+  18:28  error  'success' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+Γ£û 17 problems (17 errors, 0 warnings)
+
