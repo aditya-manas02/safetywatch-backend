@@ -54,6 +54,7 @@ const sendViaBrevo = async (to, subject, html) => {
       body: JSON.stringify({
         sender: { name: fromName, email: fromEmail },
         to: [{ email: to }],
+        replyTo: { email: fromEmail, name: fromName },
         subject,
         htmlContent: html,
       }),
@@ -171,16 +172,17 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
 export const sendOTPEmail = async (email, otp) => {
   const subject = "SafetyWatch - Verify Your Email";
   const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
-        <h2 style="color: #2563eb;">Verify Your Email Address</h2>
-        <p>Hello,</p>
-        <p>Thank you for signing up for SafetyWatch. Please use the following One-Time Password (OTP) to verify your email address. This code is valid for 10 minutes.</p>
-        <div style="background-color: #f1f5f9; padding: 16px; border-radius: 8px; font-size: 32px; font-weight: bold; text-align: center; margin: 24px 0; color: #0f172a; border: 1px solid #e2e8f0; letter-spacing: 4px;">
+      <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+        <h2 style="color: #2563eb; text-align: center;">SafetyWatch OTP</h2>
+        <p style="font-size: 16px;">Hello,</p>
+        <p style="font-size: 16px;">Your verification code for SafetyWatch is:</p>
+        <div style="background-color: #f4f7ff; padding: 20px; border-radius: 8px; font-size: 36px; font-weight: bold; text-align: center; margin: 20px 0; color: #1e40af; letter-spacing: 5px; border: 2px dashed #2563eb;">
           ${otp}
         </div>
-        <p>If you did not request this, please ignore this email.</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-        <p style="font-size: 12px; color: #64748b;">This is an automated message. Please do not reply.</p>
+        <p style="font-size: 14px; color: #666;">This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999; text-align: center;">
+          Sent by SafetyWatch Neighborhood Security
+        </div>
       </div>
     `;
 
