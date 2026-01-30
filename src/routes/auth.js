@@ -50,6 +50,7 @@ router.get("/test-smtp", async (req, res) => {
       hasBrevoKey: !!process.env.BREVO_API_KEY,
       brevoLen: process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.length : 0,
       brevoPrefix: process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.substring(0, 10) : "none",
+      emailFrom: process.env.EMAIL_FROM || "not-set",
       hasResendKey: !!process.env.RESEND_API_KEY,
       hasSmtpUser: !!process.env.SMTP_USER,
       hasSmtpPass: !!process.env.SMTP_PASS,
@@ -65,10 +66,18 @@ router.get("/test-smtp", async (req, res) => {
         const brevoData = await brevoResponse.json();
         
         if (brevoResponse.ok) {
+          // If a test email is provided in query, try sending it
+          let testResult = null;
+          if (req.query.email) {
+            const { sendOTPEmail } = await import("../services/emailService.js");
+            testResult = await sendOTPEmail(req.query.email, "123456");
+          }
+
           return res.json({ 
             status: "success", 
             message: "Brevo API Key is VALID",
             account: brevoData.email,
+            testEmailSent: testResult,
             config: configCheck
           });
         } else {
