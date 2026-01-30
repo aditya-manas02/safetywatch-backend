@@ -155,43 +155,42 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
       </div>
     `;
 
-  // Try Brevo first if API key is present
+  // Try SMTP first (Best deliverability for @gmail.com sender)
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      console.log(`Attempting to send reset email via SMTP to: ${email}...`);
+      const mailOptions = {
+        from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject,
+        html,
+      };
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Email sent successfully via SMTP. Message ID:", info.messageId);
+      return { success: true, info };
+    } catch (error) {
+      console.error("SMTP failed, attempting fallback to API providers...", error);
+    }
+  }
+
+  // Try Brevo fallback
   if (process.env.BREVO_API_KEY) {
     const res = await sendViaBrevo(email, subject, html);
     if (res.success) return res;
-    console.warn("Brevo failed, attempting fallback...");
+    console.warn("Brevo failed, attempting next fallback...");
   }
 
-  // Try Resend second if API key is present
+  // Try Resend fallback
   if (process.env.RESEND_API_KEY) {
     const res = await sendViaResend(email, subject, html);
     if (res.success) return res;
-    console.warn("Resend failed, attempting fallback...");
+    console.warn("Resend failed.");
   }
 
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.error("CRITICAL: No email provider configured (Brevo, Resend or SMTP). Email skipped.");
-    return { success: false, error: new Error("No mail provider configured") };
-  }
-  
-  console.log(`Attempting to send reset email via SMTP to: ${email}...`);
-
-  const mailOptions = {
-    from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
-    to: email,
-    subject,
-    html,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully. Message ID:", info.messageId);
-    return { success: true, info };
-  } catch (error) {
-    console.error("Detailed Email Send Error:", error);
-    return { success: false, error };
-  }
+  return { success: false, error: new Error("All email providers failed") };
 };
+  
+
 
 /**
  * Send an OTP email for registration verification.
@@ -213,40 +212,39 @@ export const sendOTPEmail = async (email, otp) => {
       </div>
     `;
 
-  // Try Brevo first if API key is present
+  // Try SMTP first (Best deliverability for @gmail.com sender)
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      console.log(`Attempting to send OTP email via SMTP to: ${email}...`);
+      const mailOptions = {
+        from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject,
+        html,
+      };
+      const info = await transporter.sendMail(mailOptions);
+      console.log("OTP Email sent successfully via SMTP. Message ID:", info.messageId);
+      return { success: true, info };
+    } catch (error) {
+      console.error("SMTP failed, attempting fallback to API providers...", error);
+    }
+  }
+
+  // Try Brevo fallback
   if (process.env.BREVO_API_KEY) {
     const res = await sendViaBrevo(email, subject, html);
     if (res.success) return res;
-    console.warn("Brevo OTP failed, attempting fallback...");
+    console.warn("Brevo OTP failed, attempting next fallback...");
   }
 
-  // Try Resend second if API key is present
+  // Try Resend fallback
   if (process.env.RESEND_API_KEY) {
     const res = await sendViaResend(email, subject, html);
     if (res.success) return res;
-    console.warn("Resend OTP failed, attempting fallback...");
+    console.warn("Resend OTP failed.");
   }
 
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.error("CRITICAL: No email provider configured (Brevo, Resend or SMTP). OTP skipped.");
-    return { success: false, error: new Error("No mail provider configured") };
-  }
-  
-  console.log(`Attempting to send OTP email via SMTP to: ${email}...`);
-
-  const mailOptions = {
-    from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
-    to: email,
-    subject,
-    html,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("OTP Email sent successfully. Message ID:", info.messageId);
-    return { success: true, info };
-  } catch (error) {
-    console.error("Detailed OTP Email Send Error:", error);
-    return { success: false, error };
-  }
+  return { success: false, error: new Error("All email providers failed") };
 };
+  
+
