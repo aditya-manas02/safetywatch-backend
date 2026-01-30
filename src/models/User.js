@@ -9,6 +9,8 @@ const userSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false },
   otp: { type: String },
   otpExpiresAt: { type: Date },
+  passwordResetOtp: { type: String },
+  passwordResetOtpExpiresAt: { type: Date },
   roles: { 
     type: [String], 
     enum: ["user", "admin", "superadmin"], 
