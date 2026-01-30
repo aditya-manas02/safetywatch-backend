@@ -44,6 +44,25 @@ router.get("/test", (req, res) => {
   res.json({ message: "Auth route is working" });
 });
 
+router.get("/test-smtp", async (req, res) => {
+  try {
+    const { transporter } = await import("../services/emailService.js");
+    await transporter.verify();
+    res.json({ 
+      status: "success", 
+      message: "SMTP server is ready",
+      user: process.env.SMTP_USER
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: "error", 
+      message: "SMTP connection failed", 
+      error: error.message,
+      code: error.code
+    });
+  }
+});
+
 /* -------------------------------------------------
    HELPERS
 -------------------------------------------------- */
