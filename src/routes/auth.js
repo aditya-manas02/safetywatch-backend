@@ -45,20 +45,38 @@ router.get("/test", (req, res) => {
 });
 
 router.get("/test-smtp", async (req, res) => {
+  const timeoutId = setTimeout(() => {
+    if (!res.headersSent) {
+      res.status(504).json({ error: "SMTP Connection timed out after 10s" });
+    }
+  }, 10000);
+
   try {
     const { transporter } = await import("../services/emailService.js");
+    
+    // Check if credentials exist
+    const configCheck = {
+      hasUser: !!process.env.SMTP_USER,
+      hasPass: !!process.env.SMTP_PASS,
+      userPrefix: process.env.SMTP_USER ? process.env.SMTP_USER.substring(0, 4) : "none"
+    };
+
     await transporter.verify();
+    clearTimeout(timeoutId);
+    
     res.json({ 
       status: "success", 
       message: "SMTP server is ready",
-      user: process.env.SMTP_USER
+      config: configCheck
     });
   } catch (error) {
+    clearTimeout(timeoutId);
     res.status(500).json({ 
       status: "error", 
       message: "SMTP connection failed", 
       error: error.message,
-      code: error.code
+      code: error.code,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
     });
   }
 });
