@@ -10,15 +10,27 @@ import { logAudit } from "../utils/auditLogger.js";
 
 const router = express.Router();
 
+/* GET USER PROFILE (Self) */
+router.get("/profile", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-passwordHash");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 /* UPDATE USER PROFILE (Self) */
 router.patch("/profile", authMiddleware, async (req, res) => {
   try {
-    const { name, phone } = req.body;
+    const { name, phone, profilePicture } = req.body;
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     if (name) user.name = name;
     if (phone) user.phone = phone;
+    if (profilePicture) user.profilePicture = profilePicture;
 
     await user.save();
 
