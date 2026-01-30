@@ -221,18 +221,11 @@ router.post("/signup", async (req, res) => {
       });
     }
 
-    const { success, error: emailError } = await sendOTPEmail(email, otp);
-    
-    if (!success) {
-      return res.status(400).json({
-        message: `User created, but OTP email failed to send: ${emailError?.message || "Unknown error"}. Please use Resend OTP after confirming your email is correct.`,
-        needsVerification: true,
-        email
-      });
-    }
+    // Non-blocking email send for performance
+    sendOTPEmail(email, otp).catch(err => console.error("Async Email Error:", err));
 
     res.status(201).json({
-      message: "Registration successful! Please verify your email with the OTP sent.",
+      message: "Registration successful! Verification code sent to your email.",
       user: {
         id: user._id,
         email: user.email,
@@ -241,7 +234,7 @@ router.post("/signup", async (req, res) => {
         roles: user.roles,
         createdAt: user.createdAt,
         isVerified: user.isVerified,
-        profilePicture: user.profilePicture,
+        profilePicture: user.profilePicture, // Ensure this field is present in User schema
       },
     });
   } catch (err) {
