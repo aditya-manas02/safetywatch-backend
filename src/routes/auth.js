@@ -183,8 +183,7 @@ router.post("/forgot-password", async (req, res) => {
     }
 
     res.json({ 
-      message: "If an account exists, a reset email has been sent.",
-      tempPassword: tempPassword // Provide for dev/debugging since SMTP is currently failing
+      message: "If an account exists, a reset email has been sent."
     });
   } catch (err) {
     if (err instanceof z.ZodError) {

@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import bodyParser from "body-parser";
+
 
 import authRoutes from "./routes/auth.js";
 import incidentRoutes from "./routes/incidents.js";
@@ -68,7 +68,7 @@ app.use((req, res) => {
 });
 
 // Global error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
     message: err.message || "Internal Server Error",
