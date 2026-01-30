@@ -56,11 +56,10 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log("Email sent successfully. Message ID:", info.messageId);
-    console.log("Accepted by:", info.accepted);
-    return true;
+    return { success: true, info };
   } catch (error) {
     console.error("Detailed Email Send Error:", error);
-    return false;
+    return { success: false, error };
   }
 };
 
@@ -97,9 +96,9 @@ export const sendOTPEmail = async (email, otp) => {
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log("OTP Email sent successfully. Message ID:", info.messageId);
-    return true;
+    return { success: true, info };
   } catch (error) {
     console.error("Detailed OTP Email Send Error:", error);
-    return false;
+    return { success: false, error };
   }
 };

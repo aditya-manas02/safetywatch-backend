@@ -108,12 +108,12 @@ router.post("/signup", async (req, res) => {
       isVerified: false,
     });
 
-    const sent = await sendOTPEmail(email, otp);
+    const { success, error: emailError } = await sendOTPEmail(email, otp);
     
     res.json({
-      message: sent 
+      message: success 
         ? "Registration successful! Please verify your email with the OTP sent."
-        : "Registration successful, but we failed to send the verification email. Please try 'Resend Code' on the verification page.",
+        : `Registration successful, but email failed: ${emailError?.message || "Unknown error"}. Check spam or try resending.`,
       user: {
         id: user._id,
         email: user.email,
@@ -248,11 +248,12 @@ router.post("/resend-otp", async (req, res) => {
     user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    const sent = await sendOTPEmail(email, otp);
-    if (!sent) {
+    const { success, error: emailError } = await sendOTPEmail(email, otp);
+    if (!success) {
       return res.status(500).json({ 
-        message: "Failed to send OTP email. Please check server logs for SMTP errors.",
-        error: "SMTP_FAILURE"
+        message: `Failed to send OTP email: ${emailError?.message || "Unknown error"}`,
+        code: emailError?.code,
+        command: emailError?.command
       });
     }
 
