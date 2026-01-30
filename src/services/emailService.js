@@ -64,8 +64,8 @@ const sendViaBrevo = async (to, subject, html) => {
       console.log("Brevo Email sent successfully:", data.messageId);
       return { success: true, info: data };
     } else {
-      console.error("Brevo API Error:", data);
-      return { success: false, error: new Error(data.message || "Brevo API failure") };
+      console.error("Brevo API Error:", JSON.stringify(data));
+      return { success: false, error: { message: data.message || "Brevo failure", details: data } };
     }
   } catch (error) {
     console.error("Brevo Fetch Error:", error);
