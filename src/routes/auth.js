@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import dotenv from "dotenv";
 import { z } from "zod";
 import { sendPasswordResetEmail, sendOTPEmail } from "../services/emailService.js";
+import { catchAsync } from "../utils/catchAsync.js";
 
 dotenv.config();
 const router = express.Router();
@@ -176,266 +177,213 @@ function generateOTP() {
 /* -------------------------------------------------
    SIGNUP
 -------------------------------------------------- */
-router.post("/signup", async (req, res) => {
-  try {
-    const { email, password, name, phone } = signupSchema.parse(req.body);
+router.post("/signup", catchAsync(async (req, res) => {
+  const { email, password, name, phone } = signupSchema.parse(req.body);
 
-    let user = await User.findOne({ email });
-    
-    // Scenario 1: User exists and is verified -> ERROR
-    if (user && user.isVerified) {
-      return res.status(400).json({
-        message: "Email already exists",
-      });
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    const otp = generateOTP();
-    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-    
-    const roles = ["user"];
-    if (process.env.SUPERADMIN_EMAIL && email.toLowerCase() === process.env.SUPERADMIN_EMAIL.toLowerCase()) {
-      roles.push("admin", "superadmin");
-    }
-
-    // Scenario 2: User exists but NOT verified -> OVERWRITE (re-register)
-    if (user) {
-      user.name = name;
-      user.phone = phone;
-      user.passwordHash = passwordHash;
-      user.otp = otp;
-      user.otpExpiresAt = otpExpiresAt;
-      user.roles = roles; // Reset roles in case of logic change
-      await user.save();
-    } else {
-      // Scenario 3: New User -> CREATE
-      user = await User.create({
-        email,
-        name,
-        phone,
-        passwordHash,
-        roles,
-        otp,
-        otpExpiresAt,
-        isVerified: false,
-      });
-    }
-
-    // Non-blocking email send for performance
-    sendOTPEmail(email, otp).catch(err => console.error("Async Email Error:", err));
-
-    res.status(201).json({
-      message: "Registration successful! Verification code sent to your email.",
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        phone: user.phone,
-        roles: user.roles,
-        createdAt: user.createdAt,
-        isVerified: user.isVerified,
-        profilePicture: user.profilePicture, // Ensure this field is present in User schema
-      },
-    });
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return res.status(400).json({ message: err.errors[0].message });
-    }
-    console.error("Signup Error:", err);
-    res.status(500).json({
-      message: "Server error during signup",
-      details: process.env.NODE_ENV === "development" ? err.message : undefined,
+  let user = await User.findOne({ email });
+  
+  if (user && user.isVerified) {
+    return res.status(400).json({
+      message: "Email already exists",
     });
   }
-});
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const otp = generateOTP();
+  const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); 
+  
+  const roles = ["user"];
+  if (process.env.SUPERADMIN_EMAIL && email.toLowerCase() === process.env.SUPERADMIN_EMAIL.toLowerCase()) {
+    roles.push("admin", "superadmin");
+  }
+
+  if (user) {
+    user.name = name;
+    user.phone = phone;
+    user.passwordHash = passwordHash;
+    user.otp = otp;
+    user.otpExpiresAt = otpExpiresAt;
+    user.roles = roles; 
+    await user.save();
+  } else {
+    user = await User.create({
+      email,
+      name,
+      phone,
+      passwordHash,
+      roles,
+      otp,
+      otpExpiresAt,
+      isVerified: false,
+    });
+  }
+
+  sendOTPEmail(email, otp).catch(err => console.error("Async Email Error:", err));
+
+  res.status(201).json({
+    message: "Registration successful! Verification code sent to your email.",
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      roles: user.roles,
+      createdAt: user.createdAt,
+      isVerified: user.isVerified,
+      profilePicture: user.profilePicture,
+    },
+  });
+}));
 
 /* -------------------------------------------------
    LOGIN
 -------------------------------------------------- */
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = loginSchema.parse(req.body);
+router.post("/login", catchAsync(async (req, res) => {
+  const { email, password } = loginSchema.parse(req.body);
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({
-        message: "Invalid credentials",
-      });
-    }
-
-    if (!user.isVerified) {
-      return res.status(403).json({
-        message: "Please verify your email address before logging in.",
-        needsVerification: true,
-      });
-    }
-
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) {
-      return res.status(400).json({
-        message: "Invalid credentials",
-      });
-    }
-
-    const token = signToken(user);
-
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        phone: user.phone,
-        roles: user.roles,
-        createdAt: user.createdAt,
-        isVerified: user.isVerified,
-        profilePicture: user.profilePicture,
-      },
-    });
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return res.status(400).json({ message: err.errors[0].message });
-    }
-    console.error("Login Error:", err);
-    res.status(500).json({
-      message: "Server error during login",
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(400).json({
+      message: "Invalid credentials",
     });
   }
-});
+
+  if (!user.isVerified) {
+    return res.status(403).json({
+      message: "Please verify your email address before logging in.",
+      needsVerification: true,
+    });
+  }
+
+  const ok = await bcrypt.compare(password, user.passwordHash);
+  if (!ok) {
+    return res.status(400).json({
+      message: "Invalid credentials",
+    });
+  }
+
+  const token = signToken(user);
+
+  res.json({
+    token,
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      roles: user.roles,
+      createdAt: user.createdAt,
+      isVerified: user.isVerified,
+      profilePicture: user.profilePicture,
+    },
+  });
+}));
 
 /* -------------------------------------------------
    VERIFY OTP
 -------------------------------------------------- */
-router.post("/verify-otp", async (req, res) => {
-  try {
-    const { email, otp } = verifyOtpSchema.parse(req.body);
+router.post("/verify-otp", catchAsync(async (req, res) => {
+  const { email, otp } = verifyOtpSchema.parse(req.body);
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.isVerified) {
-      return res.status(400).json({ message: "Email is already verified" });
-    }
-
-    if (!user.otp || user.otp !== otp || user.otpExpiresAt < new Date()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
-    }
-
-    user.isVerified = true;
-    user.otp = undefined;
-    user.otpExpiresAt = undefined;
-    await user.save();
-
-    const token = signToken(user);
-
-    res.json({
-      message: "Email verified successfully!",
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        phone: user.phone,
-        roles: user.roles,
-        createdAt: user.createdAt,
-        isVerified: true,
-        profilePicture: user.profilePicture,
-      },
-    });
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return res.status(400).json({ message: err.errors[0].message });
-    }
-    console.error("OTP Verification Error:", err);
-    res.status(500).json({ message: "Server error during verification" });
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
   }
-});
+
+  if (user.isVerified) {
+    return res.status(400).json({ message: "Email is already verified" });
+  }
+
+  if (!user.otp || user.otp !== otp || user.otpExpiresAt < new Date()) {
+    return res.status(400).json({ message: "Invalid or expired OTP" });
+  }
+
+  user.isVerified = true;
+  user.otp = undefined;
+  user.otpExpiresAt = undefined;
+  await user.save();
+
+  const token = signToken(user);
+
+  res.json({
+    message: "Email verified successfully!",
+    token,
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      roles: user.roles,
+      createdAt: user.createdAt,
+      isVerified: true,
+      profilePicture: user.profilePicture,
+    },
+  });
+}));
 
 /* -------------------------------------------------
    RESEND OTP
 -------------------------------------------------- */
-router.post("/resend-otp", async (req, res) => {
-  try {
-    const { email } = resendOtpSchema.parse(req.body);
+router.post("/resend-otp", catchAsync(async (req, res) => {
+  const { email } = resendOtpSchema.parse(req.body);
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.isVerified) {
-      return res.status(400).json({ message: "Email already verified" });
-    }
-
-    const otp = generateOTP();
-    user.otp = otp;
-    user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    await user.save();
-
-    const { success, error: emailError } = await sendOTPEmail(email, otp);
-    if (!success) {
-      return res.status(500).json({ 
-        message: `Failed to send OTP email: ${emailError?.message || "Unknown error"}`,
-        code: emailError?.code,
-        command: emailError?.command
-      });
-    }
-
-    res.json({ message: "A new OTP has been sent to your email." });
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return res.status(400).json({ message: err.errors[0].message });
-    }
-    console.error("Resend OTP Error:", err);
-    res.status(500).json({ message: "Server error during resending OTP" });
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
   }
-});
+
+  if (user.isVerified) {
+    return res.status(400).json({ message: "Email already verified" });
+  }
+
+  const otp = generateOTP();
+  user.otp = otp;
+  user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await user.save();
+
+  const { success, error: emailError } = await sendOTPEmail(email, otp);
+  if (!success) {
+    return res.status(500).json({ 
+      message: `Failed to send OTP email: ${emailError?.message || "Unknown error"}`,
+      code: emailError?.code,
+      command: emailError?.command
+    });
+  }
+
+  res.json({ message: "A new OTP has been sent to your email." });
+}));
 
 /* -------------------------------------------------
    FORGOT PASSWORD
 -------------------------------------------------- */
-router.post("/forgot-password", async (req, res) => {
-  try {
-    const { email } = forgotPasswordSchema.parse(req.body);
+router.post("/forgot-password", catchAsync(async (req, res) => {
+  const { email } = forgotPasswordSchema.parse(req.body);
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      // Industry best practice: don't reveal if user exists
-      return res.json({ message: "If an account exists, a reset email has been sent." });
-    }
-
-    const tempPassword = generateTempPassword();
-    const passwordHash = await bcrypt.hash(tempPassword, 10);
-
-    await User.updateOne({ _id: user._id }, { passwordHash });
-
-    console.log("------------------------------------------");
-    console.log(`PASSWORD RESET REQUEST for: ${email}`);
-    console.log(`GENERATED TEMP PASSWORD: ${tempPassword}`);
-    console.log("------------------------------------------");
-
-    const sent = await sendPasswordResetEmail(email, tempPassword);
-
-    if (!sent) {
-      console.error("Failed to send reset email to:", email);
-    }
-
-    res.json({ 
-      message: "If an account exists, a reset email has been sent."
-    });
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return res.status(400).json({ message: err.errors[0].message });
-    }
-    console.error("Forgot Password Error:", err);
-    res.status(500).json({ 
-      message: "Server error during password reset",
-      details: err.message
-    });
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.json({ message: "If an account exists, a reset email has been sent." });
   }
-});
+
+  const tempPassword = generateTempPassword();
+  const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+  await User.updateOne({ _id: user._id }, { passwordHash });
+
+  console.log("------------------------------------------");
+  console.log(`PASSWORD RESET REQUEST for: ${email}`);
+  console.log(`GENERATED TEMP PASSWORD: ${tempPassword}`);
+  console.log("------------------------------------------");
+
+  const sent = await sendPasswordResetEmail(email, tempPassword);
+
+  if (!sent) {
+    console.error("Failed to send reset email to:", email);
+  }
+
+  res.json({ 
+    message: "If an account exists, a reset email has been sent."
+  });
+}));
 
 /* -------------------------------------------------
    PASSWORD MANAGEMENT (PROFILE)
