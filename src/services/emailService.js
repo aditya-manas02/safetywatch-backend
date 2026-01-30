@@ -34,56 +34,67 @@ if (process.env.SMTP_USER && process.env.SMTP_PASS) {
 }
 
 /**
- * Send email via Brevo (Sendinblue) HTTP API
+ * Send email via Brevo (Sendinblue) HTTP API with retry logic
  */
-const sendViaBrevo = async (to, subject, html) => {
-  const apiKey = (process.env.BREVO_API_KEY || "").trim();
+const sendViaBrevo = async (to, subject, html, retries = 3) => {
+  const apiKey = process.env.BREVO_API_KEY?.trim();
   const fromEmail = process.env.EMAIL_FROM || "safetywatch4neighbour@gmail.com";
   const fromName = process.env.EMAIL_FROM_NAME || "SafetyWatch";
   
-  const keyDiagnostics = {
-    exists: !!apiKey,
-    length: apiKey.length,
-    prefix: apiKey ? `${apiKey.substring(0, 8)}...` : "none",
-    suffix: apiKey ? `...${apiKey.substring(apiKey.length - 4)}` : "none"
-  };
+  console.log(`Attempting to send email via BREVO to: ${to}...`);
 
-  console.log(`[BREVO DIAG] Attempting to send. Key exists: ${keyDiagnostics.exists}, Length: ${keyDiagnostics.length}, Prefix: ${keyDiagnostics.prefix}`);
-  console.log(`[BREVO DIAG] From: ${fromEmail}, To: ${to}`);
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "content-type": "application/json",
+          "api-key": apiKey,
+        },
+        body: JSON.stringify({
+          sender: { name: fromName, email: fromEmail },
+          to: [{ email: to }],
+          replyTo: { email: fromEmail, name: fromName },
+          subject,
+          htmlContent: html,
+        }),
+      });
 
-  try {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "api-key": apiKey,
-      },
-      body: JSON.stringify({
-        sender: { name: fromName, email: fromEmail },
-        to: [{ email: to }],
-        replyTo: { email: fromEmail, name: fromName },
-        subject,
-        htmlContent: html,
-      }),
-    });
-
-    const data = await response.json();
-    if (response.ok) {
-      console.log("[BREVO SUCCESS] Email sent:", data.messageId);
-      return { success: true, info: data };
-    } else {
-      console.error("[BREVO API ERROR]", JSON.stringify(data));
-      let helpfulMessage = data.message || "Brevo failure";
-      if (helpfulMessage.includes("Key not found") || helpfulMessage.includes("unauthorized")) {
-        helpfulMessage = `Brevo API Key REJECTED. Please check your Render Environment Variables. (Key Prefix: ${keyDiagnostics.prefix})`;
+      const data = await response.json();
+      if (response.ok) {
+        console.log(`Brevo Email sent successfully on attempt ${attempt}:`, data.messageId);
+        return { success: true, info: data };
+      } else {
+        console.error(`Brevo API Error (attempt ${attempt}/${retries}):`, JSON.stringify(data));
+        
+        // If this is the last attempt, return the error
+        if (attempt === retries) {
+          return { success: false, error: { message: data.message || "Brevo failure", details: data } };
+        }
+        
+        // Wait before retrying (exponential backoff: 500ms, 1s, 2s)
+        const waitTime = Math.pow(2, attempt - 1) * 500;
+        console.log(`Retrying in ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
-      return { success: false, error: { message: helpfulMessage, details: data } };
+    } catch (error) {
+      console.error(`Brevo Fetch Error (attempt ${attempt}/${retries}):`, error);
+      
+      // If this is the last attempt, return the error
+      if (attempt === retries) {
+        return { success: false, error };
+      }
+      
+      // Wait before retrying
+      const waitTime = Math.pow(2, attempt - 1) * 500;
+      console.log(`Retrying in ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
     }
-  } catch (error) {
-    console.error("Brevo Fetch Error:", error);
-    return { success: false, error };
   }
+  
+  // This should never be reached, but just in case
+  return { success: false, error: { message: "Max retries exceeded" } };
 };
 
 /**
