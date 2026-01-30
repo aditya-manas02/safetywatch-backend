@@ -45,7 +45,7 @@ router.get("/", authMiddleware, async (req, res) => {
     }).sort({ createdAt: -1 });
 
     res.json(incidents);
-  } catch (_err) {
+  } catch {
     res.status(500).json({ message: "Error fetching incidents" });
   }
 });
@@ -57,7 +57,7 @@ router.get("/public", async (req, res) => {
       createdAt: -1,
     });
     res.json(list);
-  } catch (_err) {
+  } catch {
     res.status(500).json({ message: "Error loading public incidents" });
   }
 });
@@ -70,7 +70,7 @@ router.get("/latest", async (req, res) => {
       .limit(3);
 
     res.json(items);
-  } catch (_err) {
+  } catch {
     res.status(500).json({ message: "Error fetching latest incidents" });
   }
 });
@@ -84,7 +84,7 @@ router.get("/coords/all", async (req, res) => {
     );
 
     res.json(coords);
-  } catch (_err) {
+  } catch {
     res.status(500).json({ message: "Error fetching heatmap coords" });
   }
 });
@@ -105,7 +105,7 @@ router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) 
 
     await logAudit(req, `Bulk updated ${updated.modifiedCount} incidents to ${status}`, "system", null, ids.join(", "));
     res.json({ message: `Bulk updated ${updated.modifiedCount} incidents` });
-  } catch (_err) {
+  } catch {
     res.status(500).json({ message: "Error in bulk update" });
   }
 });
@@ -124,7 +124,7 @@ router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) =
 
     await logAudit(req, `Changed status to ${req.body.status}`, "incident", req.params.id);
     res.json(updated);
-  } catch (_err) {
+  } catch {
     res.status(500).json({ message: "Error updating status" });
   }
 });
@@ -137,7 +137,7 @@ router.delete("/:id", authMiddleware, requireAdminOnly, async (req, res) => {
       await logAudit(req, "Deleted incident", "incident", req.params.id, deleted.title);
     }
     res.json({ message: "Deleted successfully" });
-  } catch (_err) {
+  } catch {
     res.status(500).json({ message: "Error deleting incident" });
   }
 });
@@ -150,7 +150,7 @@ router.get("/stats/public", async (req, res) => {
     const approved = await Incident.countDocuments({ status: "approved" });
 
     res.json({ total, active, approved });
-  } catch (_err) {
+  } catch {
     res.status(500).json({ message: "Error loading stats" });
   }
 });
