@@ -49,7 +49,10 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ----------------------- ROUTES --------------------------- */
+app.get("/api/health-test", (req, res) => {
+  res.json({ message: "Direct health-test route is working", timestamp: new Date().toISOString() });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/incidents", incidentRoutes);
 app.use("/api/users", userRoutes);
@@ -58,7 +61,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/support", supportRoutes);
 
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "SafetyWatch API running" });
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.0.1)", timestamp: new Date().toISOString() });
 });
 
 /* ----------------------- ERROR HANDLING ------------------- */
