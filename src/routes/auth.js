@@ -212,10 +212,16 @@ router.post("/signup", async (req, res) => {
 
     const { success, error: emailError } = await sendOTPEmail(email, otp);
     
-    res.json({
-      message: success 
-        ? "Registration successful! Please verify your email with the OTP sent."
-        : `Registration successful, but email failed: ${emailError?.message || "Unknown error"}. Check spam or try resending.`,
+    if (!success) {
+      return res.status(400).json({
+        message: `User created, but OTP email failed to send: ${emailError?.message || "Unknown error"}. Please use Resend OTP after confirming your email is correct.`,
+        needsVerification: true,
+        email
+      });
+    }
+
+    res.status(201).json({
+      message: "Registration successful! Please verify your email with the OTP sent.",
       user: {
         id: user._id,
         email: user.email,
