@@ -7,49 +7,42 @@ import {
   requireSuperAdmin,
 } from "../middleware/auth.js";
 import { logAudit } from "../utils/auditLogger.js";
+import { catchAsync } from "../utils/catchAsync.js";
 
 const router = express.Router();
 
 /* GET USER PROFILE (Self) */
-router.get("/profile", authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("-passwordHash");
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
-  } catch {
-    res.status(500).json({ error: "Server error" });
-  }
-});
+router.get("/profile", authMiddleware, catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id).select("-passwordHash");
+  if (!user) return res.status(404).json({ message: "User not found" });
+  res.json(user);
+}));
 
 /* UPDATE USER PROFILE (Self) */
-router.patch("/profile", authMiddleware, async (req, res) => {
-  try {
-    const { name, phone, profilePicture } = req.body;
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
+router.patch("/profile", authMiddleware, catchAsync(async (req, res) => {
+  const { name, phone, profilePicture } = req.body;
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (name) user.name = name;
-    if (phone) user.phone = phone;
-    if (profilePicture) user.profilePicture = profilePicture;
+  if (name) user.name = name;
+  if (phone) user.phone = phone;
+  if (profilePicture) user.profilePicture = profilePicture;
 
-    await user.save();
+  await user.save();
 
-    res.json({
-      message: "Profile updated",
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        phone: user.phone,
-        roles: user.roles,
-        createdAt: user.createdAt,
-        isVerified: user.isVerified,
-      },
-    });
-  } catch {
-    res.status(500).json({ error: "Server error" });
-  }
-});
+  res.json({
+    message: "Profile updated",
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      roles: user.roles,
+      createdAt: user.createdAt,
+      isVerified: user.isVerified,
+    },
+  });
+}));
 
 /* GET ALL USERS (Admin) */
 router.get("/", authMiddleware, requireAdminOnly, async (req, res) => {
