@@ -37,7 +37,7 @@ if (process.env.SMTP_USER && process.env.SMTP_PASS) {
  * Send email via Brevo (Sendinblue) HTTP API
  */
 const sendViaBrevo = async (to, subject, html) => {
-  const apiKey = process.env.BREVO_API_KEY;
+  const apiKey = process.env.BREVO_API_KEY?.trim();
   const fromEmail = process.env.EMAIL_FROM || "onboarding@resend.dev";
   const fromName = process.env.EMAIL_FROM_NAME || "SafetyWatch";
   
