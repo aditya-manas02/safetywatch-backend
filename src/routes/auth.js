@@ -227,6 +227,10 @@ router.post("/signup", async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
+        name: user.name,
+        phone: user.phone,
+        roles: user.roles,
+        createdAt: user.createdAt,
         isVerified: user.isVerified,
       },
     });
@@ -277,7 +281,11 @@ router.post("/login", async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
+        name: user.name,
+        phone: user.phone,
         roles: user.roles,
+        createdAt: user.createdAt,
+        isVerified: user.isVerified,
       },
     });
   } catch (err) {
