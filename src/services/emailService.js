@@ -157,12 +157,16 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
 
   // Try Brevo first if API key is present
   if (process.env.BREVO_API_KEY) {
-    return await sendViaBrevo(email, subject, html);
+    const res = await sendViaBrevo(email, subject, html);
+    if (res.success) return res;
+    console.warn("Brevo failed, attempting fallback...");
   }
 
   // Try Resend second if API key is present
   if (process.env.RESEND_API_KEY) {
-    return await sendViaResend(email, subject, html);
+    const res = await sendViaResend(email, subject, html);
+    if (res.success) return res;
+    console.warn("Resend failed, attempting fallback...");
   }
 
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -211,12 +215,16 @@ export const sendOTPEmail = async (email, otp) => {
 
   // Try Brevo first if API key is present
   if (process.env.BREVO_API_KEY) {
-    return await sendViaBrevo(email, subject, html);
+    const res = await sendViaBrevo(email, subject, html);
+    if (res.success) return res;
+    console.warn("Brevo OTP failed, attempting fallback...");
   }
 
   // Try Resend second if API key is present
   if (process.env.RESEND_API_KEY) {
-    return await sendViaResend(email, subject, html);
+    const res = await sendViaResend(email, subject, html);
+    if (res.success) return res;
+    console.warn("Resend OTP failed, attempting fallback...");
   }
 
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
