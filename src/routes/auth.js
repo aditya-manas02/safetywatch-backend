@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import dotenv from "dotenv";
 import { z } from "zod";
-import { sendPasswordResetEmail } from "../services/emailService.js";
+import { sendPasswordResetEmail, sendOTPEmail } from "../services/emailService.js";
 
 dotenv.config();
 const router = express.Router();
@@ -25,6 +25,15 @@ const loginSchema = z.object({
 });
 
 const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+const verifyOtpSchema = z.object({
+  email: z.string().email(),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+});
+
+const resendOtpSchema = z.object({
   email: z.string().email(),
 });
 
@@ -56,6 +65,10 @@ function generateTempPassword() {
   return Math.random().toString(36).slice(-8).toUpperCase();
 }
 
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 /* -------------------------------------------------
    SIGNUP
 -------------------------------------------------- */
@@ -81,22 +94,31 @@ router.post("/signup", async (req, res) => {
       roles.push("admin", "superadmin");
     }
 
+    const otp = generateOTP();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
     const user = await User.create({
       email,
       name,
       phone,
       passwordHash,
       roles,
+      otp,
+      otpExpiresAt,
+      isVerified: false,
     });
 
-    const token = signToken(user);
+    const sent = await sendOTPEmail(email, otp);
+    if (!sent) {
+      console.error("Failed to send OTP to:", email);
+    }
 
     res.json({
-      token,
+      message: "Registration successful! Please verify your email with the OTP sent.",
       user: {
         id: user._id,
         email: user.email,
-        roles: user.roles,
+        isVerified: user.isVerified,
       },
     });
   } catch (err) {
@@ -125,6 +147,13 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    if (!user.isVerified) {
+      return res.status(403).json({
+        message: "Please verify your email address before logging in.",
+        needsVerification: true,
+      });
+    }
+
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
       return res.status(400).json({
@@ -150,6 +179,88 @@ router.post("/login", async (req, res) => {
     res.status(500).json({
       message: "Server error during login",
     });
+  }
+});
+
+/* -------------------------------------------------
+   VERIFY OTP
+-------------------------------------------------- */
+router.post("/verify-otp", async (req, res) => {
+  try {
+    const { email, otp } = verifyOtpSchema.parse(req.body);
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+
+    if (!user.otp || user.otp !== otp || user.otpExpiresAt < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpiresAt = undefined;
+    await user.save();
+
+    const token = signToken(user);
+
+    res.json({
+      message: "Email verified successfully!",
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        roles: user.roles,
+        isVerified: true,
+      },
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: err.errors[0].message });
+    }
+    console.error("OTP Verification Error:", err);
+    res.status(500).json({ message: "Server error during verification" });
+  }
+});
+
+/* -------------------------------------------------
+   RESEND OTP
+-------------------------------------------------- */
+router.post("/resend-otp", async (req, res) => {
+  try {
+    const { email } = resendOtpSchema.parse(req.body);
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Email already verified" });
+    }
+
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    const sent = await sendOTPEmail(email, otp);
+    if (!sent) {
+      return res.status(500).json({ message: "Failed to send OTP email" });
+    }
+
+    res.json({ message: "A new OTP has been sent to your email." });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: err.errors[0].message });
+    }
+    console.error("Resend OTP Error:", err);
+    res.status(500).json({ message: "Server error during resending OTP" });
   }
 });
 
