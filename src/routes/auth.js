@@ -45,22 +45,27 @@ router.get("/test", (req, res) => {
 });
 
 router.get("/test-smtp", async (req, res) => {
+  const configCheck = {
+    hasUser: !!process.env.SMTP_USER,
+    hasPass: !!process.env.SMTP_PASS,
+    userPrefix: process.env.SMTP_USER ? process.env.SMTP_USER.substring(0, 4) : "none"
+  };
+
+  if (!configCheck.hasUser || !configCheck.hasPass) {
+    return res.status(400).json({ 
+      error: "SMTP Credentials missing in Environment Variables!",
+      config: configCheck
+    });
+  }
+
   const timeoutId = setTimeout(() => {
     if (!res.headersSent) {
-      res.status(504).json({ error: "SMTP Connection timed out after 10s" });
+      res.status(504).json({ error: "SMTP Connection timed out after 25s", config: configCheck });
     }
-  }, 10000);
+  }, 25000);
 
   try {
     const { transporter } = await import("../services/emailService.js");
-    
-    // Check if credentials exist
-    const configCheck = {
-      hasUser: !!process.env.SMTP_USER,
-      hasPass: !!process.env.SMTP_PASS,
-      userPrefix: process.env.SMTP_USER ? process.env.SMTP_USER.substring(0, 4) : "none"
-    };
-
     await transporter.verify();
     clearTimeout(timeoutId);
     
@@ -76,7 +81,7 @@ router.get("/test-smtp", async (req, res) => {
       message: "SMTP connection failed", 
       error: error.message,
       code: error.code,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+      config: configCheck
     });
   }
 });
