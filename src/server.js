@@ -16,17 +16,7 @@ import supportRoutes from "./routes/supportRoutes.js";
 dotenv.config();
 const app = express();
 
-/* ----------------------- SECURITY ----------------------- */
-app.use(helmet());
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again later."
-});
-app.use(limiter);
-
-/* ----------------------- CORS ----------------------- */
+/* ----------------------- CORS & PREFLIGHT ----------------------- */
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || ["http://localhost:5173", "http://localhost:8080", "https://safetywatch.vercel.app"],
@@ -36,8 +26,19 @@ app.use(
   })
 );
 
-// IMPORTANT: handle preflight
+// IMPORTANT: handle preflight before any limiting
 app.options("*", cors());
+
+/* ----------------------- SECURITY & LIMITING ----------------------- */
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // increased for dashboard use
+  message: "Too many requests from this IP, please try again later.",
+  skip: (req) => req.method === "OPTIONS", // Ensure preflights are NEVER blocked
+});
+app.use(limiter);
 
 /* ----------------------- BODY ----------------------- */
 app.use(express.json());
@@ -55,6 +56,20 @@ app.get("/ping", (req, res) => {
 
 app.get("/api/health-test", (req, res) => {
   res.json({ message: "Direct health-test route is working", timestamp: new Date().toISOString() });
+});
+
+app.get("/api/debug-ping", (req, res) => {
+  res.json({
+    status: "alive",
+    version: "1.0.8",
+    node: process.version,
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      JWT_SET: !!process.env.JWT_SECRET,
+      MONGO_SET: !!process.env.MONGO_URI,
+    },
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.use("/api/auth", authRoutes);
