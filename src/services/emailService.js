@@ -66,3 +66,43 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
     return false;
   }
 };
+
+/**
+ * Send an OTP email for registration verification.
+ */
+export const sendOTPEmail = async (email, otp) => {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.error("CRITICAL: SMTP credentials missing in .env (SMTP_USER/SMTP_PASS). OTP skipped.");
+    return false;
+  }
+  
+  console.log(`Attempting to send OTP email to: ${email} from ${process.env.SMTP_USER}...`);
+
+  const mailOptions = {
+    from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: "SafetyWatch - Verify Your Email",
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
+        <h2 style="color: #2563eb;">Verify Your Email Address</h2>
+        <p>Hello,</p>
+        <p>Thank you for signing up for SafetyWatch. Please use the following One-Time Password (OTP) to verify your email address. This code is valid for 10 minutes.</p>
+        <div style="background-color: #f1f5f9; padding: 16px; border-radius: 8px; font-size: 32px; font-weight: bold; text-align: center; margin: 24px 0; color: #0f172a; border: 1px solid #e2e8f0; letter-spacing: 4px;">
+          ${otp}
+        </div>
+        <p>If you did not request this, please ignore this email.</p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #64748b;">This is an automated message. Please do not reply.</p>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("OTP Email sent successfully. Message ID:", info.messageId);
+    return true;
+  } catch (error) {
+    console.error("Detailed OTP Email Send Error:", error);
+    return false;
+  }
+};
