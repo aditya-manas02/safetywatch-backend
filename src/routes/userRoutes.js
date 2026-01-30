@@ -30,6 +30,8 @@ router.patch("/profile", authMiddleware, async (req, res) => {
         name: user.name,
         phone: user.phone,
         roles: user.roles,
+        createdAt: user.createdAt,
+        isVerified: user.isVerified,
       },
     });
   } catch {
