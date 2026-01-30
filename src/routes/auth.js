@@ -75,9 +75,11 @@ router.get("/test-smtp", async (req, res) => {
 
           return res.json({ 
             status: "success", 
-            message: "Brevo API Key is VALID",
+            message: "Brevo API Key is VALID. If you don't see the email, check the Deliverability link below.",
             account: brevoData.email,
             testEmailSent: testResult,
+            deliverabilityLink: "https://app.brevo.com/transactional/statistics",
+            senderVerificationLink: "https://app.brevo.com/senders/management/sender",
             config: configCheck
           });
         } else {

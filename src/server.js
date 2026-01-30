@@ -61,7 +61,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/support", supportRoutes);
 
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.0.5)", timestamp: new Date().toISOString() });
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.0.6)", timestamp: new Date().toISOString() });
 });
 
 /* ----------------------- ERROR HANDLING ------------------- */
