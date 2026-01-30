@@ -91,34 +91,50 @@ app.use((err, req, res, _next) => {
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI;
 
-mongoose
-  .connect(MONGO_URI, {
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-  })
-  .then(() => {
-    console.log("Mongo connected");
-    app.listen(PORT, () =>
-      console.log(`Server running on port ${PORT}`)
-    );
-  })
-  .catch((err) => {
-    console.error("Mongo DB connection error:", err.message);
-    setTimeout(() => process.exit(1), 1000);
-  });
+const connectWithRetry = () => {
+  console.log("Attempting MongoDB connection...");
+  mongoose
+    .connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    })
+    .then(() => {
+      console.log("MongoDB connected successfully");
+    })
+    .catch((err) => {
+      console.error("MongoDB connection error:", err.message);
+      console.log("Retrying in 5 seconds...");
+      setTimeout(connectWithRetry, 5000);
+    });
+};
+
+connectWithRetry();
+
+// Listen for connection events for better visibility
+mongoose.connection.on("disconnected", () => {
+  console.warn("MongoDB disconnected. Reconnection will be handled by connectWithRetry or Mongoose auto-reconnect.");
+});
+
+mongoose.connection.on("error", (err) => {
+  console.error("MongoDB runtime error:", err.message);
+});
+
+app.listen(PORT, () =>
+  console.log(`Server running on port ${PORT}`)
+);
 
 /* ----------------------- PROCESS HANDLERS ----------------- */
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled Rejection at:", promise, "reason:", reason);
-  // Optional: Send to logging service
 });
 
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", err.message);
+  console.error("Uncaught Exception critically handled:", err.message);
   console.error(err.stack);
-  // In production, you might want to restart the process gracefully
-  // process.exit(1);
+  // We don't exit here to maintain availability, but in some cases a restart is safer.
+  // Given the "never break" requirement, we keep the process alive.
 });
+
 
 
   
