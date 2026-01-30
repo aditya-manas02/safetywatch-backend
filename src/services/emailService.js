@@ -23,30 +23,60 @@ export const transporter = nodemailer.createTransport({
 });
 
 // Verify connection configuration on startup
-transporter.verify((error, _success) => {
-  if (error) {
-    console.error("SMTP Connection Error Details:", error);
-  } else {
-    console.log("SMTP Server is ready to take our messages");
+if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  transporter.verify((error, _success) => {
+    if (error) {
+      console.error("SMTP Connection Error Details:", error);
+    } else {
+      console.log("SMTP Server is ready to take our messages");
+    }
+  });
+}
+
+/**
+ * Send email via Resend HTTP API
+ */
+const sendViaResend = async (to, subject, html) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
+  
+  console.log(`Attempting to send email via RESEND to: ${to}...`);
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: `SafetyWatch <${from}>`,
+        to: [to],
+        subject,
+        html,
+      }),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      console.log("Resend Email sent successfully:", data.id);
+      return { success: true, info: data };
+    } else {
+      console.error("Resend API Error:", data);
+      return { success: false, error: new Error(data.message || "Resend API failure") };
+    }
+  } catch (error) {
+    console.error("Resend Fetch Error:", error);
+    return { success: false, error };
   }
-});
+};
 
 /**
  * Send a password reset email with a system-generated password.
  */
 export const sendPasswordResetEmail = async (email, newPassword) => {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.error("CRITICAL: SMTP credentials missing in .env (SMTP_USER/SMTP_PASS). Email skipped.");
-    return false;
-  }
-  
-  console.log(`Attempting to send reset email to: ${email} from ${process.env.SMTP_USER}...`);
-
-  const mailOptions = {
-    from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
-    to: email,
-    subject: "SafetyWatch - Your Password has been Reset",
-    html: `
+  const subject = "SafetyWatch - Your Password has been Reset";
+  const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
         <h2 style="color: #2563eb;">SafetyWatch Security Alert</h2>
         <p>Hello,</p>
@@ -59,7 +89,25 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
         <p style="font-size: 12px; color: #64748b;">This is an automated message. Please do not reply.</p>
       </div>
-    `,
+    `;
+
+  // Try Resend first if API key is present
+  if (process.env.RESEND_API_KEY) {
+    return await sendViaResend(email, subject, html);
+  }
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.error("CRITICAL: No email provider configured (Resend or SMTP). Email skipped.");
+    return { success: false, error: new Error("No mail provider configured") };
+  }
+  
+  console.log(`Attempting to send reset email via SMTP to: ${email}...`);
+
+  const mailOptions = {
+    from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject,
+    html,
   };
 
   try {
@@ -76,18 +124,8 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
  * Send an OTP email for registration verification.
  */
 export const sendOTPEmail = async (email, otp) => {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.error("CRITICAL: SMTP credentials missing in .env (SMTP_USER/SMTP_PASS). OTP skipped.");
-    return false;
-  }
-  
-  console.log(`Attempting to send OTP email to: ${email} from ${process.env.SMTP_USER}...`);
-
-  const mailOptions = {
-    from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
-    to: email,
-    subject: "SafetyWatch - Verify Your Email",
-    html: `
+  const subject = "SafetyWatch - Verify Your Email";
+  const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
         <h2 style="color: #2563eb;">Verify Your Email Address</h2>
         <p>Hello,</p>
@@ -99,7 +137,25 @@ export const sendOTPEmail = async (email, otp) => {
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
         <p style="font-size: 12px; color: #64748b;">This is an automated message. Please do not reply.</p>
       </div>
-    `,
+    `;
+
+  // Try Resend first if API key is present
+  if (process.env.RESEND_API_KEY) {
+    return await sendViaResend(email, subject, html);
+  }
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.error("CRITICAL: No email provider configured (Resend or SMTP). OTP skipped.");
+    return { success: false, error: new Error("No mail provider configured") };
+  }
+  
+  console.log(`Attempting to send OTP email via SMTP to: ${email}...`);
+
+  const mailOptions = {
+    from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject,
+    html,
   };
 
   try {

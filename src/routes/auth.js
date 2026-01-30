@@ -45,20 +45,29 @@ router.get("/test", (req, res) => {
 });
 
 router.get("/test-smtp", async (req, res) => {
-  const configCheck = {
-    hasUser: !!process.env.SMTP_USER,
-    hasPass: !!process.env.SMTP_PASS,
-    userPrefix: process.env.SMTP_USER ? process.env.SMTP_USER.substring(0, 4) : "none",
-    nodeEnv: process.env.NODE_ENV,
-    renderInstance: process.env.RENDER_INSTANCE_TYPE || "unknown"
-  };
+    // Check if credentials exist
+    const configCheck = {
+      hasResendKey: !!process.env.RESEND_API_KEY,
+      hasSmtpUser: !!process.env.SMTP_USER,
+      hasSmtpPass: !!process.env.SMTP_PASS,
+      nodeEnv: process.env.NODE_ENV,
+      renderInstance: process.env.RENDER_INSTANCE_TYPE || "unknown"
+    };
 
-  if (!configCheck.hasUser || !configCheck.hasPass) {
-    return res.status(400).json({ 
-      error: "SMTP Credentials missing in Environment Variables!",
-      config: configCheck
-    });
-  }
+    if (process.env.RESEND_API_KEY) {
+      return res.json({ 
+        status: "success", 
+        message: "Resend API is configured and ready (HTTP-based)",
+        config: configCheck
+      });
+    }
+
+    if (!configCheck.hasSmtpUser || !configCheck.hasSmtpPass) {
+      return res.status(400).json({ 
+        error: "No email provider configured (Missing RESEND_API_KEY or SMTP_USER/PASS)!",
+        config: configCheck
+      });
+    }
 
   // Extreme timeout for the test route to match the transporter
   const timeoutId = setTimeout(() => {
