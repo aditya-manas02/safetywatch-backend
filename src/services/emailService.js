@@ -38,7 +38,7 @@ if (process.env.SMTP_USER && process.env.SMTP_PASS) {
  */
 const sendViaBrevo = async (to, subject, html) => {
   const apiKey = process.env.BREVO_API_KEY?.trim();
-  const fromEmail = process.env.EMAIL_FROM || "onboarding@resend.dev";
+  const fromEmail = process.env.EMAIL_FROM || "safetywatch4neighbour@gmail.com";
   const fromName = process.env.EMAIL_FROM_NAME || "SafetyWatch";
   
   console.log(`Attempting to send email via BREVO to: ${to}...`);
