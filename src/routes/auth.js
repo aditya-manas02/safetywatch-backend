@@ -232,6 +232,7 @@ router.post("/signup", async (req, res) => {
         roles: user.roles,
         createdAt: user.createdAt,
         isVerified: user.isVerified,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (err) {
@@ -286,6 +287,7 @@ router.post("/login", async (req, res) => {
         roles: user.roles,
         createdAt: user.createdAt,
         isVerified: user.isVerified,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (err) {
@@ -332,8 +334,12 @@ router.post("/verify-otp", async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
+        name: user.name,
+        phone: user.phone,
         roles: user.roles,
+        createdAt: user.createdAt,
         isVerified: true,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (err) {

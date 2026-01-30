@@ -18,9 +18,10 @@ router.post("/", authMiddleware, upload.single("image"), async (req, res) => {
     }
 
     // Upload buffer directly to Cloudinary
+    const folder = req.query.folder || "incidents";
     const uploaded = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
-        { folder: "incidents" },
+        { folder },
         (error, result) => {
           if (error) reject(error);
           else resolve(result);
