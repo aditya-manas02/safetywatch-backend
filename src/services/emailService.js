@@ -34,6 +34,46 @@ if (process.env.SMTP_USER && process.env.SMTP_PASS) {
 }
 
 /**
+ * Send email via Brevo (Sendinblue) HTTP API
+ */
+const sendViaBrevo = async (to, subject, html) => {
+  const apiKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.EMAIL_FROM || "onboarding@resend.dev";
+  const fromName = process.env.EMAIL_FROM_NAME || "SafetyWatch";
+  
+  console.log(`Attempting to send email via BREVO to: ${to}...`);
+
+  try {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "api-key": apiKey,
+      },
+      body: JSON.stringify({
+        sender: { name: fromName, email: fromEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      console.log("Brevo Email sent successfully:", data.messageId);
+      return { success: true, info: data };
+    } else {
+      console.error("Brevo API Error:", data);
+      return { success: false, error: new Error(data.message || "Brevo API failure") };
+    }
+  } catch (error) {
+    console.error("Brevo Fetch Error:", error);
+    return { success: false, error };
+  }
+};
+
+/**
  * Send email via Resend HTTP API
  */
 const sendViaResend = async (to, subject, html) => {
@@ -91,13 +131,18 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
       </div>
     `;
 
-  // Try Resend first if API key is present
+  // Try Brevo first if API key is present
+  if (process.env.BREVO_API_KEY) {
+    return await sendViaBrevo(email, subject, html);
+  }
+
+  // Try Resend second if API key is present
   if (process.env.RESEND_API_KEY) {
     return await sendViaResend(email, subject, html);
   }
 
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.error("CRITICAL: No email provider configured (Resend or SMTP). Email skipped.");
+    console.error("CRITICAL: No email provider configured (Brevo, Resend or SMTP). Email skipped.");
     return { success: false, error: new Error("No mail provider configured") };
   }
   
@@ -139,13 +184,18 @@ export const sendOTPEmail = async (email, otp) => {
       </div>
     `;
 
-  // Try Resend first if API key is present
+  // Try Brevo first if API key is present
+  if (process.env.BREVO_API_KEY) {
+    return await sendViaBrevo(email, subject, html);
+  }
+
+  // Try Resend second if API key is present
   if (process.env.RESEND_API_KEY) {
     return await sendViaResend(email, subject, html);
   }
 
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.error("CRITICAL: No email provider configured (Resend or SMTP). OTP skipped.");
+    console.error("CRITICAL: No email provider configured (Brevo, Resend or SMTP). OTP skipped.");
     return { success: false, error: new Error("No mail provider configured") };
   }
   
