@@ -57,12 +57,35 @@ router.get("/test-smtp", async (req, res) => {
     };
 
     if (process.env.BREVO_API_KEY) {
-      return res.json({ 
-        status: "success", 
-        message: "Brevo API is configured in environment",
-        config: configCheck,
-        note: "If you see 'Key not found', ensure you copied the 'V3 API Key' from Brevo, not the SMTP password."
-      });
+      try {
+        const brevoResponse = await fetch("https://api.brevo.com/v3/account", {
+          headers: { "api-key": process.env.BREVO_API_KEY.trim() }
+        });
+        const brevoData = await brevoResponse.json();
+        
+        if (brevoResponse.ok) {
+          return res.json({ 
+            status: "success", 
+            message: "Brevo API Key is VALID",
+            account: brevoData.email,
+            config: configCheck
+          });
+        } else {
+          return res.status(brevoResponse.status).json({ 
+            status: "error", 
+            message: "Brevo API Key REJECTED by Brevo",
+            brevoError: brevoData,
+            config: configCheck
+          });
+        }
+      } catch (err) {
+        return res.status(500).json({ 
+          status: "error", 
+          message: "Could not connect to Brevo API",
+          error: err.message,
+          config: configCheck
+        });
+      }
     }
 
     if (process.env.RESEND_API_KEY) {
