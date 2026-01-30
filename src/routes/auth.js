@@ -47,6 +47,7 @@ router.get("/test", (req, res) => {
 router.get("/test-smtp", async (req, res) => {
     // Check if credentials exist
     const configCheck = {
+      hasBrevoKey: !!process.env.BREVO_API_KEY,
       hasResendKey: !!process.env.RESEND_API_KEY,
       hasSmtpUser: !!process.env.SMTP_USER,
       hasSmtpPass: !!process.env.SMTP_PASS,
@@ -54,17 +55,25 @@ router.get("/test-smtp", async (req, res) => {
       renderInstance: process.env.RENDER_INSTANCE_TYPE || "unknown"
     };
 
+    if (process.env.BREVO_API_KEY) {
+      return res.json({ 
+        status: "success", 
+        message: "Brevo API is configured and ready",
+        config: configCheck
+      });
+    }
+
     if (process.env.RESEND_API_KEY) {
       return res.json({ 
         status: "success", 
-        message: "Resend API is configured and ready (HTTP-based)",
+        message: "Resend API is configured and ready (Sandbox restrictions may apply)",
         config: configCheck
       });
     }
 
     if (!configCheck.hasSmtpUser || !configCheck.hasSmtpPass) {
       return res.status(400).json({ 
-        error: "No email provider configured (Missing RESEND_API_KEY or SMTP_USER/PASS)!",
+        error: "No email provider configured (Missing BREVO_API_KEY, RESEND_API_KEY or SMTP_USER/PASS)!",
         config: configCheck
       });
     }
