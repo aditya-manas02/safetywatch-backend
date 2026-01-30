@@ -418,6 +418,136 @@ router.post("/forgot-password", async (req, res) => {
       message: "Server error during password reset",
       details: err.message
     });
+});
+
+/* -------------------------------------------------
+   PASSWORD MANAGEMENT (PROFILE)
+-------------------------------------------------- */
+
+// Change password (requires current password)
+router.post("/change-password", async (req, res) => {
+  try {
+    const { email, currentPassword, newPassword } = req.body;
+
+    // Validate input
+    if (!email || !currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Email, current password, and new password are required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters long" });
+    }
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = newPasswordHash;
+    await user.save();
+
+    res.json({ message: "Password changed successfully" });
+  } catch (err) {
+    console.error("Change Password Error:", err);
+    res.status(500).json({ message: "Server error during password change" });
+  }
+});
+
+// Request password reset OTP (for users who forgot password)
+router.post("/request-password-otp", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal if user exists for security
+      return res.json({ message: "If an account exists, an OTP has been sent to your email" });
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    // Save OTP to user
+    user.passwordResetOtp = otp;
+    user.passwordResetOtpExpiresAt = otpExpiresAt;
+    await user.save();
+
+    // Send OTP email
+    const { success } = await sendOTPEmail(email, otp);
+    
+    if (!success) {
+      return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
+    }
+
+    res.json({ message: "OTP sent to your email. Please check your inbox." });
+  } catch (err) {
+    console.error("Request Password OTP Error:", err);
+    res.status(500).json({ message: "Server error during OTP request" });
+  }
+});
+
+// Reset password with OTP verification
+router.post("/reset-password-otp", async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "Email, OTP, and new password are required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters long" });
+    }
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if OTP exists
+    if (!user.passwordResetOtp || !user.passwordResetOtpExpiresAt) {
+      return res.status(400).json({ message: "No OTP request found. Please request a new OTP." });
+    }
+
+    // Check if OTP is expired
+    if (new Date() > user.passwordResetOtpExpiresAt) {
+      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+    }
+
+    // Verify OTP
+    if (user.passwordResetOtp !== otp) {
+      return res.status(401).json({ message: "Invalid OTP. Please check and try again." });
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = newPasswordHash;
+    
+    // Clear OTP fields
+    user.passwordResetOtp = undefined;
+    user.passwordResetOtpExpiresAt = undefined;
+    await user.save();
+
+    res.json({ message: "Password reset successfully. You can now log in with your new password." });
+  } catch (err) {
+    console.error("Reset Password OTP Error:", err);
+    res.status(500).json({ message: "Server error during password reset" });
   }
 });
 
