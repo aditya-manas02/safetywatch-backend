@@ -37,11 +37,19 @@ if (process.env.SMTP_USER && process.env.SMTP_PASS) {
  * Send email via Brevo (Sendinblue) HTTP API
  */
 const sendViaBrevo = async (to, subject, html) => {
-  const apiKey = process.env.BREVO_API_KEY?.trim();
+  const apiKey = (process.env.BREVO_API_KEY || "").trim();
   const fromEmail = process.env.EMAIL_FROM || "safetywatch4neighbour@gmail.com";
   const fromName = process.env.EMAIL_FROM_NAME || "SafetyWatch";
   
-  console.log(`Attempting to send email via BREVO to: ${to}...`);
+  const keyDiagnostics = {
+    exists: !!apiKey,
+    length: apiKey.length,
+    prefix: apiKey ? `${apiKey.substring(0, 8)}...` : "none",
+    suffix: apiKey ? `...${apiKey.substring(apiKey.length - 4)}` : "none"
+  };
+
+  console.log(`[BREVO DIAG] Attempting to send. Key exists: ${keyDiagnostics.exists}, Length: ${keyDiagnostics.length}, Prefix: ${keyDiagnostics.prefix}`);
+  console.log(`[BREVO DIAG] From: ${fromEmail}, To: ${to}`);
 
   try {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -62,11 +70,15 @@ const sendViaBrevo = async (to, subject, html) => {
 
     const data = await response.json();
     if (response.ok) {
-      console.log("Brevo Email sent successfully:", data.messageId);
+      console.log("[BREVO SUCCESS] Email sent:", data.messageId);
       return { success: true, info: data };
     } else {
-      console.error("Brevo API Error:", JSON.stringify(data));
-      return { success: false, error: { message: data.message || "Brevo failure", details: data } };
+      console.error("[BREVO API ERROR]", JSON.stringify(data));
+      let helpfulMessage = data.message || "Brevo failure";
+      if (helpfulMessage.includes("Key not found") || helpfulMessage.includes("unauthorized")) {
+        helpfulMessage = `Brevo API Key REJECTED. Please check your Render Environment Variables. (Key Prefix: ${keyDiagnostics.prefix})`;
+      }
+      return { success: false, error: { message: helpfulMessage, details: data } };
     }
   } catch (error) {
     console.error("Brevo Fetch Error:", error);
