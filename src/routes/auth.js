@@ -180,37 +180,46 @@ router.post("/signup", async (req, res) => {
   try {
     const { email, password, name, phone } = signupSchema.parse(req.body);
 
-    const exists = await User.findOne({ email });
-    if (exists) {
+    let user = await User.findOne({ email });
+    
+    // Scenario 1: User exists and is verified -> ERROR
+    if (user && user.isVerified) {
       return res.status(400).json({
         message: "Email already exists",
       });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-
+    const otp = generateOTP();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    
     const roles = ["user"];
-
-    if (
-      process.env.SUPERADMIN_EMAIL &&
-      email.toLowerCase() === process.env.SUPERADMIN_EMAIL.toLowerCase()
-    ) {
+    if (process.env.SUPERADMIN_EMAIL && email.toLowerCase() === process.env.SUPERADMIN_EMAIL.toLowerCase()) {
       roles.push("admin", "superadmin");
     }
 
-    const otp = generateOTP();
-    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-
-    const user = await User.create({
-      email,
-      name,
-      phone,
-      passwordHash,
-      roles,
-      otp,
-      otpExpiresAt,
-      isVerified: false,
-    });
+    // Scenario 2: User exists but NOT verified -> OVERWRITE (re-register)
+    if (user) {
+      user.name = name;
+      user.phone = phone;
+      user.passwordHash = passwordHash;
+      user.otp = otp;
+      user.otpExpiresAt = otpExpiresAt;
+      user.roles = roles; // Reset roles in case of logic change
+      await user.save();
+    } else {
+      // Scenario 3: New User -> CREATE
+      user = await User.create({
+        email,
+        name,
+        phone,
+        passwordHash,
+        roles,
+        otp,
+        otpExpiresAt,
+        isVerified: false,
+      });
+    }
 
     const { success, error: emailError } = await sendOTPEmail(email, otp);
     
