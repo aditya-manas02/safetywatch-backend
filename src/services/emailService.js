@@ -168,25 +168,34 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
       console.log("Email sent successfully via SMTP. Message ID:", info.messageId);
       return { success: true, info };
     } catch (error) {
-      console.error("SMTP failed, attempting fallback to API providers...", error);
+      console.error("SMTP failed:", error.message);
     }
   }
 
   // Try Brevo fallback
   if (process.env.BREVO_API_KEY) {
-    const res = await sendViaBrevo(email, subject, html);
-    if (res.success) return res;
-    console.warn("Brevo failed, attempting next fallback...");
+    try {
+      const res = await sendViaBrevo(email, subject, html);
+      if (res.success) return res;
+      console.warn("Brevo failed:", res.error?.message || "Unknown error");
+    } catch (error) {
+      console.error("Brevo implementation error:", error.message);
+    }
   }
 
   // Try Resend fallback
   if (process.env.RESEND_API_KEY) {
-    const res = await sendViaResend(email, subject, html);
-    if (res.success) return res;
-    console.warn("Resend failed.");
+    try {
+      const res = await sendViaResend(email, subject, html);
+      if (res.success) return res;
+      console.warn("Resend failed:", res.error?.message || "Unknown error");
+    } catch (error) {
+      console.error("Resend implementation error:", error.message);
+    }
   }
 
-  return { success: false, error: new Error("All email providers failed") };
+  console.error(`CRITICAL: All email providers failed for recipient: ${email}`);
+  return { success: false, error: new Error("All email providers failed. Please check server logs and domain verification status.") };
 };
   
 
@@ -225,25 +234,34 @@ export const sendOTPEmail = async (email, otp) => {
       console.log("OTP Email sent successfully via SMTP. Message ID:", info.messageId);
       return { success: true, info };
     } catch (error) {
-      console.error("SMTP failed, attempting fallback to API providers...", error);
+      console.error("SMTP OTP failed:", error.message);
     }
   }
 
   // Try Brevo fallback
   if (process.env.BREVO_API_KEY) {
-    const res = await sendViaBrevo(email, subject, html);
-    if (res.success) return res;
-    console.warn("Brevo OTP failed, attempting next fallback...");
+    try {
+      const res = await sendViaBrevo(email, subject, html);
+      if (res.success) return res;
+      console.warn("Brevo OTP failed:", res.error?.message || "Unknown error");
+    } catch (error) {
+      console.error("Brevo OTP implementation error:", error.message);
+    }
   }
 
   // Try Resend fallback
   if (process.env.RESEND_API_KEY) {
-    const res = await sendViaResend(email, subject, html);
-    if (res.success) return res;
-    console.warn("Resend OTP failed.");
+    try {
+      const res = await sendViaResend(email, subject, html);
+      if (res.success) return res;
+      console.warn("Resend OTP failed:", res.error?.message || "Unknown error");
+    } catch (error) {
+      console.error("Resend OTP implementation error:", error.message);
+    }
   }
 
-  return { success: false, error: new Error("All email providers failed") };
+  console.error(`CRITICAL: All email providers failed for OTP recipient: ${email}`);
+  return { success: false, error: new Error("All email providers failed to send OTP. Please check server configuration.") };
 };
   
 

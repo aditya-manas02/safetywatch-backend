@@ -76,7 +76,11 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, _next) => {
-  console.error(err.stack);
+  console.error(`[ERROR] ${req.method} ${req.url}:`, err.message);
+  if (process.env.NODE_ENV === "development") {
+    console.error(err.stack);
+  }
+  
   res.status(err.status || 500).json({
     message: err.message || "Internal Server Error",
     error: process.env.NODE_ENV === "development" ? err.stack : undefined,
@@ -89,8 +93,8 @@ const MONGO_URI = process.env.MONGO_URI;
 
 mongoose
   .connect(MONGO_URI, {
-    serverSelectionTimeoutMS: 5000, // Fail fast after 5s if DB is unreachable
-    socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
   })
   .then(() => {
     console.log("Mongo connected");
@@ -99,11 +103,22 @@ mongoose
     );
   })
   .catch((err) => {
-    console.error("Mongo DB connection error:", err);
-    console.error("MONGO_URI exists:", !!MONGO_URI);
-    console.error("Error details:", err.message);
-    // Give time for logs to flush before exiting
+    console.error("Mongo DB connection error:", err.message);
     setTimeout(() => process.exit(1), 1000);
   });
+
+/* ----------------------- PROCESS HANDLERS ----------------- */
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  // Optional: Send to logging service
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err.message);
+  console.error(err.stack);
+  // In production, you might want to restart the process gracefully
+  // process.exit(1);
+});
+
 
   
