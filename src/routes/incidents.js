@@ -2,65 +2,48 @@ import express from "express";
 import Incident from "../models/Incident.js";
 import { authMiddleware, requireAdminOnly } from "../middleware/auth.js";
 import { logAudit } from "../utils/auditLogger.js";
+import { catchAsync } from "../utils/catchAsync.js";
 
 const router = express.Router();
 
 /* ----------------- CREATE INCIDENT ------------------ */
-router.post("/", authMiddleware, async (req, res) => {
-  try {
-    const incident = await Incident.create({
-      userId: req.user.id,
-      title: req.body.title,
-      description: req.body.description,
-      type: req.body.type,
-      location: req.body.location,
-      latitude: req.body.latitude,
-      longitude: req.body.longitude,
-      imageUrl: req.body.imageUrl || null,
-      status: "pending",
-    });
+router.post("/", authMiddleware, catchAsync(async (req, res) => {
+  const incident = await Incident.create({
+    userId: req.user.id,
+    title: req.body.title,
+    description: req.body.description,
+    type: req.body.type,
+    location: req.body.location,
+    latitude: req.body.latitude,
+    longitude: req.body.longitude,
+    imageUrl: req.body.imageUrl || null,
+    status: "pending",
+  });
 
-    res.status(201).json(incident);
-  } catch (err) {
-    console.error("Create Incident Error Details:", {
-      message: err.message,
-      stack: err.stack,
-      body: req.body,
-      user: req.user
-    });
-    res.status(500).json({ message: "Error creating incident", details: err.message });
-  }
-});
+  res.status(201).json(incident);
+}));
 
 /* ----------------- GET INCIDENTS (ADMIN OR USER) ------------------ */
-router.get("/", authMiddleware, async (req, res) => {
-  try {
-    if (req.user.isAdmin) {
-      const all = await Incident.find().sort({ createdAt: -1 });
-      return res.json(all);
-    }
-
-    const incidents = await Incident.find({
-      $or: [{ status: "approved" }, { userId: req.user.id }],
-    }).sort({ createdAt: -1 });
-
-    res.json(incidents);
-  } catch {
-    res.status(500).json({ message: "Error fetching incidents" });
+router.get("/", authMiddleware, catchAsync(async (req, res) => {
+  if (req.user.isAdmin) {
+    const all = await Incident.find().sort({ createdAt: -1 });
+    return res.json(all);
   }
-});
+
+  const incidents = await Incident.find({
+    $or: [{ status: "approved" }, { userId: req.user.id }],
+  }).sort({ createdAt: -1 });
+
+  res.json(incidents);
+}));
 
 /* ---------------- PUBLIC INCIDENTS ---------------- */
-router.get("/public", async (req, res) => {
-  try {
-    const list = await Incident.find({ status: "approved" }).sort({
-      createdAt: -1,
-    });
-    res.json(list);
-  } catch {
-    res.status(500).json({ message: "Error loading public incidents" });
-  }
-});
+router.get("/public", catchAsync(async (req, res) => {
+  const list = await Incident.find({ status: "approved" }).sort({
+    createdAt: -1,
+  });
+  res.json(list);
+}));
 
 /* --------- HOMEPAGE LATEST INCIDENTS ----------- */
 router.get("/latest", async (req, res) => {

@@ -2,6 +2,7 @@ import express from "express";
 import SupportMessage from "../models/SupportMessage.js";
 import { authMiddleware, requireAdminOnly } from "../middleware/auth.js";
 import { z } from "zod";
+import { catchAsync } from "../utils/catchAsync.js";
 
 const router = express.Router();
 
@@ -14,36 +15,25 @@ const messageSchema = z.object({
 });
 
 /* SUBMIT SUPPORT MESSAGE (Public/User) */
-router.post("/", async (req, res) => {
-  try {
-    const validatedData = messageSchema.parse(req.body);
-    
-    const newMessage = await SupportMessage.create({
-      ...validatedData,
-      userId: req.headers.authorization ? req.body.userId : null,
-    });
+router.post("/", catchAsync(async (req, res) => {
+  const validatedData = messageSchema.parse(req.body);
+  
+  const newMessage = await SupportMessage.create({
+    ...validatedData,
+    userId: req.headers.authorization ? req.body.userId : null,
+  });
 
-    res.status(201).json({ 
-      message: "Your message has been received. We will get back to you soon!",
-      messageId: newMessage._id
-    });
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return res.status(400).json({ message: err.errors[0].message });
-    }
-    res.status(500).json({ message: "Server error" });
-  }
-});
+  res.status(201).json({ 
+    message: "Your message has been received. We will get back to you soon!",
+    messageId: newMessage._id
+  });
+}));
 
 /* GET ALL SUPPORT MESSAGES (Admin Only) */
-router.get("/", authMiddleware, requireAdminOnly, async (req, res) => {
-  try {
-    const messages = await SupportMessage.find().sort({ createdAt: -1 });
-    res.json(messages);
-  } catch {
-    res.status(500).json({ message: "Server error" });
-  }
-});
+router.get("/", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
+  const messages = await SupportMessage.find().sort({ createdAt: -1 });
+  res.json(messages);
+}));
 
 /* MARK AS READ/RESOLVED (Admin Only) */
 router.patch("/:id", authMiddleware, requireAdminOnly, async (req, res) => {
