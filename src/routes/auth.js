@@ -109,12 +109,11 @@ router.post("/signup", async (req, res) => {
     });
 
     const sent = await sendOTPEmail(email, otp);
-    if (!sent) {
-      console.error("Failed to send OTP to:", email);
-    }
-
+    
     res.json({
-      message: "Registration successful! Please verify your email with the OTP sent.",
+      message: sent 
+        ? "Registration successful! Please verify your email with the OTP sent."
+        : "Registration successful, but we failed to send the verification email. Please try 'Resend Code' on the verification page.",
       user: {
         id: user._id,
         email: user.email,
@@ -251,7 +250,10 @@ router.post("/resend-otp", async (req, res) => {
 
     const sent = await sendOTPEmail(email, otp);
     if (!sent) {
-      return res.status(500).json({ message: "Failed to send OTP email" });
+      return res.status(500).json({ 
+        message: "Failed to send OTP email. Please check server logs for SMTP errors.",
+        error: "SMTP_FAILURE"
+      });
     }
 
     res.json({ message: "A new OTP has been sent to your email." });
