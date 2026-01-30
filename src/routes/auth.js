@@ -48,7 +48,9 @@ router.get("/test-smtp", async (req, res) => {
   const configCheck = {
     hasUser: !!process.env.SMTP_USER,
     hasPass: !!process.env.SMTP_PASS,
-    userPrefix: process.env.SMTP_USER ? process.env.SMTP_USER.substring(0, 4) : "none"
+    userPrefix: process.env.SMTP_USER ? process.env.SMTP_USER.substring(0, 4) : "none",
+    nodeEnv: process.env.NODE_ENV,
+    renderInstance: process.env.RENDER_INSTANCE_TYPE || "unknown"
   };
 
   if (!configCheck.hasUser || !configCheck.hasPass) {
@@ -58,11 +60,16 @@ router.get("/test-smtp", async (req, res) => {
     });
   }
 
+  // Extreme timeout for the test route to match the transporter
   const timeoutId = setTimeout(() => {
     if (!res.headersSent) {
-      res.status(504).json({ error: "SMTP Connection timed out after 25s", config: configCheck });
+      res.status(504).json({ 
+        error: "SMTP Connection timed out after 50s. This strongly indicates Render is blocking Port 465/587.",
+        config: configCheck,
+        solution: "Try using a service like Resend.com or SendGrid if Gmail continues to be blocked."
+      });
     }
-  }, 25000);
+  }, 50000);
 
   try {
     const { transporter } = await import("../services/emailService.js");
