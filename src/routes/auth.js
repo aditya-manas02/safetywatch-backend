@@ -418,6 +418,7 @@ router.post("/forgot-password", async (req, res) => {
       message: "Server error during password reset",
       details: err.message
     });
+  }
 });
 
 /* -------------------------------------------------
