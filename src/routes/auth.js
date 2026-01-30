@@ -48,6 +48,7 @@ router.get("/test-smtp", async (req, res) => {
     // Check if credentials exist
     const configCheck = {
       hasBrevoKey: !!process.env.BREVO_API_KEY,
+      brevoPrefix: process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.substring(0, 10) : "none",
       hasResendKey: !!process.env.RESEND_API_KEY,
       hasSmtpUser: !!process.env.SMTP_USER,
       hasSmtpPass: !!process.env.SMTP_PASS,
@@ -58,8 +59,9 @@ router.get("/test-smtp", async (req, res) => {
     if (process.env.BREVO_API_KEY) {
       return res.json({ 
         status: "success", 
-        message: "Brevo API is configured and ready",
-        config: configCheck
+        message: "Brevo API is configured in environment",
+        config: configCheck,
+        note: "If you see 'Key not found', ensure you copied the 'V3 API Key' from Brevo, not the SMTP password."
       });
     }
 
