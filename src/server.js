@@ -49,6 +49,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get("/ping", (req, res) => {
+  res.status(200).send("pong");
+});
+
 app.get("/api/health-test", (req, res) => {
   res.json({ message: "Direct health-test route is working", timestamp: new Date().toISOString() });
 });
@@ -84,7 +88,10 @@ const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI;
 
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGO_URI, {
+    serverSelectionTimeoutMS: 5000, // Fail fast after 5s if DB is unreachable
+    socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+  })
   .then(() => {
     console.log("Mongo connected");
     app.listen(PORT, () =>
