@@ -4,7 +4,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "465"),
+  secure: process.env.SMTP_PORT === "465", // true for 465, false for 587
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -17,7 +19,7 @@ const transporter = nodemailer.createTransport({
 // Verify connection configuration on startup
 transporter.verify((error, _success) => {
   if (error) {
-    console.error("SMTP Connection Error:", error);
+    console.error("SMTP Connection Error Details:", error);
   } else {
     console.log("SMTP Server is ready to take our messages");
   }
@@ -32,7 +34,7 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
     return false;
   }
   
-  console.log(`Attempting to send reset email to: ${email}...`);
+  console.log(`Attempting to send reset email to: ${email} from ${process.env.SMTP_USER}...`);
 
   const mailOptions = {
     from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
@@ -55,10 +57,12 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully. Message ID:", info.messageId);
+    console.log("Accepted by:", info.accepted);
     return true;
   } catch (error) {
-    console.error("Email send error:", error);
+    console.error("Detailed Email Send Error:", error);
     return false;
   }
 };
