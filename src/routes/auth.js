@@ -48,6 +48,7 @@ router.get("/test-smtp", async (req, res) => {
     // Check if credentials exist
     const configCheck = {
       hasBrevoKey: !!process.env.BREVO_API_KEY,
+      brevoLen: process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.length : 0,
       brevoPrefix: process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.substring(0, 10) : "none",
       hasResendKey: !!process.env.RESEND_API_KEY,
       hasSmtpUser: !!process.env.SMTP_USER,
