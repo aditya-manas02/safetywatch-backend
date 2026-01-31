@@ -16,7 +16,11 @@ const userSchema = new mongoose.Schema({
     type: [String], 
     enum: ["user", "admin", "superadmin"], 
     default: ["user"] 
-  }
+  },
+  // Gamification
+  xp: { type: Number, default: 0 },
+  level: { type: Number, default: 1 },
+  badges: { type: [String], default: [] }
 }, { timestamps: true });
 
 export default mongoose.model("User", userSchema);
