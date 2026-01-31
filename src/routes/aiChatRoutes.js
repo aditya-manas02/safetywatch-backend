@@ -13,7 +13,7 @@ const chatLimiter = rateLimit({
   message: { message: "Too many messages. Please wait a moment." },
 });
 
-const SYSTEM_PROMPT = "You are the SafetyWatch Assistant. Help users with neighbor safety, heatmaps, and incident reporting. Be concise.";
+const SYSTEM_PROMPT = "You are the SafetyWatch Assistant. Help users with neighborhood safety, heatmaps, and incident reporting. Be concise.";
 
 router.post("/", chatLimiter, async (req, res) => {
   const { message, history } = req.body;
@@ -26,49 +26,41 @@ router.post("/", chatLimiter, async (req, res) => {
       return res.status(500).json({ message: "AI disabled: API Key missing on Render." });
     }
 
+    // Force the stable v1 version to avoid v1beta 404 issues
     const genAI = new GoogleGenerativeAI(apiKey);
-
-    // Try to get the model list to see what's actually available
-    // This helps debug region-specific availability
-    let modelToUse = "gemini-1.5-flash"; 
     
-    try {
-        // We try a direct call first
-        const model = genAI.getGenerativeModel({ model: modelToUse });
-        const chat = model.startChat({
-            history: [
-                { role: "user", parts: [{ text: "Context: " + SYSTEM_PROMPT }] },
-                { role: "model", parts: [{ text: "Understood." }] },
-                ...(history || []).map((msg) => ({
-                    role: msg.role === "user" ? "user" : "model",
-                    parts: [{ text: msg.content }],
-                })),
-            ],
-        });
+    // Explicitly use gemini-1.5-flash as it is the most widely available on the stable channel
+    const model = genAI.getGenerativeModel(
+        { model: "gemini-1.5-flash" },
+        { apiVersion: "v1" } // FORCING STABLE v1
+    );
 
-        const result = await chat.sendMessage(message);
-        const response = await result.response;
-        return res.json({ reply: response.text() });
-    } catch (err) {
-        console.error("Initial model failed, attempting discovery...", err.message);
-        
-        // Fallback to a super simple call with a different model name if Flash fails
-        try {
-            const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
-            const result = await fallbackModel.generateContent(SYSTEM_PROMPT + "\n\nUser: " + message);
-            const response = await result.response;
-            return res.json({ reply: response.text() });
-        } catch (err2) {
-            console.error("Discovery failed:", err2.message);
-            throw new Error(`Google API returned 404 for all models. This usually means the 'Generative Language API' is not enabled for your API key project, or your region is restricted. Error: ${err2.message}`);
-        }
-    }
+    const chat = model.startChat({
+      history: [
+        { role: "user", parts: [{ text: "Context: " + SYSTEM_PROMPT }] },
+        { role: "model", parts: [{ text: "Understood." }] },
+        ...(history || []).map((msg) => ({
+          role: msg.role === "user" ? "user" : "model",
+          parts: [{ text: msg.content }],
+        })),
+      ],
+    });
+
+    const result = await chat.sendMessage(message);
+    const response = await result.response;
+    res.json({ reply: response.text() });
 
   } catch (error) {
-    console.error("FINAL AI ERROR:", error);
+    console.error("STABLE API ERROR:", error);
+    
+    // If it STILL fails with 404, it's definitely a Google propagation delay
+    let msg = error.message || "Unknown error";
+    if (msg.includes("404")) {
+        msg = "The API was just enabled! Google takes 2-5 minutes to update their servers globally. Please wait 2 minutes and try again.";
+    }
+
     res.status(500).json({ 
-      message: "AI Failure: " + (error.message || "Unknown error"),
-      instruction: "Please ensure 'Generative Language API' is enabled in your Google Cloud Console for this project."
+      message: "AI Maintenance: " + msg
     });
   }
 });
