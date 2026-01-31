@@ -71,8 +71,14 @@ router.post("/", chatLimiter, async (req, res) => {
 
     res.json({ reply: text });
   } catch (error) {
-    console.error("AI Chat Error:", error);
-    res.status(500).json({ message: "The AI is feeling a bit tired. Please try again in a moment." });
+    console.error("AI Chat Full Error:", error);
+    // Log specific details if available
+    if (error.response) console.error("Gemini Response Error:", error.response);
+    
+    res.status(500).json({ 
+      message: "The AI is feeling a bit tired. Please try again in a moment.",
+      debug: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 });
 
