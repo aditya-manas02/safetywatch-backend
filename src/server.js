@@ -14,6 +14,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import aiChatRoutes from "./routes/aiChatRoutes.js";
+import gamificationRoutes from "./routes/gamification.js";
 
 dotenv.config();
 const app = express();
@@ -82,6 +83,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/support", supportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/chat", aiChatRoutes);
+app.use("/api/gamification", gamificationRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.0.7)", timestamp: new Date().toISOString() });
