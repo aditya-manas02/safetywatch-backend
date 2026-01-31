@@ -26,13 +26,13 @@ router.post("/", chatLimiter, async (req, res) => {
       return res.status(500).json({ message: "AI disabled: API Key missing on Render." });
     }
 
-    // Force the stable v1 version to avoid v1beta 404 issues
+    // Use the latest available 2.5 Flash model
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Explicitly use gemini-1.5-flash as it is the most widely available on the stable channel
+    // Updated for 2026: using gemini-2.5-flash and v1beta
     const model = genAI.getGenerativeModel(
-        { model: "gemini-1.5-flash" },
-        { apiVersion: "v1" } // FORCING STABLE v1
+        { model: "gemini-2.5-flash" },
+        { apiVersion: "v1beta" }
     );
 
     const chat = model.startChat({
