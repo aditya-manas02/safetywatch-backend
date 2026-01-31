@@ -7,6 +7,7 @@ dotenv.config();
 
 const router = express.Router();
 
+// Rate limiting to protect your API quota
 const chatLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 15,
@@ -15,9 +16,9 @@ const chatLimiter = rateLimit({
 
 const SYSTEM_PROMPT = `
 You are the SafetyWatch Assistant. 
-Help users with neighborhood safety, heatmaps, and incident reporting.
-Be very concise and helpful. 
-If there is an emergency, tell them to call 911 immediately.
+Help users with neighborhood safety, heatmaps, and incident reporting on the SafetyWatch website.
+Be very concise, polite, and professional. 
+IMPORTANT: If someone reports an emergency, tell them to call emergency services (like 911) immediately.
 `;
 
 router.post("/", chatLimiter, async (req, res) => {
@@ -28,56 +29,59 @@ router.post("/", chatLimiter, async (req, res) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ message: "AI disabled: GEMINI_API_KEY missing." });
+      return res.status(500).json({ message: "AI not configured: GEMINI_API_KEY is missing in Render environment variables." });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Attempt to use 1.5 Flash (Cheapest/Fastest)
-    // Fallback to gemini-pro if Flash is not available in the region
-    let model;
-    try {
-        model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    } catch (e) {
-        console.warn("Flash model failed to init, falling back to Pro");
-        model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    }
+    // MODEL FALLBACK STRATEGY: 
+    // We try the most efficient models first. If one is restricted in your region, we try the next.
+    const modelNames = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro", "gemini-1.0-pro"];
+    let lastError = null;
 
-    const chat = model.startChat({
-      history: [
-        { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
-        { role: "model", parts: [{ text: "Understood. I'm ready to help SafetyWatch users." }] },
-        ...(history || []).map((msg) => ({
-          role: msg.role === "user" ? "user" : "model",
-          parts: [{ text: msg.content }],
-        })),
-      ],
-    });
+    for (const modelName of modelNames) {
+      try {
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          systemInstruction: SYSTEM_PROMPT 
+        });
 
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    const text = response.text();
+        // Test the model with the message
+        const chat = model.startChat({
+          history: (history || []).map((msg) => ({
+            role: msg.role === "user" ? "user" : "model",
+            parts: [{ text: msg.content }],
+          })),
+        });
 
-    res.json({ reply: text });
-  } catch (error) {
-    console.error("AI CHAT ERROR:", error);
-    
-    // If Flash failed during sendMessage, try one more time with Pro directly
-    if (error.message.includes("404") || error.message.includes("not found")) {
-        try {
-            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-            const result = await model.generateContent(SYSTEM_PROMPT + "\n\nUser: " + message);
-            const response = await result.response;
-            return res.json({ reply: response.text() });
-        } catch (innerError) {
-            return res.status(500).json({ message: "AI Failure: " + innerError.message });
+        const result = await chat.sendMessage(message);
+        const response = await result.response;
+        const text = response.text();
+
+        // If we reach here, it worked! Send the reply.
+        return res.json({ reply: text });
+
+      } catch (error) {
+        console.warn(`Model ${modelName} failed:`, error.message);
+        lastError = error;
+        // Continue to the next model if it's a 404 or model not found error
+        if (!error.message.includes("404") && !error.message.includes("not found")) {
+            // If it's a different error (like quota or safety block), we stop and report it
+            break;
         }
+      }
     }
 
+    // If all models failed
+    console.error("ALL AI MODELS FAILED:", lastError);
     res.status(500).json({ 
-      message: "AI Failure: " + (error.message || "Unknown error")
+      message: "SafetyWatch AI is temporarily unavailable in your region. Error: " + (lastError?.message || "All models returned 404"),
+      type: "AI_CONFIG_ERROR"
     });
+
+  } catch (globalError) {
+    console.error("GLOBAL AI ROUTE ERROR:", globalError);
+    res.status(500).json({ message: "The AI service encountered a critical error. Please try again later." });
   }
 });
 
