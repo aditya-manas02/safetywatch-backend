@@ -9,7 +9,7 @@ const router = express.Router();
 
 const chatLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 15, // Slightly higher for smoother UX
+  max: 15,
   message: { message: "Too many messages. Please wait a moment." },
 });
 
@@ -28,18 +28,21 @@ router.post("/", chatLimiter, async (req, res) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ message: "AI disabled: GEMINI_API_KEY missing on Render." });
+      return res.status(500).json({ message: "AI disabled: GEMINI_API_KEY missing." });
     }
 
-    // Standard initialization
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Using a more robust model selection pattern
-    const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-    });
+    // Attempt to use 1.5 Flash (Cheapest/Fastest)
+    // Fallback to gemini-pro if Flash is not available in the region
+    let model;
+    try {
+        model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    } catch (e) {
+        console.warn("Flash model failed to init, falling back to Pro");
+        model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    }
 
-    // Start chat with system prompt manually in history for maximum compatibility
     const chat = model.startChat({
       history: [
         { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
@@ -57,16 +60,23 @@ router.post("/", chatLimiter, async (req, res) => {
 
     res.json({ reply: text });
   } catch (error) {
-    console.error("FINAL AI ERROR:", error);
+    console.error("AI CHAT ERROR:", error);
     
-    // If it's still a 404, suggest a fallback model name
-    let errorMessage = error.message || "Unknown AI error";
-    if (errorMessage.includes("404")) {
-        errorMessage = "Google is having trouble finding the model. Please check the API key region permissions.";
+    // If Flash failed during sendMessage, try one more time with Pro directly
+    if (error.message.includes("404") || error.message.includes("not found")) {
+        try {
+            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+            const result = await model.generateContent(SYSTEM_PROMPT + "\n\nUser: " + message);
+            const response = await result.response;
+            return res.json({ reply: response.text() });
+        } catch (innerError) {
+            return res.status(500).json({ message: "AI Failure: " + innerError.message });
+        }
     }
 
     res.status(500).json({ 
-      message: "AI Failure: " + errorMessage
+      message: "AI Failure: " + (error.message || "Unknown error")
     });
   }
 });
