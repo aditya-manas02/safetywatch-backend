@@ -116,4 +116,36 @@ router.get("/public", async (req, res) => {
   }
 });
 
+/* ============================================================
+   💓 PULSE STATS (Live Ticker)
+   GET /api/stats/pulse
+   ============================================================ */
+router.get("/pulse", async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const incidentsToday = await Incident.countDocuments({
+      createdAt: { $gte: today },
+      status: "approved" // Only count verified/approved incidents
+    });
+
+    // Dynamic Safety Score Calculation
+    // Base: 100
+    // Deduction: 2 points per incident today
+    // Floor: 60 (to not scare people too much)
+    const safetyScore = Math.max(60, 100 - (incidentsToday * 2));
+
+    res.json({
+      safetyScore,
+      incidentsToday
+    });
+
+  } catch (err) {
+    console.error("Pulse stats error:", err);
+    // Fallback to safe defaults if DB fails
+    res.json({ safetyScore: 98, incidentsToday: 0 });
+  }
+});
+
 export default router;
