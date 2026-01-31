@@ -12,6 +12,7 @@ import userRoutes from "./routes/userRoutes.js";
 import statsRoutes from "./routes/stats.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -78,6 +79,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/support", supportRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.0.7)", timestamp: new Date().toISOString() });

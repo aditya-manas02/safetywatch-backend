@@ -4,10 +4,55 @@ import { authMiddleware, requireAdminOnly } from "../middleware/auth.js";
 import { logAudit } from "../utils/auditLogger.js";
 import { catchAsync } from "../utils/catchAsync.js";
 
+import Notification from "../models/Notification.js";
+
 const router = express.Router();
+
+// Simple spam detection helper
+const isSpam = (text) => {
+  if (!text || text.length < 3) return true;
+  // Check for gibberish: low vowel ratio (not perfect but catches things like "vdhwjfn")
+  const vowels = text.match(/[aeiou]/gi);
+  const vowelCount = vowels ? vowels.length : 0;
+  const ratio = vowelCount / text.length;
+  if (ratio < 0.1 && text.length > 5) return true;
+  // Check for repeating characters
+  if (/(.)\1{4,}/.test(text)) return true;
+  return false;
+};
 
 /* ----------------- CREATE INCIDENT ------------------ */
 router.post("/", authMiddleware, catchAsync(async (req, res) => {
+  const { title, description } = req.body;
+
+  // Auto-reject Spam
+  if (isSpam(title) || isSpam(description)) {
+    const rejectedIncident = await Incident.create({
+      userId: req.user.id,
+      title: req.body.title,
+      description: req.body.description,
+      type: req.body.type,
+      location: req.body.location,
+      latitude: req.body.latitude,
+      longitude: req.body.longitude,
+      imageUrl: req.body.imageUrl || null,
+      status: "rejected",
+    });
+
+    await Notification.create({
+      userId: req.user.id,
+      title: "Report Automatically Rejected",
+      message: `Your report "${title}" was rejected because it appears to be spam or contains invalid text.`,
+      type: "incident_update",
+      link: `/profile`
+    });
+
+    return res.status(400).json({ 
+      message: "Report rejected as spam. Please provide clear, meaningful details.",
+      incident: rejectedIncident 
+    });
+  }
+
   const incident = await Incident.create({
     userId: req.user.id,
     title: req.body.title,
@@ -23,6 +68,7 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
   res.status(201).json(incident);
 }));
 
+/* ----------------- GET INCIDENTS (ADMIN OR USER) ------------------ */
 /* ----------------- GET INCIDENTS (ADMIN OR USER) ------------------ */
 router.get("/", authMiddleware, catchAsync(async (req, res) => {
   if (req.user.isAdmin) {
@@ -73,7 +119,6 @@ router.get("/coords/all", async (req, res) => {
   }
 });
 
-
 /* --------- BULK UPDATE STATUS (ADMIN ONLY) ---------- */
 router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
@@ -82,14 +127,27 @@ router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) 
       return res.status(400).json({ message: "Invalid request data" });
     }
 
-    const updated = await Incident.updateMany(
+    const updatedItems = await Incident.find({ _id: { $in: ids } });
+    
+    await Incident.updateMany(
       { _id: { $in: ids } },
       { status: status }
     );
 
-    await logAudit(req, `Bulk updated ${updated.modifiedCount} incidents to ${status}`, "system", null, ids.join(", "));
-    res.json({ message: `Bulk updated ${updated.modifiedCount} incidents` });
-  } catch {
+    // Notify users
+    for (const item of updatedItems) {
+      await Notification.create({
+        userId: item.userId,
+        title: `Report ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        message: `Your report "${item.title}" has been ${status} by an administrator.`,
+        type: "incident_update",
+        link: `/profile`
+      });
+    }
+
+    await logAudit(req, `Bulk updated ${updatedItems.length} incidents to ${status}`, "system", null, ids.join(", "));
+    res.json({ message: `Bulk updated ${updatedItems.length} incidents` });
+  } catch (err) {
     res.status(500).json({ message: "Error in bulk update" });
   }
 });
@@ -106,9 +164,18 @@ router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) =
     if (!updated)
       return res.status(404).json({ message: "Incident not found" });
 
+    // Notify user
+    await Notification.create({
+      userId: updated.userId,
+      title: `Report ${req.body.status.charAt(0).toUpperCase() + req.body.status.slice(1)}`,
+      message: `Your report "${updated.title}" has been ${req.body.status} by an administrator.`,
+      type: "incident_update",
+      link: `/profile`
+    });
+
     await logAudit(req, `Changed status to ${req.body.status}`, "incident", req.params.id);
     res.json(updated);
-  } catch {
+  } catch (err) {
     res.status(500).json({ message: "Error updating status" });
   }
 });
