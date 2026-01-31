@@ -41,17 +41,16 @@ router.post("/", chatLimiter, async (req, res) => {
     return res.status(400).json({ message: "Message is required" });
   }
 
-    try {
-      // If no API key, return a demo response
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return res.json({ 
-          reply: "I'm currently in Demo Mode (API Key missing). I can tell you that SafetyWatch is a platform for community protection! Once my API key is set, I'll be able to answer all your specific questions." 
-        });
-      }
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.json({ 
+        reply: "I'm currently in Demo Mode (API Key missing). I can tell you that SafetyWatch is a platform for community protection! Once my API key is set, I'll be able to answer all your specific questions." 
+      });
+    }
 
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Format history for Gemini
     const chat = model.startChat({
@@ -71,13 +70,10 @@ router.post("/", chatLimiter, async (req, res) => {
 
     res.json({ reply: text });
   } catch (error) {
-    console.error("AI Chat Full Error:", error);
-    // Log specific details if available
-    if (error.response) console.error("Gemini Response Error:", error.response);
-    
+    console.error("AI Chat FULL ERROR:", error);
     res.status(500).json({ 
       message: "The AI is feeling a bit tired. Please try again in a moment.",
-      debug: process.env.NODE_ENV === "development" ? error.message : undefined
+      error: error.message 
     });
   }
 });
