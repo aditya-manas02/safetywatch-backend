@@ -110,6 +110,8 @@ const connectWithRetry = () => {
   console.log("Attempting MongoDB connection...");
   mongoose
     .connect(MONGO_URI, {
+      maxPoolSize: 10,
+      minPoolSize: 2,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
     })
@@ -141,13 +143,17 @@ app.listen(PORT, () =>
 /* ----------------------- PROCESS HANDLERS ----------------- */
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  // Optional: Graceful shutdown or monitoring integration
 });
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception critically handled:", err.message);
   console.error(err.stack);
-  // We don't exit here to maintain availability, but in some cases a restart is safer.
-  // Given the "never break" requirement, we keep the process alive.
+  
+  // It is generally safer to restart the process on uncaughtException
+  // especially if it's in a corrupted state.
+  console.log("Gracefully shutting down due to uncaught exception...");
+  process.exit(1);
 });
 
 

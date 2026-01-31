@@ -67,7 +67,8 @@ router.get("/coords/all", async (req, res) => {
     );
 
     res.json(coords);
-  } catch {
+  } catch (err) {
+    console.error("Error fetching heatmap coords:", err);
     res.status(500).json({ message: "Error fetching heatmap coords" });
   }
 });
