@@ -100,14 +100,40 @@ router.get("/", authMiddleware, requireAdminOnly, catchAsync(async (req, res) =>
    ============================================================ */
 router.get("/public", async (req, res) => {
   try {
-    const total = await Incident.countDocuments();
-    const active = await Incident.countDocuments({ status: "pending" });
-    const approved = await Incident.countDocuments({ status: "approved" });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(today.getDate() - 7);
+
+    // 1. Incidents Today
+    const incidentsToday = await Incident.countDocuments({
+      createdAt: { $gte: today }
+    });
+
+    // 2. Active Alerts (Pending/Urgent)
+    const activeAlerts = await Incident.countDocuments({
+      status: "pending"
+    });
+
+    // 3. Active Users (Last 7 days)
+    const activeUsers = await User.countDocuments({
+       updatedAt: { $gte: oneWeekAgo }
+    });
+
+    // 4. Most Common Type (All Time - for context)
+    const mostCommonAgg = await Incident.aggregate([
+      { $group: { _id: "$type", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 1 }
+    ]);
+    const mostCommonType = mostCommonAgg[0]?.["_id"] || "General";
 
     res.json({
-      total,
-      active,
-      approved,
+      incidentsToday,
+      activeAlerts,
+      activeUsers,
+      mostCommonType
     });
 
   } catch (err) {
