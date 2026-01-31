@@ -16,8 +16,6 @@ const chatLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
 const SYSTEM_PROMPT = `
 You are the "SafetyWatch Assistant", a helpful AI guide for the SafetyWatch community website. 
 Your goal is to help users understand how to use the website and provide safety information.
@@ -43,15 +41,17 @@ router.post("/", chatLimiter, async (req, res) => {
     return res.status(400).json({ message: "Message is required" });
   }
 
-  try {
-    // If no API key, return a demo response
-    if (!process.env.GEMINI_API_KEY) {
-      return res.json({ 
-        reply: "I'm currently in Demo Mode (API Key missing). I can tell you that SafetyWatch is a platform for community protection! Once my API key is set, I'll be able to answer all your specific questions." 
-      });
-    }
+    try {
+      // If no API key, return a demo response
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.json({ 
+          reply: "I'm currently in Demo Mode (API Key missing). I can tell you that SafetyWatch is a platform for community protection! Once my API key is set, I'll be able to answer all your specific questions." 
+        });
+      }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Format history for Gemini
     const chat = model.startChat({
