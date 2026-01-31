@@ -20,9 +20,9 @@ router.get("/", catchAsync(async (req, res) => {
   }
 
   try {
-    // Fetch top headlines from NewsAPI
+    // Fetch world news with safety keywords to make it more relevant
     const response = await fetch(
-      `https://newsapi.org/v2/top-headlines?country=us&category=general&pageSize=10&apiKey=${NEWS_API_KEY}`
+      `https://newsapi.org/v2/everything?q=world+safety+OR+global+security&sortBy=publishedAt&pageSize=10&apiKey=${NEWS_API_KEY}`
     );
 
     if (!response.ok) {
