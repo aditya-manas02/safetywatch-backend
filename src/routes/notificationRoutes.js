@@ -71,4 +71,15 @@ router.post("/announcement", authMiddleware, requireAdminOnly, catchAsync(async 
   res.status(201).json(announcement);
 }));
 
+/* ----------------- DELETE NOTIFICATION (ADMIN) ------------------ */
+router.delete("/:id", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
+  const notification = await Notification.findByIdAndDelete(req.params.id);
+  
+  if (!notification) {
+    return res.status(404).json({ message: "Notification not found" });
+  }
+
+  res.json({ message: "Notification deleted successfully" });
+}));
+
 export default router;
