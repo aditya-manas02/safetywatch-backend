@@ -36,7 +36,7 @@ if (process.env.SMTP_USER && process.env.SMTP_PASS) {
 /**
  * Send email via Brevo (Sendinblue) HTTP API with retry logic
  */
-const sendViaBrevo = async (to, subject, html, retries = 2) => {
+const sendViaBrevo = async (to, subject, html, text = null, retries = 2) => {
   const apiKey = process.env.BREVO_API_KEY?.trim();
   
   // CRITICAL: Brevo requires sender email to be verified in their dashboard
@@ -66,6 +66,7 @@ const sendViaBrevo = async (to, subject, html, retries = 2) => {
           replyTo: { email: fromEmail, name: fromName },
           subject,
           htmlContent: html,
+          textContent: text || html.replace(/<[^>]*>/g, ''),
         }),
       });
 
@@ -101,7 +102,7 @@ const sendViaBrevo = async (to, subject, html, retries = 2) => {
 /**
  * Send email via Resend HTTP API
  */
-const sendViaResend = async (to, subject, html) => {
+const sendViaResend = async (to, subject, html, text = null) => {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
   
@@ -119,6 +120,7 @@ const sendViaResend = async (to, subject, html) => {
         to: [to],
         subject,
         html,
+        text: text || html.replace(/<[^>]*>/g, ''),
       }),
     });
 
@@ -139,16 +141,16 @@ const sendViaResend = async (to, subject, html) => {
 /**
  * Primary sending logic: Prioritizes HTTP APIs (Brevo, Resend) over high-latency SMTP
  */
-const deliverEmail = async (to, subject, html) => {
+const deliverEmail = async (to, subject, html, text = null) => {
   // 1. Try Brevo (Most reliable HTTP API currently configured)
   if (process.env.BREVO_API_KEY) {
-    const res = await sendViaBrevo(to, subject, html);
+    const res = await sendViaBrevo(to, subject, html, text);
     if (res.success) return res;
   }
 
   // 2. Try Resend (Next best HTTP API)
   if (process.env.RESEND_API_KEY) {
-    const res = await sendViaResend(to, subject, html);
+    const res = await sendViaResend(to, subject, html, text);
     if (res.success) return res;
   }
 
@@ -161,6 +163,7 @@ const deliverEmail = async (to, subject, html) => {
         to,
         subject,
         html,
+        text: text || html.replace(/<[^>]*>/g, ''),
       };
       const info = await transporter.sendMail(mailOptions);
       console.log("[EMAIL] SMTP success:", info.messageId);
@@ -201,21 +204,88 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
  * Send an OTP email for registration verification
  */
 export const sendOTPEmail = async (email, otp) => {
-  const subject = "SafetyWatch - Verify Your Email";
+  const subject = "Your SafetyWatch Verification Code";
+  
+  // Plain text version (important for spam filters)
+  const text = `
+Hello,
+
+Thank you for registering with SafetyWatch!
+
+Your verification code is: ${otp}
+
+This code will expire in 10 minutes.
+
+If you didn't request this code, you can safely ignore this email.
+
+Best regards,
+SafetyWatch Team
+
+---
+SafetyWatch - Neighborhood Security Platform
+This is an automated message, please do not reply.
+  `;
+
+  // HTML version (improved to avoid spam triggers)
   const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-        <h2 style="color: #2563eb; text-align: center;">SafetyWatch OTP</h2>
-        <p style="font-size: 16px;">Hello,</p>
-        <p style="font-size: 16px;">Your verification code for SafetyWatch is:</p>
-        <div style="background-color: #f4f7ff; padding: 20px; border-radius: 8px; font-size: 36px; font-weight: bold; text-align: center; margin: 20px 0; color: #1e40af; letter-spacing: 5px; border: 2px dashed #2563eb;">
-          ${otp}
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f5f5f5;">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 30px 20px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">SafetyWatch</h1>
+          <p style="color: #e0e7ff; margin: 8px 0 0 0; font-size: 14px;">Neighborhood Security Platform</p>
         </div>
-        <p style="font-size: 14px; color: #666;">This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999; text-align: center;">
-          Sent by SafetyWatch Neighborhood Security
+        
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+          <p style="font-size: 16px; color: #1f2937; margin: 0 0 20px 0; line-height: 1.5;">Hello,</p>
+          <p style="font-size: 16px; color: #1f2937; margin: 0 0 30px 0; line-height: 1.5;">Thank you for registering with SafetyWatch. Please use the verification code below to complete your registration:</p>
+          
+          <!-- OTP Box -->
+          <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 30px; border-radius: 10px; text-align: center; margin: 30px 0; border: 2px solid #2563eb;">
+            <div style="font-size: 14px; color: #64748b; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Your Verification Code</div>
+            <div style="font-size: 42px; font-weight: bold; color: #1e40af; letter-spacing: 8px; font-family: 'Courier New', monospace;">
+              ${otp}
+            </div>
+          </div>
+          
+          <p style="font-size: 14px; color: #64748b; margin: 20px 0; line-height: 1.6;">
+            <strong>Important:</strong> This code will expire in 10 minutes for security reasons.
+          </p>
+          
+          <p style="font-size: 14px; color: #64748b; margin: 20px 0; line-height: 1.6;">
+            If you didn't request this code, you can safely ignore this email. Your account security is our priority.
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f9fafb; padding: 25px 30px; border-top: 1px solid #e5e7eb;">
+          <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px 0; line-height: 1.5;">
+            This is an automated message from SafetyWatch. Please do not reply to this email.
+          </p>
+          <p style="font-size: 12px; color: #9ca3af; margin: 0; line-height: 1.5;">
+            © ${new Date().getFullYear()} SafetyWatch. All rights reserved.
+          </p>
         </div>
       </div>
-    `;
+      
+      <!-- Spam folder reminder -->
+      <div style="max-width: 600px; margin: 15px auto; padding: 0 20px;">
+        <p style="font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.5;">
+          📧 <strong>Can't find this email?</strong> Check your spam or junk folder and mark this email as "Not Spam" to ensure you receive future updates.
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
 
-  return await deliverEmail(email, subject, html);
+  // Send with both plain text and HTML
+  return await deliverEmail(email, subject, html, text);
 };
