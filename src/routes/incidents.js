@@ -44,7 +44,7 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
       title: "Report Automatically Rejected",
       message: `Your report "${title}" was rejected because it appears to be spam or contains invalid text.`,
       type: "incident_update",
-      link: `/profile`
+      link: `/profile?tab=reports`
     });
 
     return res.status(400).json({ 
@@ -187,7 +187,7 @@ router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) 
           title: `Report ${status.charAt(0).toUpperCase() + status.slice(1)}`,
           message: `Your report "${item.title}" has been updated to ${status} by an administrator.`,
           type: "incident_update",
-          link: `/profile`
+          link: `/profile?tab=reports`
         });
       }
     }
@@ -223,7 +223,7 @@ router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) =
         title: `Report ${status.charAt(0).toUpperCase() + status.slice(1)}`,
         message: `Your report "${updated.title}" has been updated to ${status} by an administrator.`,
         type: "incident_update",
-        link: `/profile`
+        link: `/profile?tab=reports`
       });
     }
 
