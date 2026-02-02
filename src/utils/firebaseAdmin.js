@@ -18,8 +18,9 @@ if (serviceAccount) {
 } else {
   // Fallback for simple verification (might require GOOGLE_APPLICATION_CREDENTIALS)
   admin.initializeApp({
-    projectId: "safetywatch-96157"
+    projectId: "szfetywatch-96157"
   });
+
 
 
 }
