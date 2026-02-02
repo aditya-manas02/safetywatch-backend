@@ -7,6 +7,8 @@ import { z } from "zod";
 import { sendPasswordResetEmail, sendOTPEmail } from "../services/emailService.js";
 import { sendPhoneOTP } from "../services/smsService.js";
 import { catchAsync } from "../utils/catchAsync.js";
+import { verifyFirebaseToken } from "../utils/firebaseAdmin.js";
+
 
 dotenv.config();
 const router = express.Router();
@@ -45,8 +47,10 @@ const phoneOtpRequestSchema = z.object({
 
 const phoneOtpVerifySchema = z.object({
   phone: z.string().min(10, "Invalid phone number"),
-  otp: z.string().length(6, "OTP must be 6 digits"),
+  otp: z.string().length(6, "OTP must be 6 digits").optional(),
+  firebaseToken: z.string().optional(),
 });
+
 
 /* -------------------------------------------------
    BROWSER-SAFE GET ROUTES (DEBUG / TEST ONLY)
@@ -374,9 +378,20 @@ router.post("/request-phone-otp", catchAsync(async (req, res) => {
    PHONE OTP VERIFY
 -------------------------------------------------- */
 router.post("/verify-phone-otp", catchAsync(async (req, res) => {
-  const { phone, otp } = phoneOtpVerifySchema.parse(req.body);
+  const { phone, otp, firebaseToken } = phoneOtpVerifySchema.parse(req.body);
+
+  if (firebaseToken) {
+    const { success, error } = await verifyFirebaseToken(firebaseToken);
+    if (!success) {
+      return res.status(401).json({ message: "Firebase verification failed", error });
+    }
+    // Token is valid! We can proceed.
+  } else if (!otp) {
+    return res.status(400).json({ message: "OTP or Firebase Token is required" });
+  }
 
   const user = await User.findOne({ phone });
+
 
   // If user doesn't exist, this is a registration attempt. 
   // We verified the phone, but we need email/name to create the user.
@@ -394,11 +409,14 @@ router.post("/verify-phone-otp", catchAsync(async (req, res) => {
   }
 
   // Existing user verification
-  if (!user.otp || user.otp !== otp || user.otpExpiresAt < new Date()) {
-    return res.status(400).json({ message: "Invalid or expired OTP" });
+  if (!firebaseToken) {
+    if (!user.otp || user.otp !== otp || user.otpExpiresAt < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
   }
 
   user.isVerified = true; // Mobile verification also verifies account
+
   user.otp = undefined;
   user.otpExpiresAt = undefined;
   await user.save();
