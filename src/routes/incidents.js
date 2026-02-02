@@ -77,10 +77,47 @@ router.get("/", authMiddleware, catchAsync(async (req, res) => {
   }
 
   const incidents = await Incident.find({
-    $or: [{ status: "approved" }, { userId: req.user.id }],
+    $or: [{ status: { $in: ["approved", "problem solved"] } }, { userId: req.user.id }],
   }).sort({ createdAt: -1 });
 
   res.json(incidents);
+}));
+
+/* ---------------- GET MY REPORTS ---------------- */
+router.get("/my-reports", authMiddleware, catchAsync(async (req, res) => {
+  const myReports = await Incident.find({ userId: req.user.id }).sort({ createdAt: -1 });
+  res.json(myReports);
+}));
+
+/* ---------------- GET POPULAR INCIDENTS ---------------- */
+router.get("/popular", catchAsync(async (req, res) => {
+  const popular = await Incident.find({ 
+    isImportant: true, 
+    status: { $in: ["approved", "problem solved"] } 
+  }).sort({ createdAt: -1 }).limit(10);
+  res.json(popular);
+}));
+
+/* ---------------- GET NEARBY INCIDENTS ---------------- */
+router.get("/near-me", catchAsync(async (req, res) => {
+  const { lat, lng, radius = 10 } = req.query; // radius in km
+  
+  if (!lat || !lng) {
+    return res.status(400).json({ message: "Latitude and longitude are required" });
+  }
+
+  // Simplified "near me" using a square bounding box instead of exact circle for performance
+  // 1 degree ~ 111km
+  const latDelta = radius / 111;
+  const lngDelta = radius / (111 * Math.cos(lat * Math.PI / 180));
+
+  const nearby = await Incident.find({
+    status: { $in: ["approved", "problem solved"] },
+    latitude: { $gte: parseFloat(lat) - latDelta, $lte: parseFloat(lat) + latDelta },
+    longitude: { $gte: parseFloat(lng) - lngDelta, $lte: parseFloat(lng) + lngDelta }
+  }).sort({ createdAt: -1 }).limit(15);
+
+  res.json(nearby);
 }));
 
 /* ---------------- PUBLIC INCIDENTS ---------------- */
@@ -122,30 +159,40 @@ router.get("/coords/all", async (req, res) => {
 /* --------- BULK UPDATE STATUS (ADMIN ONLY) ---------- */
 router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
-    const { ids, status } = req.body;
-    if (!Array.isArray(ids) || !status) {
+    const { ids, status, isImportant } = req.body;
+    if (!Array.isArray(ids)) {
       return res.status(400).json({ message: "Invalid request data" });
+    }
+
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (typeof isImportant === "boolean") updateData.isImportant = isImportant;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "No update data provided" });
     }
 
     const updatedItems = await Incident.find({ _id: { $in: ids } });
     
     await Incident.updateMany(
       { _id: { $in: ids } },
-      { status: status }
+      updateData
     );
 
-    // Notify users
-    for (const item of updatedItems) {
-      await Notification.create({
-        userId: item.userId,
-        title: `Report ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-        message: `Your report "${item.title}" has been ${status} by an administrator.`,
-        type: "incident_update",
-        link: `/profile`
-      });
+    // Notify users if status changed
+    if (status) {
+      for (const item of updatedItems) {
+        await Notification.create({
+          userId: item.userId,
+          title: `Report ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+          message: `Your report "${item.title}" has been updated to ${status} by an administrator.`,
+          type: "incident_update",
+          link: `/profile`
+        });
+      }
     }
 
-    await logAudit(req, `Bulk updated ${updatedItems.length} incidents to ${status}`, "system", null, ids.join(", "));
+    await logAudit(req, `Bulk updated ${updatedItems.length} incidents: ${JSON.stringify(updateData)}`, "system", null, ids.join(", "));
     res.json({ message: `Bulk updated ${updatedItems.length} incidents` });
   } catch (err) {
     res.status(500).json({ message: "Error in bulk update" });
@@ -155,25 +202,32 @@ router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) 
 /* --------- UPDATE STATUS (ADMIN ONLY) ---------- */
 router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
+    const { status, isImportant } = req.body;
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (typeof isImportant === "boolean") updateData.isImportant = isImportant;
+
     const updated = await Incident.findByIdAndUpdate(
       req.params.id,
-      { status: req.body.status },
+      updateData,
       { new: true }
     );
 
     if (!updated)
       return res.status(404).json({ message: "Incident not found" });
 
-    // Notify user
-    await Notification.create({
-      userId: updated.userId,
-      title: `Report ${req.body.status.charAt(0).toUpperCase() + req.body.status.slice(1)}`,
-      message: `Your report "${updated.title}" has been ${req.body.status} by an administrator.`,
-      type: "incident_update",
-      link: `/profile`
-    });
+    // Notify user if status changed
+    if (status) {
+      await Notification.create({
+        userId: updated.userId,
+        title: `Report ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        message: `Your report "${updated.title}" has been updated to ${status} by an administrator.`,
+        type: "incident_update",
+        link: `/profile`
+      });
+    }
 
-    await logAudit(req, `Changed status to ${req.body.status}`, "incident", req.params.id);
+    await logAudit(req, `Updated incident ${req.params.id}: ${JSON.stringify(updateData)}`, "incident", req.params.id);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: "Error updating status" });

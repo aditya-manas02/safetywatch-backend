@@ -8,7 +8,8 @@ const incidentSchema = new mongoose.Schema({
   location: { type: String, required: true },
   latitude: { type: Number, default: null },
   longitude: { type: Number, default: null },
-  status: { type: String, enum: ["pending","approved","rejected"], default: "pending" },
+  status: { type: String, enum: ["pending", "under process", "approved", "rejected", "problem solved"], default: "pending" },
+  isImportant: { type: Boolean, default: false },
   imageUrl: { type: String, default: null },
 }, { timestamps: true });
 
