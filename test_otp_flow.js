@@ -1,41 +1,38 @@
-/* eslint-disable no-unused-vars */
-import axios from "axios";
+import { sendPhoneOTP } from './src/services/smsService.js';
+import dotenv from 'dotenv';
 
-const BASE_URL = "http://localhost:4000/api/auth";
-const TEST_EMAIL = "adityamanas09@gmail.com";
+dotenv.config({ path: '../.env' }); // Adjust to point to root .env if needed
 
-async function testOTPFlow() {
-    console.log("--- STARTING OTP FLOW TEST ---");
+const testPhone = process.argv[2];
 
-    try {
-        // 1. SIGNUP
-        console.log("\n1. Testing Signup...");
-        const signupRes = await axios.post(`${BASE_URL}/signup`, {
-            email: TEST_EMAIL,
-            name: "Test User",
-            password: "password123"
-        });
-        console.log("Signup Response:", signupRes.data.message);
-
-        // 2. TRY LOGIN (should fail)
-        console.log("\n2. Testing Login before verification...");
-        try {
-            await axios.post(`${BASE_URL}/login`, {
-                email: TEST_EMAIL,
-                password: "password123"
-            });
-        } catch (err) {
-            console.log("Login failed as expected:", err.response.data.message);
-        }
-
-        console.log("\n!!! PLEASE CHECK EMAIL FOR OTP AND CALL verify-otp MANUALLY IF NEEDED !!!");
-        console.log("Since I cannot read your email, I will stop here. You can verify it manually.");
-
-    } catch (err) {
-        console.error("Test Error:", err.response?.data || err.message);
-    }
+if (!testPhone) {
+  console.log("Usage: node test_otp_flow.js <phone_number>");
+  console.log("Example: node test_otp_flow.js +1234567890");
+  process.exit(1);
 }
 
-// Note: This requires the server to be running.
-// testOTPFlow();
-console.log("To run this test, make sure the backend is running and uncomment the call.");
+async function test() {
+  console.log(`\n--- Twilio OTP Tester ---`);
+  console.log(`Target Phone: ${testPhone}`);
+  
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const result = await sendPhoneOTP(testPhone, otp);
+  
+  if (result.success) {
+    if (result.simulated) {
+      console.log("⚠️  SIMULATION MODE: Twilio credentials missing in .env");
+      console.log(`Simulated OTP for ${testPhone}: ${otp}`);
+    } else {
+      console.log(`✅ SUCCESS! Real SMS sent via Twilio.`);
+      console.log(`Message SID: ${result.messageId}`);
+    }
+  } else {
+    console.error(`❌ FAILED: ${result.error}`);
+    console.log(`\nCheck that:`);
+    console.log(`1. Your TWILIO_ACCOUNT_SID and AUTH_TOKEN are correct in .env`);
+    console.log(`2. If on Trial, the number ${testPhone} is a 'Verified Caller ID' in Twilio.`);
+  }
+}
+
+test();
+
