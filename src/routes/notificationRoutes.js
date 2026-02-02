@@ -5,7 +5,22 @@ import { catchAsync } from "../utils/catchAsync.js";
 
 const router = express.Router();
 
-/* ----------------- GET NOTIFICATIONS ------------------ */
+/* ----------------- GET PUBLIC ANNOUNCEMENTS ------------------ */
+router.get("/public", catchAsync(async (req, res) => {
+  // Only return global announcements (userId: null) from the last 72 hours
+  const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
+  
+  const announcements = await Notification.find({ 
+    userId: null,
+    createdAt: { $gte: seventyTwoHoursAgo }
+  })
+    .sort({ createdAt: -1 })
+    .limit(20);
+
+  res.json(announcements);
+}));
+
+/* ----------------- GET NOTIFICATIONS (AUTH) ------------------ */
 router.get("/", authMiddleware, catchAsync(async (req, res) => {
   const { history } = req.query;
   const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
