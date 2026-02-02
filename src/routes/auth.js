@@ -221,8 +221,29 @@ router.post("/signup", catchAsync(async (req, res) => {
     });
   }
 
-  sendOTPEmail(email, otp).catch(err => console.error("Async Email Error:", err));
+  // CRITICAL FIX: Await email sending and handle errors properly
+  console.log(`[SIGNUP] Attempting to send OTP to: ${email}`);
+  const { success, error: emailError } = await sendOTPEmail(email, otp);
+  
+  if (!success) {
+    console.error(`[SIGNUP] Email failed for ${email}:`, emailError);
+    // Still return success to user but with a warning
+    return res.status(201).json({
+      message: "Registration successful! However, we couldn't send the verification email. Please use 'Resend OTP' to try again.",
+      emailWarning: true,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        roles: user.roles,
+        createdAt: user.createdAt,
+        isVerified: user.isVerified,
+        profilePicture: user.profilePicture,
+      },
+    });
+  }
 
+  console.log(`[SIGNUP] ✅ OTP sent successfully to: ${email}`);
   res.status(201).json({
     message: "Registration successful! Verification code sent to your email.",
     user: {
