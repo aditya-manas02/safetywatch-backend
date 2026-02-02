@@ -38,10 +38,18 @@ if (process.env.SMTP_USER && process.env.SMTP_PASS) {
  */
 const sendViaBrevo = async (to, subject, html, retries = 2) => {
   const apiKey = process.env.BREVO_API_KEY?.trim();
-  const fromEmail = process.env.EMAIL_FROM || "safetywatch4neighbour@gmail.com";
+  
+  // CRITICAL: Brevo requires sender email to be verified in their dashboard
+  // Using the SMTP_USER as it should be verified
+  const fromEmail = process.env.SMTP_USER || "safetywatch4neighbour@gmail.com";
   const fromName = process.env.EMAIL_FROM_NAME || "SafetyWatch";
   
-  console.log(`[EMAIL] Attempting via BREVO to: ${to}...`);
+  if (!apiKey) {
+    console.log("[EMAIL] Brevo API key not configured, skipping...");
+    return { success: false, error: { message: "No Brevo API key" } };
+  }
+  
+  console.log(`[EMAIL] Attempting via BREVO to: ${to} from: ${fromEmail}...`);
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -63,15 +71,26 @@ const sendViaBrevo = async (to, subject, html, retries = 2) => {
 
       const data = await response.json();
       if (response.ok) {
-        console.log(`[EMAIL] Brevo success on attempt ${attempt}:`, data.messageId);
+        console.log(`[EMAIL] ✅ Brevo success on attempt ${attempt}:`, data.messageId);
         return { success: true, info: data };
       } else {
-        console.error(`[EMAIL] Brevo API Error (attempt ${attempt}/${retries}):`, data.message);
+        console.error(`[EMAIL] ❌ Brevo API Error (attempt ${attempt}/${retries}):`, {
+          status: response.status,
+          message: data.message,
+          code: data.code,
+          details: data
+        });
+        
+        // Don't retry on authentication errors
+        if (response.status === 401 || response.status === 403) {
+          return { success: false, error: data };
+        }
+        
         if (attempt === retries) return { success: false, error: data };
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 500));
       }
     } catch (error) {
-      console.error(`[EMAIL] Brevo Fetch Error (attempt ${attempt}/${retries}):`, error.message);
+      console.error(`[EMAIL] ❌ Brevo Fetch Error (attempt ${attempt}/${retries}):`, error.message);
       if (attempt === retries) return { success: false, error };
       await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 500));
     }
