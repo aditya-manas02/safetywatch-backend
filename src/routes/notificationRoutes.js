@@ -7,13 +7,24 @@ const router = express.Router();
 
 /* ----------------- GET NOTIFICATIONS ------------------ */
 router.get("/", authMiddleware, catchAsync(async (req, res) => {
-  // Fetch user specific notifications AND global announcements
-  const notifications = await Notification.find({
+  const { history } = req.query;
+  const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
+
+  let query = {
     $or: [
       { userId: req.user.id },
       { userId: null }
     ]
-  }).sort({ createdAt: -1 }).limit(50);
+  };
+
+  // If not requesting history (or not admin), filter by 72h window
+  if (history !== "true" || !req.user.isAdmin) {
+    query.createdAt = { $gte: seventyTwoHoursAgo };
+  }
+
+  const notifications = await Notification.find(query)
+    .sort({ createdAt: -1 })
+    .limit(history === "true" ? 200 : 50);
 
   res.json(notifications);
 }));
