@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// SMTP Transporter - Keep as a fallback but optimized for failure-prone environments (Render)
 export const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -13,19 +14,19 @@ export const transporter = nodemailer.createTransport({
     rejectUnauthorized: false,
     servername: "smtp.gmail.com"
   },
-  pool: false, // Disable pooling to prevent stuck idle connections
-  connectionTimeout: 10000, // Reduced from 60s to fail fast
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-  logger: true,
-  debug: true,
+  pool: false, 
+  connectionTimeout: 5000, // Reduced to 5s to fail fast
+  greetingTimeout: 5000,
+  socketTimeout: 5000,
+  logger: false, // Disabled full logger to keep logs clean
+  debug: false,
 });
 
-// Verify connection configuration on startup
+// Non-blocking verification on startup
 if (process.env.SMTP_USER && process.env.SMTP_PASS) {
   transporter.verify((error, _success) => {
     if (error) {
-      console.error("SMTP Connection Error Details:", error);
+      console.warn("SMTP Alert: Porter 465/587 likely blocked (ETIMEDOUT). Falling back to HTTP APIs. Error:", error.message);
     } else {
       console.log("SMTP Server is ready to take our messages");
     }
@@ -35,12 +36,12 @@ if (process.env.SMTP_USER && process.env.SMTP_PASS) {
 /**
  * Send email via Brevo (Sendinblue) HTTP API with retry logic
  */
-const sendViaBrevo = async (to, subject, html, retries = 3) => {
+const sendViaBrevo = async (to, subject, html, retries = 2) => {
   const apiKey = process.env.BREVO_API_KEY?.trim();
   const fromEmail = process.env.EMAIL_FROM || "safetywatch4neighbour@gmail.com";
   const fromName = process.env.EMAIL_FROM_NAME || "SafetyWatch";
   
-  console.log(`Attempting to send email via BREVO to: ${to}...`);
+  console.log(`[EMAIL] Attempting via BREVO to: ${to}...`);
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -62,38 +63,20 @@ const sendViaBrevo = async (to, subject, html, retries = 3) => {
 
       const data = await response.json();
       if (response.ok) {
-        console.log(`Brevo Email sent successfully on attempt ${attempt}:`, data.messageId);
+        console.log(`[EMAIL] Brevo success on attempt ${attempt}:`, data.messageId);
         return { success: true, info: data };
       } else {
-        console.error(`Brevo API Error (attempt ${attempt}/${retries}):`, JSON.stringify(data));
-        
-        // If this is the last attempt, return the error
-        if (attempt === retries) {
-          return { success: false, error: { message: data.message || "Brevo failure", details: data } };
-        }
-        
-        // Wait before retrying (exponential backoff: 500ms, 1s, 2s)
-        const waitTime = Math.pow(2, attempt - 1) * 500;
-        console.log(`Retrying in ${waitTime}ms...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
+        console.error(`[EMAIL] Brevo API Error (attempt ${attempt}/${retries}):`, data.message);
+        if (attempt === retries) return { success: false, error: data };
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 500));
       }
     } catch (error) {
-      console.error(`Brevo Fetch Error (attempt ${attempt}/${retries}):`, error);
-      
-      // If this is the last attempt, return the error
-      if (attempt === retries) {
-        return { success: false, error };
-      }
-      
-      // Wait before retrying
-      const waitTime = Math.pow(2, attempt - 1) * 500;
-      console.log(`Retrying in ${waitTime}ms...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      console.error(`[EMAIL] Brevo Fetch Error (attempt ${attempt}/${retries}):`, error.message);
+      if (attempt === retries) return { success: false, error };
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 500));
     }
   }
-  
-  // This should never be reached, but just in case
-  return { success: false, error: { message: "Max retries exceeded" } };
+  return { success: false, error: { message: "Brevo max retries" } };
 };
 
 /**
@@ -103,7 +86,7 @@ const sendViaResend = async (to, subject, html) => {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
   
-  console.log(`Attempting to send email via RESEND to: ${to}...`);
+  console.log(`[EMAIL] Attempting via RESEND to: ${to}...`);
 
   try {
     const response = await fetch("https://api.resend.com/emails", {
@@ -122,20 +105,58 @@ const sendViaResend = async (to, subject, html) => {
 
     const data = await response.json();
     if (response.ok) {
-      console.log("Resend Email sent successfully:", data.id);
+      console.log("[EMAIL] Resend success:", data.id);
       return { success: true, info: data };
     } else {
-      console.error("Resend API Error:", data);
-      return { success: false, error: new Error(data.message || "Resend API failure") };
+      console.error("[EMAIL] Resend error:", data.message);
+      return { success: false, error: data };
     }
   } catch (error) {
-    console.error("Resend Fetch Error:", error);
+    console.error("[EMAIL] Resend error:", error.message);
     return { success: false, error };
   }
 };
 
 /**
- * Send a password reset email with a system-generated password.
+ * Primary sending logic: Prioritizes HTTP APIs (Brevo, Resend) over high-latency SMTP
+ */
+const deliverEmail = async (to, subject, html) => {
+  // 1. Try Brevo (Most reliable HTTP API currently configured)
+  if (process.env.BREVO_API_KEY) {
+    const res = await sendViaBrevo(to, subject, html);
+    if (res.success) return res;
+  }
+
+  // 2. Try Resend (Next best HTTP API)
+  if (process.env.RESEND_API_KEY) {
+    const res = await sendViaResend(to, subject, html);
+    if (res.success) return res;
+  }
+
+  // 3. Try SMTP (Highly likely to fail or delay on Render, used as last resort)
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      console.log(`[EMAIL] Attempting via SMTP to: ${to}...`);
+      const mailOptions = {
+        from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
+        to,
+        subject,
+        html,
+      };
+      const info = await transporter.sendMail(mailOptions);
+      console.log("[EMAIL] SMTP success:", info.messageId);
+      return { success: true, info };
+    } catch (error) {
+      console.error("[EMAIL] SMTP failed:", error.message);
+    }
+  }
+
+  console.error(`[CRITICAL] All email delivery methods failed for: ${to}`);
+  return { success: false, error: new Error("All delivery methods failed") };
+};
+
+/**
+ * Send a password reset email
  */
 export const sendPasswordResetEmail = async (email, newPassword) => {
   const subject = "SafetyWatch - Your Password has been Reset";
@@ -148,60 +169,17 @@ export const sendPasswordResetEmail = async (email, newPassword) => {
           ${newPassword}
         </div>
         <p><strong>Please log in and change your password immediately.</strong></p>
-        <p>If you did not request this, please contact support or ignore this email if you can still log in with your old password.</p>
+        <p>If you did not request this, please contact support or ignore this email.</p>
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
         <p style="font-size: 12px; color: #64748b;">This is an automated message. Please do not reply.</p>
       </div>
     `;
 
-  // Try SMTP first (Best deliverability for @gmail.com sender)
-  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-    try {
-      console.log(`Attempting to send reset email via SMTP to: ${email}...`);
-      const mailOptions = {
-        from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject,
-        html,
-      };
-      const info = await transporter.sendMail(mailOptions);
-      console.log("Email sent successfully via SMTP. Message ID:", info.messageId);
-      return { success: true, info };
-    } catch (error) {
-      console.error("SMTP failed:", error.message);
-    }
-  }
-
-  // Try Brevo fallback
-  if (process.env.BREVO_API_KEY) {
-    try {
-      const res = await sendViaBrevo(email, subject, html);
-      if (res.success) return res;
-      console.warn("Brevo failed:", res.error?.message || "Unknown error");
-    } catch (error) {
-      console.error("Brevo implementation error:", error.message);
-    }
-  }
-
-  // Try Resend fallback
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const res = await sendViaResend(email, subject, html);
-      if (res.success) return res;
-      console.warn("Resend failed:", res.error?.message || "Unknown error");
-    } catch (error) {
-      console.error("Resend implementation error:", error.message);
-    }
-  }
-
-  console.error(`CRITICAL: All email providers failed for recipient: ${email}`);
-  return { success: false, error: new Error("All email providers failed. Please check server logs and domain verification status.") };
+  return await deliverEmail(email, subject, html);
 };
-  
-
 
 /**
- * Send an OTP email for registration verification.
+ * Send an OTP email for registration verification
  */
 export const sendOTPEmail = async (email, otp) => {
   const subject = "SafetyWatch - Verify Your Email";
@@ -220,48 +198,5 @@ export const sendOTPEmail = async (email, otp) => {
       </div>
     `;
 
-  // Try SMTP first (Best deliverability for @gmail.com sender)
-  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-    try {
-      console.log(`Attempting to send OTP email via SMTP to: ${email}...`);
-      const mailOptions = {
-        from: `"SafetyWatch" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject,
-        html,
-      };
-      const info = await transporter.sendMail(mailOptions);
-      console.log("OTP Email sent successfully via SMTP. Message ID:", info.messageId);
-      return { success: true, info };
-    } catch (error) {
-      console.error("SMTP OTP failed:", error.message);
-    }
-  }
-
-  // Try Brevo fallback
-  if (process.env.BREVO_API_KEY) {
-    try {
-      const res = await sendViaBrevo(email, subject, html);
-      if (res.success) return res;
-      console.warn("Brevo OTP failed:", res.error?.message || "Unknown error");
-    } catch (error) {
-      console.error("Brevo OTP implementation error:", error.message);
-    }
-  }
-
-  // Try Resend fallback
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const res = await sendViaResend(email, subject, html);
-      if (res.success) return res;
-      console.warn("Resend OTP failed:", res.error?.message || "Unknown error");
-    } catch (error) {
-      console.error("Resend OTP implementation error:", error.message);
-    }
-  }
-
-  console.error(`CRITICAL: All email providers failed for OTP recipient: ${email}`);
-  return { success: false, error: new Error("All email providers failed to send OTP. Please check server configuration.") };
+  return await deliverEmail(email, subject, html);
 };
-  
-
