@@ -247,6 +247,25 @@ router.delete("/:id", authMiddleware, requireAdminOnly, async (req, res) => {
   }
 });
 
+/* ---------------- ACKNOWLEDGE INCIDENT ---------------- */
+router.patch("/:id/acknowledge", authMiddleware, catchAsync(async (req, res) => {
+  const incident = await Incident.findByIdAndUpdate(
+    req.params.id,
+    { $addToSet: { acknowledgements: req.user.id } },
+    { new: true }
+  );
+
+  if (!incident) return res.status(404).json({ message: "Incident not found" });
+
+  // Log the action for audit
+  await logAudit(req, `Acknowledged incident ${req.params.id}`, "incident", req.params.id);
+  
+  res.json({ 
+    message: "Successfully acknowledged", 
+    acknowledgements: incident.acknowledgements?.length || 0 
+  });
+}));
+
 /* ---------------- PUBLIC HOMEPAGE STATS ---------------- */
 router.get("/stats/public", async (req, res) => {
   try {

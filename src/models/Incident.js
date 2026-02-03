@@ -11,6 +11,7 @@ const incidentSchema = new mongoose.Schema({
   status: { type: String, enum: ["pending", "under process", "approved", "rejected", "problem solved"], default: "pending" },
   isImportant: { type: Boolean, default: false },
   imageUrl: { type: String, default: null },
+  acknowledgements: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 }, { timestamps: true });
 
 
