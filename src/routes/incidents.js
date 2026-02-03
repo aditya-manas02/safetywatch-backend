@@ -225,7 +225,7 @@ router.patch("/:id/status", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "Incident not found" });
 
     // Permissions check: Admin can do anything. Reporter can only update status to 'problem solved' or 'rejected' (archive)
-    const isReporter = incident.userId.toString() === req.user.id;
+    const isReporter = incident.userId.toString() === req.user.id.toString();
     const isAdmin = req.user.isAdmin;
 
     if (!isAdmin && !isReporter) {
@@ -387,7 +387,7 @@ router.post("/:id/messages", authMiddleware, catchAsync(async (req, res) => {
   let receiverId = explicitReceiverId || incident.userId;
 
   // If the reporter is sending a message (broadcasting/replying)
-  if (incident.userId.toString() === req.user.id) {
+  if (incident.userId.toString() === req.user.id.toString()) {
     if (explicitReceiverId) {
       receiverId = explicitReceiverId;
     } else {
@@ -435,7 +435,7 @@ router.post("/:id/messages/:messageId/reply", authMiddleware, catchAsync(async (
   if (!message) return res.status(404).json({ message: "Message not found" });
 
   // Only the original sender or the original receiver (reporter) can reply
-  if (message.senderId.toString() !== req.user.id && message.receiverId.toString() !== req.user.id) {
+  if (message.senderId.toString() !== req.user.id.toString() && message.receiverId.toString() !== req.user.id.toString()) {
     return res.status(403).json({ message: "Not authorized to reply to this message" });
   }
 
@@ -447,7 +447,7 @@ router.post("/:id/messages/:messageId/reply", authMiddleware, catchAsync(async (
   await message.save();
 
   // Notify the other party
-  const notifyId = message.senderId.toString() === req.user.id ? message.receiverId : message.senderId;
+  const notifyId = message.senderId.toString() === req.user.id.toString() ? message.receiverId : message.senderId;
   await Notification.create({
     userId: notifyId,
     title: "New Reply",
