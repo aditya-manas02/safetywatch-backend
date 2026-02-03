@@ -191,24 +191,48 @@ async function checkRateLimit(user, type, limit, windowHours) {
   const windowStartField = `${type}WindowStart`;
   const now = new Date();
   const windowStart = user[windowStartField] || now;
+  const windowMillis = windowHours * 60 * 60 * 1000;
 
   // Check if window has expired
-  if (now - windowStart > windowHours * 60 * 60 * 1000) {
+  if (now - windowStart > windowMillis) {
     user[countField] = 0;
     user[windowStartField] = now;
   }
 
+  const resetAt = new Date(user[windowStartField].getTime() + windowMillis);
+  const resetIn = Math.max(0, resetAt - now);
+  
+  const formatTime = (ms) => {
+    const totalMinutes = Math.ceil(ms / (60 * 1000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
   if (user[countField] >= limit) {
-    const hoursLeft = Math.ceil((windowHours * 60 * 60 * 1000 - (now - windowStart)) / (60 * 60 * 1000));
     return { 
       limited: true, 
-      message: `Limit reached. Please try again in ${hoursLeft} hour(s).` 
+      message: `Limit reached. Please try again in ${formatTime(resetIn)}.`,
+      rateLimit: {
+        remaining: 0,
+        resetIn: formatTime(resetIn),
+        total: limit
+      }
     };
   }
 
   user[countField] += 1;
   await user.save();
-  return { limited: false };
+  
+  return { 
+    limited: false,
+    rateLimit: {
+      remaining: limit - user[countField],
+      resetIn: formatTime(resetIn),
+      total: limit
+    }
+  };
 }
 
 /* -------------------------------------------------
@@ -238,7 +262,7 @@ router.post("/signup", catchAsync(async (req, res) => {
     // Check OTP rate limit for existing unverified user
     const rateLimit = await checkRateLimit(user, 'otp', 3, 1);
     if (rateLimit.limited) {
-      return res.status(429).json({ message: rateLimit.message });
+      return res.status(429).json({ message: rateLimit.message, rateLimit: rateLimit.rateLimit });
     }
 
     user.name = name;
@@ -247,6 +271,9 @@ router.post("/signup", catchAsync(async (req, res) => {
     user.otpExpiresAt = otpExpiresAt;
     user.roles = roles; 
     await user.save();
+    
+    // Pass rateLimit info forward
+    req.rateLimitInfo = rateLimit.rateLimit;
   } else {
     user = await User.create({
       email,
@@ -256,8 +283,14 @@ router.post("/signup", catchAsync(async (req, res) => {
       otp,
       otpExpiresAt,
       isVerified: false,
+      otpCount: 1,
+      otpWindowStart: new Date()
     });
+    req.rateLimitInfo = { remaining: 2, resetIn: "60m", total: 3 };
   }
+
+  // ... (rest of signup logic handled below with req.rateLimitInfo)
+
 
   // CRITICAL FIX: Await email sending and handle errors properly
   console.log(`[SIGNUP] Attempting to send OTP to: ${email}`);
@@ -269,6 +302,7 @@ router.post("/signup", catchAsync(async (req, res) => {
     return res.status(201).json({
       message: "Registration successful! However, we couldn't send the verification email. Please use 'Resend OTP' to try again.",
       emailWarning: true,
+      rateLimit: req.rateLimitInfo,
       user: {
         id: user._id,
         email: user.email,
@@ -284,6 +318,7 @@ router.post("/signup", catchAsync(async (req, res) => {
   console.log(`[SIGNUP] ✅ OTP sent successfully to: ${email}`);
   res.status(201).json({
     message: "Registration successful! Verification code sent to your email.",
+    rateLimit: req.rateLimitInfo,
     user: {
       id: user._id,
       email: user.email,
@@ -401,9 +436,9 @@ router.post("/resend-otp", catchAsync(async (req, res) => {
   }
 
   // Check OTP rate limit
-  const rateLimit = await checkRateLimit(user, 'otp', 3, 1);
-  if (rateLimit.limited) {
-    return res.status(429).json({ message: rateLimit.message });
+  const rateLimitInfo = await checkRateLimit(user, 'otp', 3, 1);
+  if (rateLimitInfo.limited) {
+    return res.status(429).json({ message: rateLimitInfo.message, rateLimit: rateLimitInfo.rateLimit });
   }
 
   const otp = generateOTP();
@@ -416,11 +451,15 @@ router.post("/resend-otp", catchAsync(async (req, res) => {
     return res.status(500).json({ 
       message: `Failed to send OTP email: ${emailError?.message || "Unknown error"}`,
       code: emailError?.code,
-      command: emailError?.command
+      command: emailError?.command,
+      rateLimit: rateLimitInfo.rateLimit
     });
   }
 
-  res.json({ message: "A new OTP has been sent to your email." });
+  res.json({ 
+    message: "A new OTP has been sent to your email.",
+    rateLimit: rateLimitInfo.rateLimit
+  });
 }));
 
 /* -------------------------------------------------
@@ -435,9 +474,9 @@ router.post("/forgot-password", catchAsync(async (req, res) => {
   }
 
   // Check Password Reset rate limit
-  const rateLimit = await checkRateLimit(user, 'passwordReset', 3, 24);
-  if (rateLimit.limited) {
-    return res.status(429).json({ message: rateLimit.message });
+  const rateLimitInfo = await checkRateLimit(user, 'passwordReset', 3, 24);
+  if (rateLimitInfo.limited) {
+    return res.status(429).json({ message: rateLimitInfo.message, rateLimit: rateLimitInfo.rateLimit });
   }
 
   const tempPassword = generateTempPassword();
@@ -461,7 +500,8 @@ router.post("/forgot-password", catchAsync(async (req, res) => {
   }
 
   res.json({ 
-    message: "If an account exists, a reset email has been sent."
+    message: "If an account exists, a reset email has been sent.",
+    rateLimit: rateLimitInfo.rateLimit
   });
 }));
 
@@ -524,9 +564,9 @@ router.post("/request-password-otp", async (req, res) => {
     }
 
     // Check OTP rate limit
-    const rateLimit = await checkRateLimit(user, 'otp', 3, 1);
-    if (rateLimit.limited) {
-      return res.status(429).json({ message: rateLimit.message });
+    const rateLimitInfo = await checkRateLimit(user, 'otp', 3, 1);
+    if (rateLimitInfo.limited) {
+      return res.status(429).json({ message: rateLimitInfo.message, rateLimit: rateLimitInfo.rateLimit });
     }
 
     // Generate OTP
@@ -542,10 +582,16 @@ router.post("/request-password-otp", async (req, res) => {
     const { success } = await sendOTPEmail(email, otp);
     
     if (!success) {
-      return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
+      return res.status(500).json({ 
+        message: "Failed to send OTP email. Please try again.",
+        rateLimit: rateLimitInfo.rateLimit
+      });
     }
 
-    res.json({ message: "OTP sent to your email. Please check your inbox." });
+    res.json({ 
+      message: "OTP sent to your email. Please check your inbox.",
+      rateLimit: rateLimitInfo.rateLimit
+    });
   } catch (err) {
     console.error("Request Password OTP Error:", err);
     res.status(500).json({ message: "Server error during OTP request" });
