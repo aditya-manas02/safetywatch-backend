@@ -80,7 +80,6 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
 }));
 
 /* ----------------- GET INCIDENTS (ADMIN OR USER) ------------------ */
-/* ----------------- GET INCIDENTS (ADMIN OR USER) ------------------ */
 router.get("/", authMiddleware, catchAsync(async (req, res) => {
   if (req.user.isAdmin) {
     const all = await Incident.find().sort({ createdAt: -1 });
