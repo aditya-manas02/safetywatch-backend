@@ -179,6 +179,38 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+/**
+ * Rate limiting helper
+ * @param {Object} user User model instance
+ * @param {String} type 'otp' or 'passwordReset'
+ * @param {Number} limit Max allowed in window
+ * @param {Number} windowHours Window duration in hours
+ */
+async function checkRateLimit(user, type, limit, windowHours) {
+  const countField = `${type}Count`;
+  const windowStartField = `${type}WindowStart`;
+  const now = new Date();
+  const windowStart = user[windowStartField] || now;
+
+  // Check if window has expired
+  if (now - windowStart > windowHours * 60 * 60 * 1000) {
+    user[countField] = 0;
+    user[windowStartField] = now;
+  }
+
+  if (user[countField] >= limit) {
+    const hoursLeft = Math.ceil((windowHours * 60 * 60 * 1000 - (now - windowStart)) / (60 * 60 * 1000));
+    return { 
+      limited: true, 
+      message: `Limit reached. Please try again in ${hoursLeft} hour(s).` 
+    };
+  }
+
+  user[countField] += 1;
+  await user.save();
+  return { limited: false };
+}
+
 /* -------------------------------------------------
    SIGNUP
 -------------------------------------------------- */
@@ -203,6 +235,12 @@ router.post("/signup", catchAsync(async (req, res) => {
   }
 
   if (user) {
+    // Check OTP rate limit for existing unverified user
+    const rateLimit = await checkRateLimit(user, 'otp', 3, 1);
+    if (rateLimit.limited) {
+      return res.status(429).json({ message: rateLimit.message });
+    }
+
     user.name = name;
     user.passwordHash = passwordHash;
     user.otp = otp;
@@ -362,6 +400,12 @@ router.post("/resend-otp", catchAsync(async (req, res) => {
     return res.status(400).json({ message: "Email already verified" });
   }
 
+  // Check OTP rate limit
+  const rateLimit = await checkRateLimit(user, 'otp', 3, 1);
+  if (rateLimit.limited) {
+    return res.status(429).json({ message: rateLimit.message });
+  }
+
   const otp = generateOTP();
   user.otp = otp;
   user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -390,10 +434,20 @@ router.post("/forgot-password", catchAsync(async (req, res) => {
     return res.json({ message: "If an account exists, a reset email has been sent." });
   }
 
+  // Check Password Reset rate limit
+  const rateLimit = await checkRateLimit(user, 'passwordReset', 3, 24);
+  if (rateLimit.limited) {
+    return res.status(429).json({ message: rateLimit.message });
+  }
+
   const tempPassword = generateTempPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-  await User.updateOne({ _id: user._id }, { passwordHash });
+  await User.updateOne({ _id: user._id }, { 
+    passwordHash,
+    passwordResetCount: user.passwordResetCount, // Already incremented in checkRateLimit
+    passwordResetWindowStart: user.passwordResetWindowStart
+  });
 
   console.log("------------------------------------------");
   console.log(`PASSWORD RESET REQUEST for: ${email}`);
@@ -467,6 +521,12 @@ router.post("/request-password-otp", async (req, res) => {
     if (!user) {
       // Don't reveal if user exists for security
       return res.json({ message: "If an account exists, an OTP has been sent to your email" });
+    }
+
+    // Check OTP rate limit
+    const rateLimit = await checkRateLimit(user, 'otp', 3, 1);
+    if (rateLimit.limited) {
+      return res.status(429).json({ message: rateLimit.message });
     }
 
     // Generate OTP
