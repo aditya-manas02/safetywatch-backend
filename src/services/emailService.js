@@ -1,7 +1,48 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import dns from "dns";
+import { promisify } from "util";
 
+const resolveMx = promisify(dns.resolveMx);
 dotenv.config();
+
+// Common disposable email domains
+const DISPOSABLE_DOMAINS = new Set([
+  "temp-mail.org", "guerrillamail.com", "sharklasers.com", "mailinator.com",
+  "10minutemail.com", "dispostable.com", "getnada.com", "tempmail.net"
+]);
+
+/**
+ * Validates if an email domain exists and can receive mail
+ * @param {string} email 
+ * @returns {Promise<{valid: boolean, message?: string}>}
+ */
+export const validateEmailDomain = async (email) => {
+  const domain = email.split("@")[1]?.toLowerCase();
+  
+  if (!domain) return { valid: false, message: "Invalid email format" };
+
+  // 1. Check if it's a known disposable domain
+  if (DISPOSABLE_DOMAINS.has(domain)) {
+    return { valid: false, message: "Disposable email addresses are not allowed for security reasons." };
+  }
+
+  // 2. Check for MX records (Mail Exchange)
+  try {
+    const mxRecords = await resolveMx(domain);
+    if (!mxRecords || mxRecords.length === 0) {
+      return { valid: false, message: `The domain @${domain} does not appear to have an active mail server.` };
+    }
+    return { valid: true };
+  } catch (error) {
+    if (error.code === 'ENODATA' || error.code === 'ENOTFOUND') {
+      return { valid: false, message: `The email domain @${domain} does not exist.` };
+    }
+    // For other DNS errors (timeout, etc.), we'll be lenient to avoid false negatives
+    console.warn(`DNS check failed for ${domain}:`, error.message);
+    return { valid: true }; 
+  }
+};
 
 // SMTP Transporter - Keep as a fallback but optimized for failure-prone environments (Render)
 export const transporter = nodemailer.createTransport({
