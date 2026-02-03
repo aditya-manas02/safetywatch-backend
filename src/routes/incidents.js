@@ -373,7 +373,7 @@ router.get("/:id/messages", authMiddleware, catchAsync(async (req, res) => {
   const messages = await IncidentMessage.find({
     incidentId: req.params.id,
     $or: [{ senderId: req.user.id }, { receiverId: req.user.id }]
-  }).sort({ createdAt: 1 }).populate("senderId", "name avatar").populate("replies.senderId", "name avatar");
+  }).sort({ createdAt: 1 }).populate("senderId", "name profilePicture").populate("replies.senderId", "name profilePicture");
 
   res.json(messages);
 }));
