@@ -287,6 +287,8 @@ router.delete("/:id", authMiddleware, requireAdminOnly, async (req, res) => {
     const deleted = await Incident.findByIdAndDelete(req.params.id);
     if (deleted) {
       await logAudit(req, "Deleted incident", "incident", req.params.id, deleted.title);
+      // Clean up associated messages
+      await IncidentMessage.deleteMany({ incidentId: req.params.id });
     }
     res.json({ message: "Deleted successfully" });
   } catch {
