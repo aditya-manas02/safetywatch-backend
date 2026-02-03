@@ -214,14 +214,40 @@ router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) 
     res.status(500).json({ message: "Error in bulk update" });
   }
 });
-
-/* --------- UPDATE STATUS (ADMIN ONLY) ---------- */
-router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) => {
+/* --------- UPDATE STATUS (ADMIN OR REPORTER) ---------- */
+router.patch("/:id/status", authMiddleware, async (req, res) => {
   try {
     const { status, isImportant } = req.body;
+    
+    // Find the incident first to check ownership
+    const incident = await Incident.findById(req.params.id);
+    if (!incident)
+      return res.status(404).json({ message: "Incident not found" });
+
+    // Permissions check: Admin can do anything. Reporter can only update status to 'problem solved' or 'rejected' (archive)
+    const isReporter = incident.userId.toString() === req.user.id;
+    const isAdmin = req.user.isAdmin;
+
+    if (!isAdmin && !isReporter) {
+      return res.status(403).json({ message: "Not authorized to update this incident" });
+    }
+
     const updateData = {};
-    if (status) updateData.status = status;
-    if (typeof isImportant === "boolean") updateData.isImportant = isImportant;
+    if (status) {
+      // Reporters can only set status to 'problem solved' or 'rejected'
+      if (!isAdmin && status !== "problem solved" && status !== "rejected") {
+        return res.status(403).json({ message: "Reporters can only resolve or archive incidents" });
+      }
+      updateData.status = status;
+    }
+
+    // Only admins can change importance
+    if (typeof isImportant === "boolean") {
+      if (!isAdmin) {
+        return res.status(403).json({ message: "Only administrators can mark incidents as important" });
+      }
+      updateData.isImportant = isImportant;
+    }
 
     const updated = await Incident.findByIdAndUpdate(
       req.params.id,
@@ -229,11 +255,8 @@ router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) =
       { new: true }
     );
 
-    if (!updated)
-      return res.status(404).json({ message: "Incident not found" });
-
-    // Notify user if status changed
-    if (status) {
+    // Notify user if status changed by admin
+    if (status && isAdmin && !isReporter) {
       await Notification.create({
         userId: updated.userId,
         title: `Report ${status.charAt(0).toUpperCase() + status.slice(1)}`,
@@ -252,6 +275,7 @@ router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) =
 
     res.json(updated);
   } catch (err) {
+    console.error("Error updating status:", err);
     res.status(500).json({ message: "Error updating status" });
   }
 });
@@ -351,35 +375,54 @@ router.get("/:id/messages", authMiddleware, catchAsync(async (req, res) => {
   res.json(messages);
 }));
 
-// Send a private message to the reporter
+// Send a private message or reply to the reporter
 router.post("/:id/messages", authMiddleware, catchAsync(async (req, res) => {
-  const { content } = req.body;
+  const { content, receiverId: explicitReceiverId } = req.body;
   const incident = await Incident.findById(req.params.id);
 
   if (!incident) return res.status(404).json({ message: "Incident not found" });
   if (!incident.allowMessages) return res.status(403).json({ message: "Messages are disabled for this report" });
   if (incident.status === "problem solved") return res.status(403).json({ message: "Report is resolved. No new messages allowed." });
 
-  // A reporter cannot message themselves (or they can, but it's weird)
-  // Let's allow it for now, but usually it's others messaging the reporter.
+  let receiverId = explicitReceiverId || incident.userId;
+
+  // If the reporter is sending a message (broadcasting/replying)
+  if (incident.userId.toString() === req.user.id) {
+    if (explicitReceiverId) {
+      receiverId = explicitReceiverId;
+    } else {
+      // Find the most recent message received by the reporter for this incident
+      // to determine who they are talking to in this 1-on-1 context.
+      const lastReceived = await IncidentMessage.findOne({
+        incidentId: req.params.id,
+        receiverId: req.user.id
+      }).sort({ createdAt: -1 });
+
+      if (lastReceived) {
+        receiverId = lastReceived.senderId;
+      } else {
+        // Fallback or broadcast logic. For now, if no one messaged, we might just error
+        // or allow it as a broadcast (though schema requires a receiver).
+        return res.status(400).json({ message: "Need a recipient to send a message." });
+      }
+    }
+  }
 
   const message = await IncidentMessage.create({
     incidentId: req.params.id,
     senderId: req.user.id,
-    receiverId: incident.userId,
+    receiverId,
     content
   });
 
-  // Notify the reporter
-  if (incident.userId.toString() !== req.user.id) {
-    await Notification.create({
-      userId: incident.userId,
-      title: "New Private Message",
-      message: `Someone sent a message regarding your report "${incident.title}".`,
-      type: "incident_update",
-      link: `/profile?tab=reports` // Adjust if there's a better link
-    });
-  }
+  // Notify the receiver
+  await Notification.create({
+    userId: receiverId,
+    title: "New Private Message",
+    message: `New message regarding report "${incident.title}".`,
+    type: "incident_update",
+    link: `/inbox?incident=${incident._id}`
+  });
 
   res.status(201).json(message);
 }));
