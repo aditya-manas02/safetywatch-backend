@@ -37,6 +37,10 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
       longitude: req.body.longitude,
       imageUrl: req.body.imageUrl || null,
       status: "rejected",
+      locationPoint: {
+        type: "Point",
+        coordinates: [req.body.longitude || 0, req.body.latitude || 0]
+      }
     });
 
     await Notification.create({
@@ -63,6 +67,10 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
     longitude: req.body.longitude,
     imageUrl: req.body.imageUrl || null,
     status: "pending",
+    locationPoint: {
+      type: "Point",
+      coordinates: [req.body.longitude || 0, req.body.latitude || 0]
+    }
   });
 
   res.status(201).json(incident);
