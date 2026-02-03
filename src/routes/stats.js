@@ -174,4 +174,40 @@ router.get("/pulse", async (req, res) => {
   }
 });
 
+/* ============================================================
+   🏆 GUARDIAN LEADERBOARD
+   GET /api/stats/leaderboard
+   Returns top 10 users ranked by approved reports
+   ============================================================ */
+router.get("/leaderboard", catchAsync(async (req, res) => {
+  const leaderboard = await Incident.aggregate([
+    { $match: { status: "approved" } },
+    { $group: { 
+        _id: "$userId", 
+        reportCount: { $sum: 1 } 
+      } 
+    },
+    { $sort: { reportCount: -1 } },
+    { $limit: 10 },
+    { $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "userDetails"
+      }
+    },
+    { $unwind: "$userDetails" },
+    { $project: {
+        _id: 1,
+        reportCount: 1,
+        name: "$userDetails.name",
+        profilePicture: "$userDetails.profilePicture",
+        memberSince: "$userDetails.createdAt"
+      }
+    }
+  ]);
+
+  res.json(leaderboard);
+}));
+
 export default router;
