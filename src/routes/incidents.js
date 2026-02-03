@@ -234,9 +234,10 @@ router.patch("/:id/status", authMiddleware, async (req, res) => {
 
     const updateData = {};
     if (status) {
-      // Reporters can only set status to 'problem solved' or 'rejected'
-      if (!isAdmin && status !== "problem solved" && status !== "rejected") {
-        return res.status(403).json({ message: "Reporters can only resolve or archive incidents" });
+      // Reporters can only set status to 'problem solved', 'rejected', or restore to 'pending' (unarchive)
+      const allowedReporterStatuses = ["problem solved", "rejected", "pending"];
+      if (!isAdmin && !allowedReporterStatuses.includes(status)) {
+        return res.status(403).json({ message: "Reporters can only resolve, archive, or unarchive incidents" });
       }
       updateData.status = status;
     }
