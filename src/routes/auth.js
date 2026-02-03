@@ -304,20 +304,17 @@ router.post("/signup", catchAsync(async (req, res) => {
   
   if (!success) {
     console.error(`[SIGNUP] Email failed for ${email}:`, emailError);
-    // Still return success to user but with a warning
-    return res.status(201).json({
-      message: "Registration successful! However, we couldn't send the verification email. Please use 'Resend OTP' to try again.",
-      emailWarning: true,
-      rateLimit: req.rateLimitInfo,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        roles: user.roles,
-        createdAt: user.createdAt,
-        isVerified: user.isVerified,
-        profilePicture: user.profilePicture,
-      },
+    
+    // Cleanup: If this was a new user, remove them so they can try again with a corrected email
+    // If it was an existing unverified user, we keep them but still report the failure
+    const isNewUser = user.createdAt && (new Date() - user.createdAt < 5000); // Created in last 5s
+    if (isNewUser && !user.isVerified) {
+      await User.deleteOne({ _id: user._id });
+    }
+
+    return res.status(400).json({
+      message: "Verification email could not be delivered. Please check if your email address is correct.",
+      details: emailError?.message
     });
   }
 
