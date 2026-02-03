@@ -5,6 +5,7 @@ import { logAudit } from "../utils/auditLogger.js";
 import { catchAsync } from "../utils/catchAsync.js";
 
 import Notification from "../models/Notification.js";
+import IncidentMessage from "../models/IncidentMessage.js";
 
 const router = express.Router();
 
@@ -36,6 +37,7 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
       latitude: req.body.latitude,
       longitude: req.body.longitude,
       imageUrl: req.body.imageUrl || null,
+      allowMessages: req.body.allowMessages !== undefined ? req.body.allowMessages : true,
       status: "rejected",
       locationPoint: {
         type: "Point",
@@ -66,6 +68,7 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
     latitude: req.body.latitude,
     longitude: req.body.longitude,
     imageUrl: req.body.imageUrl || null,
+    allowMessages: req.body.allowMessages !== undefined ? req.body.allowMessages : true,
     status: "pending",
     locationPoint: {
       type: "Point",
@@ -201,6 +204,12 @@ router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) 
     }
 
     await logAudit(req, `Bulk updated ${updatedItems.length} incidents: ${JSON.stringify(updateData)}`, "system", null, ids.join(", "));
+
+    // Delete messages if status is problem solved
+    if (status === "problem solved") {
+      await IncidentMessage.deleteMany({ incidentId: { $in: ids } });
+    }
+
     res.json({ message: `Bulk updated ${updatedItems.length} incidents` });
   } catch (err) {
     res.status(500).json({ message: "Error in bulk update" });
@@ -236,6 +245,12 @@ router.patch("/:id/status", authMiddleware, requireAdminOnly, async (req, res) =
     }
 
     await logAudit(req, `Updated incident ${req.params.id}: ${JSON.stringify(updateData)}`, "incident", req.params.id);
+
+    // Delete messages if status is problem solved
+    if (status === "problem solved") {
+      await IncidentMessage.deleteMany({ incidentId: req.params.id });
+    }
+
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: "Error updating status" });
@@ -286,5 +301,86 @@ router.get("/stats/public", async (req, res) => {
     res.status(500).json({ message: "Error loading stats" });
   }
 });
+
+/* ---------------- MESSAGING ROUTES ---------------- */
+
+// Get private messages for an incident
+router.get("/:id/messages", authMiddleware, catchAsync(async (req, res) => {
+  const incident = await Incident.findById(req.params.id);
+  if (!incident) return res.status(404).json({ message: "Incident not found" });
+
+  // Only return messages where the user is the sender OR the receiver (reporter)
+  const messages = await IncidentMessage.find({
+    incidentId: req.params.id,
+    $or: [{ senderId: req.user.id }, { receiverId: req.user.id }]
+  }).sort({ createdAt: 1 }).populate("senderId", "name avatar").populate("replies.senderId", "name avatar");
+
+  res.json(messages);
+}));
+
+// Send a private message to the reporter
+router.post("/:id/messages", authMiddleware, catchAsync(async (req, res) => {
+  const { content } = req.body;
+  const incident = await Incident.findById(req.params.id);
+
+  if (!incident) return res.status(404).json({ message: "Incident not found" });
+  if (!incident.allowMessages) return res.status(403).json({ message: "Messages are disabled for this report" });
+  if (incident.status === "problem solved") return res.status(403).json({ message: "Report is resolved. No new messages allowed." });
+
+  // A reporter cannot message themselves (or they can, but it's weird)
+  // Let's allow it for now, but usually it's others messaging the reporter.
+
+  const message = await IncidentMessage.create({
+    incidentId: req.params.id,
+    senderId: req.user.id,
+    receiverId: incident.userId,
+    content
+  });
+
+  // Notify the reporter
+  if (incident.userId.toString() !== req.user.id) {
+    await Notification.create({
+      userId: incident.userId,
+      title: "New Private Message",
+      message: `Someone sent a message regarding your report "${incident.title}".`,
+      type: "incident_update",
+      link: `/profile?tab=reports` // Adjust if there's a better link
+    });
+  }
+
+  res.status(201).json(message);
+}));
+
+// Reply to a private message (Reporter or Original Sender)
+router.post("/:id/messages/:messageId/reply", authMiddleware, catchAsync(async (req, res) => {
+  const { content } = req.body;
+  const message = await IncidentMessage.findById(req.params.messageId);
+
+  if (!message) return res.status(404).json({ message: "Message not found" });
+
+  // Only the original sender or the original receiver (reporter) can reply
+  if (message.senderId.toString() !== req.user.id && message.receiverId.toString() !== req.user.id) {
+    return res.status(403).json({ message: "Not authorized to reply to this message" });
+  }
+
+  message.replies.push({
+    senderId: req.user.id,
+    content
+  });
+
+  await message.save();
+
+  // Notify the other party
+  const notifyId = message.senderId.toString() === req.user.id ? message.receiverId : message.senderId;
+  await Notification.create({
+    userId: notifyId,
+    title: "New Reply",
+    message: `You have a new reply in a private conversation.`,
+    type: "incident_update",
+    link: `/profile?tab=reports`
+  });
+
+  res.status(201).json(message);
+}));
 
 export default router;
