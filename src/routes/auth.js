@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import dotenv from "dotenv";
 import { z } from "zod";
-import { sendPasswordResetEmail, sendOTPEmail } from "../services/emailService.js";
+import { sendPasswordResetEmail, sendOTPEmail, validateEmailDomain } from "../services/emailService.js";
 import { catchAsync } from "../utils/catchAsync.js";
 
 
@@ -241,6 +241,12 @@ async function checkRateLimit(user, type, limit, windowHours) {
 router.post("/signup", catchAsync(async (req, res) => {
   const { email, password, name } = signupSchema.parse(req.body);
 
+  // 1. Validate email domain existence
+  const emailVal = await validateEmailDomain(email);
+  if (!emailVal.valid) {
+    return res.status(400).json({ message: emailVal.message });
+  }
+
   let user = await User.findOne({ email });
   
   if (user && user.isVerified) {
@@ -426,6 +432,11 @@ router.post("/verify-otp", catchAsync(async (req, res) => {
 router.post("/resend-otp", catchAsync(async (req, res) => {
   const { email } = resendOtpSchema.parse(req.body);
 
+  const emailVal = await validateEmailDomain(email);
+  if (!emailVal.valid) {
+    return res.status(400).json({ message: emailVal.message });
+  }
+
   const user = await User.findOne({ email });
   if (!user) {
     return res.status(404).json({ message: "User not found" });
@@ -467,6 +478,11 @@ router.post("/resend-otp", catchAsync(async (req, res) => {
 -------------------------------------------------- */
 router.post("/forgot-password", catchAsync(async (req, res) => {
   const { email } = forgotPasswordSchema.parse(req.body);
+
+  const emailVal = await validateEmailDomain(email);
+  if (!emailVal.valid) {
+    return res.status(400).json({ message: emailVal.message });
+  }
 
   const user = await User.findOne({ email });
   if (!user) {
