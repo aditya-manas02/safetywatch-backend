@@ -30,8 +30,16 @@ export const validateEmailDomain = async (email) => {
   // 2. Check for MX records (Mail Exchange)
   try {
     const mxRecords = await resolveMx(domain);
-    if (!mxRecords || mxRecords.length === 0) {
-      return { valid: false, message: `The domain @${domain} does not appear to have an active mail server.` };
+    
+    // Filter out invalid or "Null MX" records (RFC 7505)
+    const validMx = mxRecords.filter(record => 
+      record.exchange && 
+      record.exchange !== "." && 
+      record.exchange !== ""
+    );
+
+    if (validMx.length === 0) {
+      return { valid: false, message: `The domain @${domain} is configured to not receive emails or has no valid mail servers.` };
     }
     return { valid: true };
   } catch (error) {
