@@ -179,33 +179,37 @@ router.get("/pulse", async (req, res) => {
    GET /api/stats/leaderboard
    Returns top 10 users ranked by approved reports
    ============================================================ */
-router.get("/leaderboard", catchAsync(async (req, res) => {
-  const { lat, lng, radius = 10 } = req.query; // radius in km
+router.get("/leaderboard", authMiddleware, catchAsync(async (req, res) => {
+  const { lat, lng, radius = 10, userId } = req.query; // radius in km
   
   const pipeline = [];
+  const baseMatch = { status: "approved" };
 
-  // If geo params provided, filter by distance first
+  // 1. Setup Base Pipeline (Geo or Match)
   if (lat && lng) {
     pipeline.push({
       $geoNear: {
         near: { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] },
         distanceField: "dist.calculated",
-        maxDistance: radius * 1000, // km to meters
-        query: { status: "approved" },
+        maxDistance: radius * 1000, 
+        query: baseMatch,
         spherical: true
       }
     });
   } else {
-    pipeline.push({ $match: { status: "approved" } });
+    pipeline.push({ $match: baseMatch });
   }
 
-  pipeline.push(
-    { $group: { 
-        _id: "$userId", 
-        reportCount: { $sum: 1 } 
-      } 
-    },
-    { $sort: { reportCount: -1 } },
+  // 2. Group by User
+  const rankingPipeline = [
+    ...pipeline,
+    { $group: { _id: "$userId", reportCount: { $sum: 1 } } },
+    { $sort: { reportCount: -1, _id: 1 } } // Stable sorting
+  ];
+
+  // 3. Execution for Top 10
+  const top10Pipeline = [
+    ...rankingPipeline,
     { $limit: 10 },
     { $lookup: {
         from: "users",
@@ -223,10 +227,32 @@ router.get("/leaderboard", catchAsync(async (req, res) => {
         memberSince: "$userDetails.createdAt"
       }
     }
-  );
+  ];
 
-  const leaderboard = await Incident.aggregate(pipeline);
-  res.json(leaderboard);
+  const leaderboard = await Incident.aggregate(top10Pipeline);
+
+  // 4. Calculate Individual Rank if userId provided
+  let userRank = null;
+  if (userId) {
+    const allRankings = await Incident.aggregate(rankingPipeline);
+    const index = allRankings.findIndex(r => r._id.toString() === userId.toString());
+    
+    if (index !== -1) {
+      const userRankData = allRankings[index];
+      // Get user details for this specific user
+      const userDetails = await User.findById(userId).select("name profilePicture createdAt");
+      userRank = {
+        rank: index + 1,
+        reportCount: userRankData.reportCount,
+        name: userDetails.name,
+        profilePicture: userDetails.profilePicture,
+        memberSince: userDetails.createdAt,
+        _id: userId
+      };
+    }
+  }
+
+  res.json({ leaderboard, userRank });
 }));
 
 export default router;
