@@ -6,6 +6,7 @@ import { catchAsync } from "../utils/catchAsync.js";
 
 import Notification from "../models/Notification.js";
 import IncidentMessage from "../models/IncidentMessage.js";
+import User from "../models/User.js";
 
 const router = express.Router();
 
@@ -359,8 +360,8 @@ router.get("/user/conversations", authMiddleware, catchAsync(async (req, res) =>
   const threads = Array.from(threadMap.values());
 
   // Fetch unique incident and user details
-  const incidentIds = [...new Set(threads.map(t => t.incidentId))];
-  const otherUserIds = [...new Set(threads.map(t => t.otherUserId))];
+  const incidentIds = [...new Set(threads.map(t => t.incidentId.toString()))];
+  const otherUserIds = [...new Set(threads.map(t => t.otherUserId.toString()))];
 
   const [incidents, otherUsers] = await Promise.all([
     Incident.find({ _id: { $in: incidentIds } }).populate("userId", "name profilePicture"),
