@@ -330,50 +330,84 @@ router.get("/stats/public", async (req, res) => {
 
 /* ---------------- MESSAGING ROUTES ---------------- */
 
-// Get all conversations for the current user
+// Get all conversations for the current user (1-on-1 chats)
 router.get("/user/conversations", authMiddleware, catchAsync(async (req, res) => {
-  // Find all messages where user is sender or receiver
+  // Find all messages where user is involved
   const messages = await IncidentMessage.find({
     $or: [{ senderId: req.user.id }, { receiverId: req.user.id }]
   }).sort({ createdAt: -1 });
 
-  // Extract unique incident IDs
-  const incidentIds = [...new Set(messages.map(m => m.incidentId.toString()))];
+  // Map to group by [incidentId, otherUserId]
+  const threadMap = new Map();
 
-  // Fetch details for these incidents
-  const incidents = await Incident.find({ _id: { $in: incidentIds } })
-    .populate("userId", "name avatar") // Reporter details
-    .sort({ updatedAt: -1 });
-
-  // For each incident, attach the latest message relevant to this user
-  const conversations = await Promise.all(incidents.map(async (incident) => {
-    const lastMessage = messages.find(m => m.incidentId.toString() === incident._id.toString());
+  messages.forEach(msg => {
+    const otherUserId = msg.senderId.toString() === req.user.id.toString() 
+      ? msg.receiverId.toString() 
+      : msg.senderId.toString();
     
-    // Count unread messages (optional optimization for later)
-    // const unreadCount = messages.filter(m => m.incidentId.toString() === incident._id.toString() && m.receiverId.toString() === req.user.id && !m.read).length;
+    const key = `${msg.incidentId}_${otherUserId}`;
+    
+    if (!threadMap.has(key)) {
+      threadMap.set(key, {
+        incidentId: msg.incidentId,
+        otherUserId: otherUserId,
+        lastMessage: msg
+      });
+    }
+  });
+
+  const threads = Array.from(threadMap.values());
+
+  // Fetch unique incident and user details
+  const incidentIds = [...new Set(threads.map(t => t.incidentId))];
+  const otherUserIds = [...new Set(threads.map(t => t.otherUserId))];
+
+  const [incidents, otherUsers] = await Promise.all([
+    Incident.find({ _id: { $in: incidentIds } }).populate("userId", "name profilePicture"),
+    User.find({ _id: { $in: otherUserIds } }, "name profilePicture")
+  ]);
+
+  const conversations = threads.map(thread => {
+    const incident = incidents.find(i => i._id.toString() === thread.incidentId.toString());
+    const otherUser = otherUsers.find(u => u._id.toString() === thread.otherUserId.toString());
+
+    if (!incident) return null;
 
     return {
       ...incident.toObject(),
-      lastMessage: lastMessage,
-      otherParty: incident.userId.toString() === req.user.id 
-        ? "Community Member" // If I am the reporter, I'm talking to community
-        : incident.userId // If I am not reporter, I'm talking to reporter (which is populated)
+      lastMessage: thread.lastMessage,
+      otherParty: otherUser || { name: "Community Member", _id: thread.otherUserId }
     };
-  }));
+  }).filter(Boolean);
 
   res.json(conversations);
 }));
 
-// Get private messages for an incident
+// Get private messages for an incident (optionally filtered by a specific 1-on-1 thread)
 router.get("/:id/messages", authMiddleware, catchAsync(async (req, res) => {
+  const { withUser } = req.query;
   const incident = await Incident.findById(req.params.id);
   if (!incident) return res.status(404).json({ message: "Incident not found" });
 
-  // Only return messages where the user is the sender OR the receiver (reporter)
-  const messages = await IncidentMessage.find({
-    incidentId: req.params.id,
-    $or: [{ senderId: req.user.id }, { receiverId: req.user.id }]
-  }).sort({ createdAt: 1 }).populate("senderId", "name profilePicture").populate("replies.senderId", "name profilePicture");
+  const query = {
+    incidentId: req.params.id
+  };
+
+  if (withUser) {
+    // Strictly fetch messages between current user and specified user
+    query.$or = [
+      { senderId: req.user.id, receiverId: withUser },
+      { senderId: withUser, receiverId: req.user.id }
+    ];
+  } else {
+    // Legacy/Fallback: fetch all messages where user is involved for this incident
+    query.$or = [{ senderId: req.user.id }, { receiverId: req.user.id }];
+  }
+
+  const messages = await IncidentMessage.find(query)
+    .sort({ createdAt: 1 })
+    .populate("senderId", "name profilePicture")
+    .populate("replies.senderId", "name profilePicture");
 
   res.json(messages);
 }));
