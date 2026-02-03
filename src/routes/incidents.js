@@ -303,6 +303,40 @@ router.get("/stats/public", async (req, res) => {
 
 /* ---------------- MESSAGING ROUTES ---------------- */
 
+// Get all conversations for the current user
+router.get("/user/conversations", authMiddleware, catchAsync(async (req, res) => {
+  // Find all messages where user is sender or receiver
+  const messages = await IncidentMessage.find({
+    $or: [{ senderId: req.user.id }, { receiverId: req.user.id }]
+  }).sort({ createdAt: -1 });
+
+  // Extract unique incident IDs
+  const incidentIds = [...new Set(messages.map(m => m.incidentId.toString()))];
+
+  // Fetch details for these incidents
+  const incidents = await Incident.find({ _id: { $in: incidentIds } })
+    .populate("userId", "name avatar") // Reporter details
+    .sort({ updatedAt: -1 });
+
+  // For each incident, attach the latest message relevant to this user
+  const conversations = await Promise.all(incidents.map(async (incident) => {
+    const lastMessage = messages.find(m => m.incidentId.toString() === incident._id.toString());
+    
+    // Count unread messages (optional optimization for later)
+    // const unreadCount = messages.filter(m => m.incidentId.toString() === incident._id.toString() && m.receiverId.toString() === req.user.id && !m.read).length;
+
+    return {
+      ...incident.toObject(),
+      lastMessage: lastMessage,
+      otherParty: incident.userId.toString() === req.user.id 
+        ? "Community Member" // If I am the reporter, I'm talking to community
+        : incident.userId // If I am not reporter, I'm talking to reporter (which is populated)
+    };
+  }));
+
+  res.json(conversations);
+}));
+
 // Get private messages for an incident
 router.get("/:id/messages", authMiddleware, catchAsync(async (req, res) => {
   const incident = await Incident.findById(req.params.id);
