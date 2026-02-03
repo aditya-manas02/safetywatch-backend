@@ -37,8 +37,8 @@ app.use(helmet());
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // increased for dashboard use
-  message: "Too many requests from this IP, please try again later.",
+  max: 2000, // relaxed for production dashboard concurrency
+  message: "Too many requests from this IP, please try again later. Dashboard traffic detected - limit increased.",
   skip: (req) => req.method === "OPTIONS", // Ensure preflights are NEVER blocked
 });
 app.use(limiter);
