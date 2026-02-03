@@ -180,8 +180,26 @@ router.get("/pulse", async (req, res) => {
    Returns top 10 users ranked by approved reports
    ============================================================ */
 router.get("/leaderboard", catchAsync(async (req, res) => {
-  const leaderboard = await Incident.aggregate([
-    { $match: { status: "approved" } },
+  const { lat, lng, radius = 10 } = req.query; // radius in km
+  
+  const pipeline = [];
+
+  // If geo params provided, filter by distance first
+  if (lat && lng) {
+    pipeline.push({
+      $geoNear: {
+        near: { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] },
+        distanceField: "dist.calculated",
+        maxDistance: radius * 1000, // km to meters
+        query: { status: "approved" },
+        spherical: true
+      }
+    });
+  } else {
+    pipeline.push({ $match: { status: "approved" } });
+  }
+
+  pipeline.push(
     { $group: { 
         _id: "$userId", 
         reportCount: { $sum: 1 } 
@@ -205,8 +223,9 @@ router.get("/leaderboard", catchAsync(async (req, res) => {
         memberSince: "$userDetails.createdAt"
       }
     }
-  ]);
+  );
 
+  const leaderboard = await Incident.aggregate(pipeline);
   res.json(leaderboard);
 }));
 

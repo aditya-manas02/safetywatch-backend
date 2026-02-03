@@ -12,7 +12,20 @@ const incidentSchema = new mongoose.Schema({
   isImportant: { type: Boolean, default: false },
   imageUrl: { type: String, default: null },
   acknowledgements: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  locationPoint: {
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point"
+    },
+    coordinates: {
+      type: [Number],
+      default: [0, 0] // [longitude, latitude]
+    }
+  }
 }, { timestamps: true });
+
+incidentSchema.index({ locationPoint: "2dsphere" });
 
 
 
