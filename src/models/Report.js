@@ -16,6 +16,11 @@ const reportSchema = new mongoose.Schema({
     enum: ["none", "warned", "suspended"],
     default: "none"
   },
+  chatSnapshot: [{
+    senderId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    content: String,
+    createdAt: Date
+  }],
   reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   reviewedAt: { type: Date }
 }, { timestamps: true });
