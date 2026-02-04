@@ -17,6 +17,13 @@ const userSchema = new mongoose.Schema({
     enum: ["user", "admin", "superadmin"], 
     default: ["user"] 
   },
+  isSuspended: { type: Boolean, default: false },
+  suspensionExpiresAt: { type: Date },
+  warnings: [{
+    reason: { type: String, required: true },
+    date: { type: Date, default: Date.now },
+    adminId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+  }],
   // Rate limiting fields
   otpCount: { type: Number, default: 0 },
   otpWindowStart: { type: Date, default: Date.now },

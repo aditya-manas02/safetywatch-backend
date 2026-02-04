@@ -20,6 +20,24 @@ export const authMiddleware = async (req, res, next) => {
     if (!user)
       return res.status(401).json({ message: "Invalid token (user not found)" });
 
+    // Check suspension
+    if (user.isSuspended) {
+      if (user.suspensionExpiresAt && new Date() < user.suspensionExpiresAt) {
+        return res.status(403).json({ 
+          message: "Account is temporarily suspended", 
+          expiresAt: user.suspensionExpiresAt 
+        });
+      } else if (user.suspensionExpiresAt) {
+        // Suspension expired, lift it
+        user.isSuspended = false;
+        user.suspensionExpiresAt = null;
+        await user.save();
+      } else {
+        // Indefinite suspension (if suspensionExpiresAt is null)
+        return res.status(403).json({ message: "Account is indefinitely suspended" });
+      }
+    }
+
     // Attach complete user (including roles) to request
     req.user = {
       id: user._id,

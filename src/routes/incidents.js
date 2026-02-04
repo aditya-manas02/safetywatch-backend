@@ -7,6 +7,7 @@ import { catchAsync } from "../utils/catchAsync.js";
 import Notification from "../models/Notification.js";
 import IncidentMessage from "../models/IncidentMessage.js";
 import User from "../models/User.js";
+import Report from "../models/Report.js";
 
 const router = express.Router();
 
@@ -495,6 +496,114 @@ router.post("/:id/messages/:messageId/reply", authMiddleware, catchAsync(async (
   });
 
   res.status(201).json(message);
+}));
+
+/* ---------------- DELETE CHAT THREAD ---------------- */
+router.delete("/:id/messages/:otherUserId", authMiddleware, catchAsync(async (req, res) => {
+  const { id: incidentId, otherUserId } = req.params;
+
+  // Delete all messages between current user and otherUserId for this incident
+  const deleted = await IncidentMessage.deleteMany({
+    incidentId,
+    $or: [
+      { senderId: req.user.id, receiverId: otherUserId },
+      { senderId: otherUserId, receiverId: req.user.id }
+    ]
+  });
+
+  await logAudit(req, `Deleted chat thread with user ${otherUserId} for incident ${incidentId}`, "incident", incidentId);
+
+  res.json({ message: `Successfully deleted ${deleted.deletedCount} messages` });
+}));
+
+/* ---------------- REPORT CHAT/USER ---------------- */
+router.post("/:id/report", authMiddleware, catchAsync(async (req, res) => {
+  const { id: incidentId } = req.params;
+  const { reportedUserId, messageId, reason } = req.body;
+
+  if (!reportedUserId || !reason) {
+    return res.status(400).json({ message: "Reported user ID and reason are required" });
+  }
+
+  const report = await Report.create({
+    reporterId: req.user.id,
+    reportedUserId,
+    incidentId,
+    messageId,
+    reason
+  });
+
+  await logAudit(req, `Created report against user ${reportedUserId} for incident ${incidentId}`, "user_report", reportedUserId);
+
+  res.status(201).json({ message: "Report submitted successfully", report });
+}));
+
+/* ---------------- ADMIN: GET ALL REPORTS ---------------- */
+router.get("/admin/reports", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
+  const reports = await Report.find()
+    .populate("reporterId", "name email")
+    .populate("reportedUserId", "name email")
+    .populate("incidentId", "title")
+    .populate("messageId", "content")
+    .sort({ createdAt: -1 });
+
+  res.json(reports);
+}));
+
+/* ---------------- ADMIN: TAKE ACTION ON REPORT ---------------- */
+router.post("/admin/reports/:reportId/action", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
+  const { action, reason, suspensionDays } = req.body; // action: 'warn', 'suspend', 'dismiss'
+  const { reportId } = req.params;
+
+  const report = await Report.findById(reportId);
+  if (!report) return res.status(404).json({ message: "Report not found" });
+
+  const reportedUser = await User.findById(report.reportedUserId);
+  if (!reportedUser) return res.status(404).json({ message: "Reported user not found" });
+
+  if (action === "warn") {
+    reportedUser.warnings.push({
+      reason,
+      adminId: req.user.id
+    });
+    report.adminAction = "warned";
+
+    await Notification.create({
+      userId: reportedUser._id,
+      title: "Account Warning",
+      message: `You have received a warning: ${reason}`,
+      type: "system"
+    });
+  } else if (action === "suspend") {
+    reportedUser.isSuspended = true;
+    if (suspensionDays) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + parseInt(suspensionDays));
+      reportedUser.suspensionExpiresAt = expiresAt;
+    } else {
+      reportedUser.suspensionExpiresAt = null; // Indefinite
+    }
+    report.adminAction = "suspended";
+
+    await Notification.create({
+      userId: reportedUser._id,
+      title: "Account Suspended",
+      message: `Your account has been suspended${suspensionDays ? ` for ${suspensionDays} days` : ' indefinitely'}. Reason: ${reason}`,
+      type: "system"
+    });
+  } else if (action === "dismiss") {
+    report.adminAction = "none";
+  }
+
+  report.status = "resolved";
+  report.reviewedBy = req.user.id;
+  report.reviewedAt = new Date();
+
+  await Promise.all([reportedUser.save(), report.save()]);
+
+  await logAudit(req, `Admin action taken on report ${reportId}: ${action}`, "admin_action", reportedUser._id);
+
+  res.json({ message: `Action '${action}' applied successfully` });
 }));
 
 export default router;
