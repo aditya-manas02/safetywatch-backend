@@ -555,11 +555,13 @@ router.post("/admin/reports/:reportId/action", authMiddleware, requireAdminOnly,
   const { action, reason, suspensionDays } = req.body; // action: 'warn', 'suspend', 'dismiss'
   const { reportId } = req.params;
 
-  const report = await Report.findById(reportId);
+  const report = await Report.findById(reportId).populate("incidentId"); // Populated incidentId
   if (!report) return res.status(404).json({ message: "Report not found" });
 
   const reportedUser = await User.findById(report.reportedUserId);
   if (!reportedUser) return res.status(404).json({ message: "Reported user not found" });
+
+  const incidentTitle = report.incidentId?.title || "a reported incident"; // Get incident title
 
   if (action === "warn") {
     reportedUser.warnings.push({
@@ -571,8 +573,8 @@ router.post("/admin/reports/:reportId/action", authMiddleware, requireAdminOnly,
     await Notification.create({
       userId: reportedUser._id,
       title: "Account Warning",
-      message: `You have received a warning: ${reason}`,
-      type: "system"
+      message: `You have received a warning regarding your report on "${incidentTitle}". Reason: ${reason}`,
+      type: "system_alert" // Fixed enum
     });
   } else if (action === "suspend") {
     reportedUser.isSuspended = true;
@@ -588,8 +590,8 @@ router.post("/admin/reports/:reportId/action", authMiddleware, requireAdminOnly,
     await Notification.create({
       userId: reportedUser._id,
       title: "Account Suspended",
-      message: `Your account has been suspended${suspensionDays ? ` for ${suspensionDays} days` : ' indefinitely'}. Reason: ${reason}`,
-      type: "system"
+      message: `Your account has been suspended${suspensionDays ? ` for ${suspensionDays} days` : ' indefinitely'} regarding your report on "${incidentTitle}". Reason: ${reason}`,
+      type: "system_alert" // Fixed enum
     });
   } else if (action === "dismiss") {
     report.adminAction = "none";
