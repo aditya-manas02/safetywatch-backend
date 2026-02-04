@@ -525,12 +525,28 @@ router.post("/:id/report", authMiddleware, catchAsync(async (req, res) => {
     return res.status(400).json({ message: "Reported user ID and reason are required" });
   }
 
+  // Fetch chat history between reporter and reported user for this incident
+  const messages = await IncidentMessage.find({
+    incidentId,
+    $or: [
+      { senderId: req.user.id, receiverId: reportedUserId },
+      { senderId: reportedUserId, receiverId: req.user.id }
+    ]
+  }).sort({ createdAt: 1 });
+
+  const chatSnapshot = messages.map(m => ({
+    senderId: m.senderId,
+    content: m.content,
+    createdAt: m.createdAt
+  }));
+
   const report = await Report.create({
     reporterId: req.user.id,
     reportedUserId,
     incidentId,
     messageId,
-    reason
+    reason,
+    chatSnapshot
   });
 
   await logAudit(req, `Created report against user ${reportedUserId} for incident ${incidentId}`, "user_report", reportedUserId);
@@ -606,6 +622,17 @@ router.post("/admin/reports/:reportId/action", authMiddleware, requireAdminOnly,
   await logAudit(req, `Admin action taken on report ${reportId}: ${action}`, "admin_action", reportedUser._id);
 
   res.json({ message: `Action '${action}' applied successfully` });
+}));
+
+/* ---------------- ADMIN: DELETE REPORT ---------------- */
+router.delete("/admin/reports/:reportId", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
+  const { reportId } = req.params;
+  const deleted = await Report.findByIdAndDelete(reportId);
+  if (!deleted) return res.status(404).json({ message: "Report not found" });
+
+  await logAudit(req, `Admin deleted report ${reportId}`, "admin_action", deleted.reportedUserId);
+
+  res.json({ message: "Report deleted successfully" });
 }));
 
 export default router;
