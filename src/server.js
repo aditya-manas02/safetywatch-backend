@@ -20,9 +20,30 @@ dotenv.config();
 const app = express();
 
 /* ----------------------- CORS & PREFLIGHT ----------------------- */
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:8080",
+  "https://safetywatch.vercel.app",
+  "http://localhost",
+  "capacitor://localhost"
+];
+
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || ["http://localhost:5173", "http://localhost:8080", "https://safetywatch.vercel.app"],
+    origin: (origin, callback) => {
+      // allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.some(ao => origin === ao)) {
+        callback(null, true);
+      } else {
+        console.warn(`[CORS] Rejected origin: ${origin}`);
+        callback(null, true); // Temporarily allow ALL in production to debug "Failed to fetch"
+      }
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
