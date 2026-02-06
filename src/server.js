@@ -68,22 +68,37 @@ app.use((req, res, next) => {
   // Helper function for simple semver comparison (v1, v2 strings like '1.3.4')
   const isOutdated = (current, min) => {
     if (!current) return true;
-    const c = current.split('.').map(Number);
-    const m = min.split('.').map(Number);
-    for (let i = 0; i < Math.max(c.length, m.length); i++) {
-      const cv = c[i] || 0;
-      const mv = m[i] || 0;
-      if (cv < mv) return true;
-      if (cv > mv) return false;
+    
+    // Normalize: remove 'v' prefix if present
+    const currClean = current.replace(/^v/, '');
+    const minClean = min.replace(/^v/, '');
+    
+    const c = currClean.split('.').map(Number);
+    const m = minClean.split('.').map(Number);
+    
+    // Ensure we have at least 3 parts for comparison
+    while (c.length < 3) c.push(0);
+    while (m.length < 3) m.push(0);
+
+    for (let i = 0; i < 3; i++) {
+        const cv = isNaN(c[i]) ? 0 : c[i];
+        const mv = isNaN(m[i]) ? 0 : m[i];
+        if (cv < mv) return true;
+        if (cv > mv) return false;
     }
     return false;
   };
 
   if (isOutdated(appVersion, MIN_VERSION)) {
-    console.warn(`[VERSION] Rejected request from outdated app (Version: ${appVersion || 'Unknown'})`);
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const origin = req.headers['origin'] || 'Unknown';
+    console.warn(`[VERSION_REJECTED] App: ${appVersion || 'None'} | Min: ${MIN_VERSION} | UA: ${userAgent} | Origin: ${origin} | IP: ${req.ip}`);
+    
     return res.status(426).json({ 
       error: "Upgrade Required",
-      message: "SafetyWatch Update Required: Your app version is discontinued. Please download the latest v1.3.4 to continue.",
+      message: `SafetyWatch Update Required: Your version (${appVersion || 'legacy'}) is discontinued. Please download the latest v${MIN_VERSION} to continue.`,
+      currentVersion: appVersion,
+      requiredVersion: MIN_VERSION,
       downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk"
     });
   }
