@@ -54,6 +54,28 @@ app.use(
 // IMPORTANT: handle preflight before any limiting
 app.options("*", cors());
 
+/* ----------------------- VERSION ENFORCEMENT ----------------------- */
+// Discontinue legacy versions (< 1.3.4) by requiring a header
+app.use((req, res, next) => {
+  // Skip version check for health checks and non-api routes
+  if (req.url === '/ping' || req.url === '/' || req.url.startsWith('/api/health')) {
+    return next();
+  }
+
+  const appVersion = req.headers['x-app-version'];
+  const MIN_VERSION = '1.3.4';
+
+  if (!appVersion || appVersion < MIN_VERSION) {
+    console.warn(`[VERSION] Rejected request from outdated app (Version: ${appVersion || 'Unknown'})`);
+    return res.status(426).json({ 
+      error: "Upgrade Required",
+      message: "SafetyWatch Update Required: Your app version is discontinued. Download v1.3.4 from https://safetywatch.vercel.app to continue using the service.",
+      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk"
+    });
+  }
+  next();
+});
+
 /* ----------------------- SECURITY & LIMITING ----------------------- */
 app.use(helmet());
 
