@@ -21,19 +21,48 @@ router.get("/public", catchAsync(async (req, res) => {
 }));
 
 /* ----------------- GET NOTIFICATIONS (AUTH) ------------------ */
-router.get("/", authMiddleware, catchAsync(async (req, res) => {
+/* ----------------- GET NOTIFICATIONS (SOFT AUTH) ------------------ */
+import jwt from "jsonwebtoken";
+
+router.get("/", catchAsync(async (req, res) => {
   const { history } = req.query;
   const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
 
+  // SOFT AUTH CHECK
+  let userId = null;
+  let user = null;
+  
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.id;
+      // We could fetch the full user if needed, but for notifications this might be enough
+      // For isAdmin check we need the user
+      const User = (await import("../models/User.js")).default;
+      user = await User.findById(userId);
+    }
+  } catch (e) {
+    // Ignore invalid token, just treat as guest/global
+  }
+
+  // If auth failed, we can either return [] or just public notifications
+  // Returning [] is safer for legacy crash prevention
+  if (!userId || !user) {
+     // OPTIONAL: We could return just public announcements here
+     // But to be absolutely safe for legacy crashes, let's return []
+     return res.json([]); 
+  }
+
   let query = {
     $or: [
-      { userId: req.user.id },
+      { userId: userId },
       { userId: null }
     ]
   };
 
   // If not requesting history (or not admin), filter by 72h window
-  if (history !== "true" || !req.user.isAdmin) {
+  if (history !== "true" || !user.roles.includes("admin")) {
     query.createdAt = { $gte: seventyTwoHoursAgo };
   }
 
