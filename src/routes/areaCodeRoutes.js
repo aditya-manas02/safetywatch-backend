@@ -37,7 +37,7 @@ router.post("/generate", authMiddleware, requireSuperAdmin, async (req, res) => 
       code: code.toUpperCase(),
       name: name.trim(),
       description: description || "",
-      createdBy: req.user.userId,
+      createdBy: req.user.id,
       isActive: true
     });
 
