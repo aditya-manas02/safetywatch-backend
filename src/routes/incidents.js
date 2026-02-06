@@ -3,6 +3,7 @@ import Incident from "../models/Incident.js";
 import { authMiddleware, requireAdminOnly } from "../middleware/auth.js";
 import { logAudit } from "../utils/auditLogger.js";
 import { catchAsync } from "../utils/catchAsync.js";
+import jwt from "jsonwebtoken";
 
 import Notification from "../models/Notification.js";
 import IncidentMessage from "../models/IncidentMessage.js";
@@ -91,9 +92,29 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
   res.status(201).json(incident);
 }));
 
-/* ----------------- GET INCIDENTS (ADMIN OR USER) ------------------ */
-router.get("/", authMiddleware, catchAsync(async (req, res) => {
-  const user = await User.findById(req.user.id);
+/* ----------------- GET INCIDENTS (SOFT AUTH) ------------------ */
+router.get("/", catchAsync(async (req, res) => {
+  // SOFT AUTH CHECK
+  let user = null;
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // We need the full user to check areaCode and roles
+      user = await User.findById(decoded.id);
+    }
+  } catch (e) {
+    // Invalid token
+  }
+
+  // If auth fails, return [] to prevent legacy crash
+  if (!user) {
+    return res.json([]);
+  }
+
+  // Perform checks with the manually fetched user
+  req.user = { id: user._id, isAdmin: user.roles.includes("admin") || user.roles.includes("superadmin") };
+  
   const isSuperAdmin = user.roles.includes("superadmin");
   
   if (req.user.isAdmin) {
