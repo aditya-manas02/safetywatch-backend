@@ -30,6 +30,7 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
 
   // Auto-reject Spam
   if (isSpam(title) || isSpam(description)) {
+    const user = await User.findById(req.user.id);
     const rejectedIncident = await Incident.create({
       userId: req.user.id,
       title: req.body.title,
@@ -41,6 +42,7 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
       imageUrl: req.body.imageUrl || null,
       allowMessages: req.body.allowMessages !== undefined ? req.body.allowMessages : true,
       status: "rejected",
+      areaCode: user.areaCode || "DEFAULT", // Use user's area code
       locationPoint: {
         type: "Point",
         coordinates: [req.body.longitude || 0, req.body.latitude || 0]
@@ -61,6 +63,13 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
     });
   }
 
+  const user = await User.findById(req.user.id);
+  if (!user.areaCode) {
+    return res.status(400).json({ 
+      message: "Please set your area code before creating incidents" 
+    });
+  }
+
   const incident = await Incident.create({
     userId: req.user.id,
     title: req.body.title,
@@ -72,6 +81,7 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
     imageUrl: req.body.imageUrl || null,
     allowMessages: req.body.allowMessages !== undefined ? req.body.allowMessages : true,
     status: "pending",
+    areaCode: user.areaCode, // Use user's area code
     locationPoint: {
       type: "Point",
       coordinates: [req.body.longitude || 0, req.body.latitude || 0]
@@ -83,13 +93,42 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
 
 /* ----------------- GET INCIDENTS (ADMIN OR USER) ------------------ */
 router.get("/", authMiddleware, catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  const isSuperAdmin = user.roles.includes("superadmin");
+  
   if (req.user.isAdmin) {
-    const all = await Incident.find().sort({ createdAt: -1 });
+    // SuperAdmin can see all incidents
+    if (isSuperAdmin) {
+      const all = await Incident.find().sort({ createdAt: -1 });
+      return res.json(all);
+    }
+    
+    // Regular admin sees only their area code incidents
+    if (!user.areaCode) {
+      return res.status(400).json({ message: "Please set your area code to view incidents" });
+    }
+    
+    const all = await Incident.find({ areaCode: user.areaCode }).sort({ createdAt: -1 });
     return res.json(all);
   }
 
+  // Regular users see approved incidents from their area + their own incidents
+  if (!user.areaCode) {
+    // If user hasn't set area code yet, only show their own incidents
+    const incidents = await Incident.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    return res.json(incidents);
+  }
+
   const incidents = await Incident.find({
-    $or: [{ status: { $in: ["approved", "problem solved"] } }, { userId: req.user.id }],
+    $and: [
+      { areaCode: user.areaCode }, // Same area code
+      {
+        $or: [
+          { status: { $in: ["approved", "problem solved"] } }, 
+          { userId: req.user.id }
+        ]
+      }
+    ]
   }).sort({ createdAt: -1 });
 
   res.json(incidents);
