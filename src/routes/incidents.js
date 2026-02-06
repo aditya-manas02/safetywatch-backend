@@ -424,17 +424,34 @@ router.get("/stats/public", async (req, res) => {
 /* ---------------- MESSAGING ROUTES ---------------- */
 
 // Get all conversations for the current user (1-on-1 chats)
-router.get("/user/conversations", authMiddleware, catchAsync(async (req, res) => {
+router.get("/user/conversations", catchAsync(async (req, res) => {
+  // SOFT AUTH CHECK
+  let userId = null;
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.id;
+    }
+  } catch (e) {
+    // Ignore invalid token
+  }
+
+  // If auth fails, return [] to prevent legacy crash
+  if (!userId) {
+    return res.json([]);
+  }
+
   // Find all messages where user is involved
   const messages = await IncidentMessage.find({
-    $or: [{ senderId: req.user.id }, { receiverId: req.user.id }]
+    $or: [{ senderId: userId }, { receiverId: userId }]
   }).sort({ createdAt: -1 });
 
   // Map to group by [incidentId, otherUserId]
   const threadMap = new Map();
 
   messages.forEach(msg => {
-    const otherUserId = msg.senderId.toString() === req.user.id.toString() 
+    const otherUserId = msg.senderId.toString() === userId.toString() 
       ? msg.receiverId.toString() 
       : msg.senderId.toString();
     
