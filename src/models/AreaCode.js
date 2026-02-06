@@ -7,7 +7,7 @@ const areaCodeSchema = new mongoose.Schema({
     unique: true, 
     uppercase: true,
     trim: true,
-    minlength: 6,
+    minlength: 3,
     maxlength: 12
   },
   name: { 
