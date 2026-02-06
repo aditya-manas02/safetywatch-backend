@@ -99,6 +99,8 @@ app.use((req, res, next) => {
     return false;
   };
 
+  const appVersion = req.headers['x-app-version'];
+
   if (isOutdated(appVersion, MIN_VERSION)) {
     const userAgent = req.headers['user-agent'] || 'Unknown';
     const origin = req.headers['origin'] || 'Unknown';
