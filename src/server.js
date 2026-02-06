@@ -62,20 +62,22 @@ app.use((req, res, next) => {
     return next();
   }
 
-  const appVersion = req.headers['x-app-version'];
   /* 
-   * LEGACY RESCUE MODE:
-   * We are setting MIN_VERSION to '0.0.0' temporarily.
-   * Reason: Legacy apps (v1.3.3) have a fatal bug where they CRASH if they receive a 426.
-   * By allowing them to connect (200 OK), they will load the UI.
-   * The client-side "AppUpdateOverlay" will then detect the version mismatch via version.json
-   * and prompt the user to update nicely, without the "System Interrupted" crash.
+   * LEGACY COMPATIBILITY MODE:
+   * RESTORED MIN_VERSION to '1.3.4' to correctly guide updated clients.
+   * FIX: We now explicitly ALLOW requests with missing `x-app-version` headers.
+   * Why? Legacy apps (v1.3.3) do NOT send this header.
+   * By returning `false` (not outdated) for missing headers, we allow them to connect (200 OK).
+   * This bypasses the backend 426 block (preventing Red Toasts/Crashes).
+   * The blocking responsiblity is transferred to the client-side `AppUpdateOverlay`.
    */
-  const MIN_VERSION = '0.0.0';
+  const MIN_VERSION = '1.3.4';
 
   // Helper function for simple semver comparison (v1, v2 strings like '1.3.4')
   const isOutdated = (current, min) => {
-    if (!current) return true;
+    // CRITICAL FIX: If header is missing, assume it's a legacy app and ALLOW it (return false).
+    // This pushes the blocking responsibility to the frontend UI.
+    if (!current) return false; 
     
     // Normalize: remove 'v' prefix if present
     const currClean = current.replace(/^v/, '');
