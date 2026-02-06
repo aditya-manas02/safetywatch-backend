@@ -2,7 +2,7 @@ import express from "express";
 import AreaCode from "../models/AreaCode.js";
 import User from "../models/User.js";
 import Incident from "../models/Incident.js";
-import { authenticateToken } from "../middleware/auth.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ const requireSuperAdmin = (req, res, next) => {
 };
 
 // Generate new area code (SuperAdmin only)
-router.post("/generate", authenticateToken, requireSuperAdmin, async (req, res) => {
+router.post("/generate", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
     const { name, description, prefix } = req.body;
 
@@ -54,7 +54,7 @@ router.post("/generate", authenticateToken, requireSuperAdmin, async (req, res) 
 });
 
 // Get all area codes (SuperAdmin only)
-router.get("/", authenticateToken, requireSuperAdmin, async (req, res) => {
+router.get("/", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
     const areaCodes = await AreaCode.find()
       .populate("createdBy", "name email")
@@ -69,7 +69,7 @@ router.get("/", authenticateToken, requireSuperAdmin, async (req, res) => {
 });
 
 // Get single area code details (SuperAdmin only)
-router.get("/:id", authenticateToken, requireSuperAdmin, async (req, res) => {
+router.get("/:id", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
     const areaCode = await AreaCode.findById(req.params.id)
       .populate("createdBy", "name email")
@@ -117,7 +117,7 @@ router.get("/validate/:code", async (req, res) => {
 });
 
 // Assign area code to admin (SuperAdmin only)
-router.patch("/:id/assign", authenticateToken, requireSuperAdmin, async (req, res) => {
+router.patch("/:id/assign", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
     const { adminIds } = req.body;
 
@@ -164,7 +164,7 @@ router.patch("/:id/assign", authenticateToken, requireSuperAdmin, async (req, re
 });
 
 // Remove admin from area code (SuperAdmin only)
-router.patch("/:id/remove-admin", authenticateToken, requireSuperAdmin, async (req, res) => {
+router.patch("/:id/remove-admin", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
     const { adminId } = req.body;
 
@@ -198,7 +198,7 @@ router.patch("/:id/remove-admin", authenticateToken, requireSuperAdmin, async (r
 });
 
 // Toggle area code active status (SuperAdmin only)
-router.patch("/:id/toggle-status", authenticateToken, requireSuperAdmin, async (req, res) => {
+router.patch("/:id/toggle-status", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
     const areaCode = await AreaCode.findById(req.params.id);
     if (!areaCode) {
@@ -244,7 +244,7 @@ router.patch("/:code/update-stats", async (req, res) => {
 });
 
 // Delete area code (SuperAdmin only - soft delete by deactivating)
-router.delete("/:id", authenticateToken, requireSuperAdmin, async (req, res) => {
+router.delete("/:id", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
     const areaCode = await AreaCode.findById(req.params.id);
     if (!areaCode) {
