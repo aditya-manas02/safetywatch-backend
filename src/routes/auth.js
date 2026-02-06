@@ -373,6 +373,9 @@ router.post("/login", catchAsync(async (req, res) => {
       createdAt: user.createdAt,
       isVerified: user.isVerified,
       profilePicture: user.profilePicture,
+      areaCode: user.areaCode,
+      assignedAreaCodes: user.assignedAreaCodes || [],
+      hasAreaCode: !!user.areaCode, // Flag to check if user needs to enter area code
     },
 
   });
@@ -661,4 +664,113 @@ router.post("/reset-password-otp", async (req, res) => {
   }
 });
 
+/* -------------------------------------------------
+   AREA CODE MANAGEMENT
+-------------------------------------------------- */
+
+// Assign area code to user (after login)
+router.post("/assign-area-code", async (req, res) => {
+  try {
+    const { email, areaCode } = req.body;
+
+    if (!email || !areaCode) {
+      return res.status(400).json({ message: "Email and area code are required" });
+    }
+
+    // Import AreaCode model
+    const AreaCode = (await import("../models/AreaCode.js")).default;
+
+    // Verify area code exists and is active
+    const validAreaCode = await AreaCode.findOne({ 
+      code: areaCode.toUpperCase(), 
+      isActive: true 
+    });
+
+    if (!validAreaCode) {
+      return res.status(404).json({ message: "Invalid or inactive area code" });
+    }
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if user is admin and verify they have access to this area code
+    if (user.roles.includes("admin") && !user.roles.includes("superadmin")) {
+      if (!user.assignedAreaCodes || !user.assignedAreaCodes.includes(areaCode.toUpperCase())) {
+        return res.status(403).json({ 
+          message: "You do not have access to this area code. Please contact your administrator." 
+        });
+      }
+    }
+
+    // Assign area code to user
+    user.areaCode = areaCode.toUpperCase();
+    await user.save();
+
+    // Update area code statistics
+    validAreaCode.totalUsers = await User.countDocuments({ areaCode: areaCode.toUpperCase() });
+    await validAreaCode.save();
+
+    res.json({
+      message: "Area code assigned successfully",
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        areaCode: user.areaCode,
+        roles: user.roles
+      },
+      areaInfo: {
+        code: validAreaCode.code,
+        name: validAreaCode.name,
+        description: validAreaCode.description
+      }
+    });
+  } catch (err) {
+    console.error("Assign Area Code Error:", err);
+    res.status(500).json({ message: "Server error during area code assignment" });
+  }
+});
+
+// Verify area code (check if valid and active)
+router.post("/verify-area-code", async (req, res) => {
+  try {
+    const { areaCode } = req.body;
+
+    if (!areaCode) {
+      return res.status(400).json({ message: "Area code is required" });
+    }
+
+    // Import AreaCode model
+    const AreaCode = (await import("../models/AreaCode.js")).default;
+
+    const validAreaCode = await AreaCode.findOne({ 
+      code: areaCode.toUpperCase(), 
+      isActive: true 
+    });
+
+    if (!validAreaCode) {
+      return res.status(404).json({ 
+        valid: false,
+        message: "Invalid or inactive area code" 
+      });
+    }
+
+    res.json({
+      valid: true,
+      areaCode: {
+        code: validAreaCode.code,
+        name: validAreaCode.name,
+        description: validAreaCode.description
+      }
+    });
+  } catch (err) {
+    console.error("Verify Area Code Error:", err);
+    res.status(500).json({ message: "Server error during area code verification" });
+  }
+});
+
 export default router;
+

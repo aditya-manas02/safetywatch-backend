@@ -12,6 +12,7 @@ const incidentSchema = new mongoose.Schema({
   isImportant: { type: Boolean, default: false },
   imageUrl: { type: String, default: null },
   allowMessages: { type: Boolean, default: true },
+  areaCode: { type: String, uppercase: true, trim: true, required: true }, // Area code for location-based filtering
   acknowledgements: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   locationPoint: {
     type: {

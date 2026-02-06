@@ -24,6 +24,9 @@ const userSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now },
     adminId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
   }],
+  // Area code fields for location-based access
+  areaCode: { type: String, uppercase: true, trim: true }, // User's assigned area code
+  assignedAreaCodes: [{ type: String, uppercase: true }], // For admins managing multiple areas
   // Rate limiting fields
   otpCount: { type: Number, default: 0 },
   otpWindowStart: { type: Date, default: Date.now },
