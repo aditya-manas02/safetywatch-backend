@@ -190,13 +190,25 @@ router.get("/pulse", async (req, res) => {
   }
 });
 
+import jwt from "jsonwebtoken";
+
 /* ============================================================
-   🏆 GUARDIAN LEADERBOARD
+   🏆 GUARDIAN LEADERBOARD (SOFT AUTH)
    GET /api/stats/leaderboard
-   Returns top 10 users ranked by approved reports
    ============================================================ */
-router.get("/leaderboard", authMiddleware, catchAsync(async (req, res) => {
-  const { lat, lng, radius = 10, userId } = req.query; // radius in km
+router.get("/leaderboard", catchAsync(async (req, res) => {
+  let { lat, lng, radius = 10, userId } = req.query; // radius in km
+  
+  // SOFT AUTH: Extract userId from token if present
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (!userId) userId = decoded.id;
+    }
+  } catch (e) {
+    // Treat as guest
+  }
   
   const pipeline = [];
   const baseMatch = { status: "approved" };
