@@ -65,11 +65,25 @@ app.use((req, res, next) => {
   const appVersion = req.headers['x-app-version'];
   const MIN_VERSION = '1.3.4';
 
-  if (!appVersion || appVersion < MIN_VERSION) {
+  // Helper function for simple semver comparison (v1, v2 strings like '1.3.4')
+  const isOutdated = (current, min) => {
+    if (!current) return true;
+    const c = current.split('.').map(Number);
+    const m = min.split('.').map(Number);
+    for (let i = 0; i < Math.max(c.length, m.length); i++) {
+      const cv = c[i] || 0;
+      const mv = m[i] || 0;
+      if (cv < mv) return true;
+      if (cv > mv) return false;
+    }
+    return false;
+  };
+
+  if (isOutdated(appVersion, MIN_VERSION)) {
     console.warn(`[VERSION] Rejected request from outdated app (Version: ${appVersion || 'Unknown'})`);
     return res.status(426).json({ 
       error: "Upgrade Required",
-      message: "SafetyWatch Update Required: Your app version is discontinued. Download v1.3.4 from https://safetywatch.vercel.app to continue using the service.",
+      message: "SafetyWatch Update Required: Your app version is discontinued. Please download the latest v1.3.4 to continue.",
       downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk"
     });
   }
