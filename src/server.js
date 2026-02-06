@@ -75,9 +75,9 @@ app.use((req, res, next) => {
 
   // Helper function for simple semver comparison (v1, v2 strings like '1.3.4')
   const isOutdated = (current, min) => {
-    // CRITICAL FIX: If header is missing, assume it's a legacy app and ALLOW it (return false).
-    // This pushes the blocking responsibility to the frontend UI.
-    if (!current) return false; 
+    // CRITICAL CHANGE: If header is missing, treat as outdated (v1.3.3 or below).
+    // This forces the client to handle the 426 block and show the update UI.
+    if (!current) return true; 
     
     // Normalize: remove 'v' prefix if present
     const currClean = current.replace(/^v/, '');
@@ -102,14 +102,12 @@ app.use((req, res, next) => {
   const appVersion = req.headers['x-app-version'];
 
   if (isOutdated(appVersion, MIN_VERSION)) {
-    const userAgent = req.headers['user-agent'] || 'Unknown';
-    const origin = req.headers['origin'] || 'Unknown';
-    
-    // PERMISSIVE MODE: Log the outdated access but DO NOT BLOCK.
-    // Blocking (426) causes legacy apps to crash ("System Interrupted").
-    // We rely on the client-side AppUpdateOverlay to block the user UI.
-    console.warn(`[VERSION_WARN] Legacy App Allowed: ${appVersion || 'None'} | Min: ${MIN_VERSION}`);
-    return next();
+    console.warn(`[VERSION_BLOCK] Outdated App Blocking: ${appVersion || 'None'} | Min: ${MIN_VERSION}`);
+    return res.status(426).json({
+      message: "Update Required",
+      requiredVersion: MIN_VERSION,
+      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk"
+    });
   }
   next();
 });
@@ -169,7 +167,7 @@ app.use("/api/news", newsRoutes);
 app.use("/api/area-codes", areaCodeRoutes);
 
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.0.7)", timestamp: new Date().toISOString() });
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.3.4)", timestamp: new Date().toISOString() });
 });
 
 /* ----------------------- ERROR HANDLING ------------------- */
