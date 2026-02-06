@@ -159,7 +159,6 @@ router.get("/", catchAsync(async (req, res) => {
 /* ---------------- GET MY REPORTS ---------------- */
 // CRITICAL FIX: Removed authMiddleware to prevent 401 responses handling.
 // Legacy frontend blindly maps response, so we MUST return [] even if auth fails.
-import jwt from "jsonwebtoken";
 
 router.get("/my-reports", catchAsync(async (req, res) => {
   try {
