@@ -8,7 +8,7 @@ const areaCodeSchema = new mongoose.Schema({
     uppercase: true,
     trim: true,
     minlength: 6,
-    maxlength: 8
+    maxlength: 12
   },
   name: { 
     type: String, 
