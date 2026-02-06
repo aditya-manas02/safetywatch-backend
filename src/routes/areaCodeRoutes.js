@@ -17,17 +17,24 @@ const requireSuperAdmin = (req, res, next) => {
 // Generate new area code (SuperAdmin only)
 router.post("/generate", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
-    const { name, description, prefix } = req.body;
+    const { name, description, code } = req.body;
 
     if (!name || name.trim().length < 2) {
       return res.status(400).json({ error: "Area name is required (minimum 2 characters)" });
     }
 
-    // Generate unique code
-    const code = await AreaCode.generateCode(prefix || "");
+    if (!code || code.trim().length < 3 || code.trim().length > 12) {
+      return res.status(400).json({ error: "Area code must be between 3 and 12 characters" });
+    }
+
+    // Check if code already exists
+    const existingCode = await AreaCode.findOne({ code: code.toUpperCase() });
+    if (existingCode) {
+      return res.status(400).json({ error: "Area code already exists" });
+    }
 
     const areaCode = new AreaCode({
-      code,
+      code: code.toUpperCase(),
       name: name.trim(),
       description: description || "",
       createdBy: req.user.userId,
