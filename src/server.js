@@ -96,7 +96,7 @@ app.use((req, res, next) => {
     
     return res.status(426).json({ 
       error: "Upgrade Required",
-      message: `SafetyWatch Update Required: Your version (${appVersion || 'legacy'}) is discontinued. Please download the latest v${MIN_VERSION} to continue.`,
+      message: `SafetyWatch Update Required: Your version (${appVersion || 'legacy'}) is discontinued. Please download the latest version v${MIN_VERSION} here: https://safetywatch.vercel.app/SafetyWatch.apk`,
       currentVersion: appVersion,
       requiredVersion: MIN_VERSION,
       downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk"
