@@ -141,35 +141,48 @@ router.get("/my-reports", authMiddleware, catchAsync(async (req, res) => {
 }));
 
 /* ---------------- GET POPULAR INCIDENTS ---------------- */
-router.get("/popular", catchAsync(async (req, res) => {
-  const popular = await Incident.find({ 
-    isImportant: true, 
-    status: { $in: ["approved", "problem solved"] } 
-  }).sort({ createdAt: -1 }).limit(10);
-  res.json(popular);
-}));
+router.get("/popular", async (req, res) => {
+  try {
+    const popular = await Incident.find({ 
+      isImportant: true, 
+      status: { $in: ["approved", "problem solved"] } 
+    }).sort({ createdAt: -1 }).limit(10);
+    res.json(popular);
+  } catch (err) {
+    console.error("Error fetching popular incidents:", err);
+    // CRITICAL FIX: Return empty array instead of 500 to prevent legacy app crash
+    res.json([]);
+  }
+});
 
 /* ---------------- GET NEARBY INCIDENTS ---------------- */
-router.get("/near-me", catchAsync(async (req, res) => {
-  const { lat, lng, radius = 10 } = req.query; // radius in km
-  
-  if (!lat || !lng) {
-    return res.status(400).json({ message: "Latitude and longitude are required" });
+router.get("/near-me", async (req, res) => {
+  try {
+    const { lat, lng, radius = 10 } = req.query; // radius in km
+    
+    if (!lat || !lng) {
+      // CRITICAL FIX: Return empty array instead of 400 to prevent legacy app crash
+      return res.json([]);
+    }
+
+    // Simplified "near me" using a square bounding box instead of exact circle for performance
+    // 1 degree ~ 111km
+    const latDelta = radius / 111;
+    const lngDelta = radius / (111 * Math.cos(lat * Math.PI / 180));
+
+    const nearby = await Incident.find({
+      status: { $in: ["approved", "problem solved"] },
+      latitude: { $gte: parseFloat(lat) - latDelta, $lte: parseFloat(lat) + latDelta },
+      longitude: { $gte: parseFloat(lng) - lngDelta, $lte: parseFloat(lng) + lngDelta }
+    }).sort({ createdAt: -1 }).limit(15);
+
+    res.json(nearby);
+  } catch (err) {
+    console.error("Error fetching nearby incidents:", err);
+    // CRITICAL FIX: Return empty array instead of 500 to prevent legacy app crash
+    res.json([]);
   }
-
-  // Simplified "near me" using a square bounding box instead of exact circle for performance
-  // 1 degree ~ 111km
-  const latDelta = radius / 111;
-  const lngDelta = radius / (111 * Math.cos(lat * Math.PI / 180));
-
-  const nearby = await Incident.find({
-    status: { $in: ["approved", "problem solved"] },
-    latitude: { $gte: parseFloat(lat) - latDelta, $lte: parseFloat(lat) + latDelta },
-    longitude: { $gte: parseFloat(lng) - lngDelta, $lte: parseFloat(lng) + lngDelta }
-  }).sort({ createdAt: -1 }).limit(15);
-
-  res.json(nearby);
-}));
+});
 
 /* ---------------- PUBLIC INCIDENTS ---------------- */
 router.get("/public", catchAsync(async (req, res) => {
