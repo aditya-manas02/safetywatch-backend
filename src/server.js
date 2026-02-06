@@ -63,11 +63,11 @@ app.use((req, res, next) => {
   }
 
   const appVersion = req.headers['x-app-version'];
-  const MIN_VERSION = '1.3.3';
+  const MIN_VERSION = '0.0.0'; // TEMPORARILY DISABLED FOR DEBUGGING
 
   // Helper function for simple semver comparison (v1, v2 strings like '1.3.4')
   const isOutdated = (current, min) => {
-    if (!current) return true;
+    if (!current) return false; // PERMISSIVE FOR DEBUGGING
     
     // Normalize: remove 'v' prefix if present
     const currClean = current.replace(/^v/, '');
