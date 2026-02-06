@@ -11,6 +11,16 @@ const router = express.Router();
    GET /api/stats
    ============================================================ */
 router.get("/", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  const isSuperAdmin = user.roles.includes("superadmin");
+
+  // Base Query: If not superadmin, restrict to areaCode
+  const baseQuery = {};
+  if (!isSuperAdmin) {
+    if (!user.areaCode) return res.status(400).json({ message: "Area code requirement for stats" });
+    baseQuery.areaCode = user.areaCode;
+  }
+
   const now = new Date();
 
   // --- Last 7 Days ---
@@ -23,21 +33,25 @@ router.get("/", authMiddleware, requireAdminOnly, catchAsync(async (req, res) =>
 
   // Incidents This Week
   const incidentsThisWeek = await Incident.countDocuments({
+    ...baseQuery,
     createdAt: { $gte: oneWeekAgo },
   });
 
   // Incidents Today
   const incidentsToday = await Incident.countDocuments({
+    ...baseQuery,
     createdAt: { $gte: today },
   });
 
   // Active Users (updated in last 7 days)
   const activeUsers = await User.countDocuments({
+    ...baseQuery,
     updatedAt: { $gte: oneWeekAgo },
   });
 
   // Most Common Incident Type
   const mostCommonAgg = await Incident.aggregate([
+    { $match: baseQuery },
     { $group: { _id: "$type", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
     { $limit: 1 }
@@ -46,11 +60,11 @@ router.get("/", authMiddleware, requireAdminOnly, catchAsync(async (req, res) =>
   const mostCommonType = mostCommonAgg[0]?.["_id"] || "N/A";
 
   // Old Stats
-  const totalIncidents = await Incident.countDocuments();
-  const pending = await Incident.countDocuments({ status: "pending" });
-  const approved = await Incident.countDocuments({ status: "approved" });
-  const rejected = await Incident.countDocuments({ status: "rejected" });
-  const totalUsers = await User.countDocuments();
+  const totalIncidents = await Incident.countDocuments(baseQuery);
+  const pending = await Incident.countDocuments({ ...baseQuery, status: "pending" });
+  const approved = await Incident.countDocuments({ ...baseQuery, status: "approved" });
+  const rejected = await Incident.countDocuments({ ...baseQuery, status: "rejected" });
+  const totalUsers = await User.countDocuments(baseQuery);
 
   // --- BREAKDOWN BY DAY (Last 7 Days) ---
   const incidentsByDay = [];
@@ -63,6 +77,7 @@ router.get("/", authMiddleware, requireAdminOnly, catchAsync(async (req, res) =>
       nextD.setDate(d.getDate() + 1);
 
       const count = await Incident.countDocuments({
+          ...baseQuery,
           createdAt: { $gte: d, $lt: nextD }
       });
 
@@ -74,6 +89,7 @@ router.get("/", authMiddleware, requireAdminOnly, catchAsync(async (req, res) =>
 
   // --- TYPE DISTRIBUTION ---
   const typeDistribution = await Incident.aggregate([
+      { $match: baseQuery },
       { $group: { _id: "$type", value: { $sum: 1 } } }
   ]).then(res => res.map(r => ({ name: r._id, value: r.value })));
 

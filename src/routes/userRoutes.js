@@ -47,9 +47,23 @@ router.patch("/profile", authMiddleware, catchAsync(async (req, res) => {
 /* GET ALL USERS (Admin) */
 router.get("/", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
-    const users = await User.find().select("-passwordHash");
+    const user = await User.findById(req.user.id);
+    const isSuperAdmin = user.roles.includes("superadmin");
+
+    const query = {};
+    
+    // If NOT superadmin, filter by area code
+    if (!isSuperAdmin) {
+      if (!user.areaCode) {
+        return res.status(400).json({ message: "Admin has no assigned area code" });
+      }
+      query.areaCode = user.areaCode;
+    }
+
+    const users = await User.find(query).select("-passwordHash");
     res.json(users);
-  } catch {
+  } catch (error) {
+    console.error("Error fetching users:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
