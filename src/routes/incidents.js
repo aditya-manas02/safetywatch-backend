@@ -135,9 +135,26 @@ router.get("/", authMiddleware, catchAsync(async (req, res) => {
 }));
 
 /* ---------------- GET MY REPORTS ---------------- */
-router.get("/my-reports", authMiddleware, catchAsync(async (req, res) => {
-  const myReports = await Incident.find({ userId: req.user.id }).sort({ createdAt: -1 });
-  res.json(myReports);
+/* ---------------- GET MY REPORTS ---------------- */
+// CRITICAL FIX: Removed authMiddleware to prevent 401 responses handling.
+// Legacy frontend blindly maps response, so we MUST return [] even if auth fails.
+import jwt from "jsonwebtoken";
+
+router.get("/my-reports", catchAsync(async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.json([]); // No token -> empty list
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded || !decoded.id) return res.json([]); // Invalid token -> empty list
+
+    const myReports = await Incident.find({ userId: decoded.id }).sort({ createdAt: -1 });
+    res.json(myReports);
+  } catch (err) {
+    // Return empty array on ANY error (auth or db)
+    console.error("Soft Auth error for /my-reports:", err.message);
+    res.json([]);
+  }
 }));
 
 /* ---------------- GET POPULAR INCIDENTS ---------------- */
