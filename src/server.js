@@ -102,15 +102,12 @@ app.use((req, res, next) => {
   if (isOutdated(appVersion, MIN_VERSION)) {
     const userAgent = req.headers['user-agent'] || 'Unknown';
     const origin = req.headers['origin'] || 'Unknown';
-    console.warn(`[VERSION_REJECTED] App: ${appVersion || 'None'} | Min: ${MIN_VERSION} | UA: ${userAgent} | Origin: ${origin} | IP: ${req.ip}`);
     
-    return res.status(426).json({ 
-      error: "Upgrade Required",
-      message: `SafetyWatch Update Required: Your version (${appVersion || 'legacy'}) is discontinued. Please download the latest version v${MIN_VERSION} here: https://safetywatch.vercel.app/SafetyWatch.apk`,
-      currentVersion: appVersion,
-      requiredVersion: MIN_VERSION,
-      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk"
-    });
+    // PERMISSIVE MODE: Log the outdated access but DO NOT BLOCK.
+    // Blocking (426) causes legacy apps to crash ("System Interrupted").
+    // We rely on the client-side AppUpdateOverlay to block the user UI.
+    console.warn(`[VERSION_WARN] Legacy App Allowed: ${appVersion || 'None'} | Min: ${MIN_VERSION}`);
+    return next();
   }
   next();
 });
