@@ -201,7 +201,8 @@ router.get("/latest", async (req, res) => {
 
     res.json(items);
   } catch {
-    res.status(500).json({ message: "Error fetching latest incidents" });
+    // CRITICAL FIX: Return empty array to prevent legacy app crash
+    res.json([]);
   }
 });
 
@@ -216,7 +217,8 @@ router.get("/coords/all", async (req, res) => {
     res.json(coords);
   } catch (err) {
     console.error("Error fetching heatmap coords:", err);
-    res.status(500).json({ message: "Error fetching heatmap coords" });
+    // CRITICAL FIX: Return empty array to prevent legacy app crash
+    res.json([]);
   }
 });
 
