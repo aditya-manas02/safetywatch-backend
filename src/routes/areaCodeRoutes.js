@@ -262,12 +262,34 @@ router.delete("/:id", authMiddleware, requireSuperAdmin, async (req, res) => {
     const userCount = await User.countDocuments({ areaCode: areaCode.code });
     const incidentCount = await Incident.countDocuments({ areaCode: areaCode.code });
 
+    // Reassign users and incidents to DEFAULT
     if (userCount > 0 || incidentCount > 0) {
-      return res.status(400).json({ 
-        error: "Cannot delete area code with existing users or incidents. Deactivate instead.",
-        userCount,
-        incidentCount
-      });
+      // Find DEFAULT area code
+      const defaultArea = await AreaCode.findOne({ code: "DEFAULT" });
+      
+      if (defaultArea) {
+        // Move users
+        await User.updateMany(
+          { areaCode: areaCode.code }, 
+          { $set: { areaCode: "DEFAULT" } }
+        );
+
+        // Move incidents
+        await Incident.updateMany(
+          { areaCode: areaCode.code }, 
+          { $set: { areaCode: "DEFAULT" } }
+        );
+
+        // Update statistics for DEFAULT area
+        defaultArea.totalUsers += userCount;
+        defaultArea.totalIncidents += incidentCount;
+        await defaultArea.save();
+
+        console.log(`Migrated ${userCount} users and ${incidentCount} incidents to DEFAULT from ${areaCode.code}`);
+      } else {
+        // Fallback if DEFAULT doesn't exist (shouldn't happen if migration ran)
+        console.warn("DEFAULT area code not found during deletion migration");
+      }
     }
 
     await AreaCode.findByIdAndDelete(req.params.id);
