@@ -63,7 +63,15 @@ app.use((req, res, next) => {
   }
 
   const appVersion = req.headers['x-app-version'];
-  const MIN_VERSION = '1.3.4';
+  /* 
+   * LEGACY RESCUE MODE:
+   * We are setting MIN_VERSION to '0.0.0' temporarily.
+   * Reason: Legacy apps (v1.3.3) have a fatal bug where they CRASH if they receive a 426.
+   * By allowing them to connect (200 OK), they will load the UI.
+   * The client-side "AppUpdateOverlay" will then detect the version mismatch via version.json
+   * and prompt the user to update nicely, without the "System Interrupted" crash.
+   */
+  const MIN_VERSION = '0.0.0';
 
   // Helper function for simple semver comparison (v1, v2 strings like '1.3.4')
   const isOutdated = (current, min) => {
