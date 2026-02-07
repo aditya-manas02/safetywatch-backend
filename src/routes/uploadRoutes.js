@@ -2,29 +2,34 @@ import express from "express";
 import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { catchAsync } from "../utils/catchAsync.js";
 
 const router = express.Router();
 
-// Temp storage
-const upload = multer({ dest: "uploads/" });
+/* ---------------- MULTER (MEMORY STORAGE) ---------------- */
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
+/* ---------------- UPLOAD ROUTE ---------------- */
 // MUST MATCH FRONTEND KEY: "image"
-router.post("/", authMiddleware, upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
-
-    const uploaded = await cloudinary.uploader.upload(req.file.path, {
-      folder: "incidents",
-    });
-
-    return res.json({ url: uploaded.secure_url });
-
-  } catch (err) {
-    console.error("Image Upload Error:", err);
-    return res.status(500).json({ error: "Upload failed" });
+router.post("/", authMiddleware, upload.single("image"), catchAsync(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
   }
-});
+
+  // Upload buffer directly to Cloudinary
+  const folder = req.query.folder || "incidents";
+  const uploaded = await new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { folder },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    ).end(req.file.buffer);
+  });
+
+  return res.json({ url: uploaded.secure_url });
+}));
 
 export default router;
