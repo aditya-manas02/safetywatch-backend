@@ -63,8 +63,8 @@ app.options("*", cors());
 /* ----------------------- VERSION ENFORCEMENT ----------------------- */
 // Discontinue legacy versions (< 1.3.4) by requiring a header
 app.use((req, res, next) => {
-  // Skip version check for health checks and non-api routes
-  if (req.url === '/ping' || req.url === '/' || req.url.startsWith('/api/health')) {
+  // Skip version check for health checks, root, and the APK download route itself
+  if (req.url === '/ping' || req.url === '/' || req.url.startsWith('/api/health') || req.url === '/SafetyWatch.apk') {
     return next();
   }
 
