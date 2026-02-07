@@ -64,14 +64,11 @@ app.use((req, res, next) => {
 
   /* 
    * LEGACY COMPATIBILITY MODE:
-   * RESTORED MIN_VERSION to '1.3.4' to correctly guide updated clients.
-   * FIX: We now explicitly ALLOW requests with missing `x-app-version` headers.
-   * Why? Legacy apps (v1.3.3) do NOT send this header.
-   * By returning `false` (not outdated) for missing headers, we allow them to connect (200 OK).
-   * This bypasses the backend 426 block (preventing Red Toasts/Crashes).
-   * The blocking responsiblity is transferred to the client-side `AppUpdateOverlay`.
+   * We set MIN_VERSION to '1.3.0' to allow older APKs (v1.3.2) to at least boot.
+   * If we block with 426 too early, the app crashes before the webview can 
+   * load the new v1.4.0 logic from Vercel that shows the nice update prompt.
    */
-  const MIN_VERSION = '1.4.0';
+  const MIN_VERSION = '1.3.0';
 
   // Helper function for simple semver comparison (v1, v2 strings like '1.3.4')
   const isOutdated = (current, min) => {
