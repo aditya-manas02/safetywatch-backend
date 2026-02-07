@@ -1,16 +1,90 @@
 import express from "express";
 import User from "../models/User.js";
 import Incident from "../models/Incident.js";
-import { authMiddleware, requireAdminOnly, requireSuperAdmin } from "../middleware/auth.js";
+import {
+  authMiddleware,
+  requireAdminOnly,
+  requireSuperAdmin,
+} from "../middleware/auth.js";
+import { logAudit } from "../utils/auditLogger.js";
+import { catchAsync } from "../utils/catchAsync.js";
 
 const router = express.Router();
+
+import jwt from "jsonwebtoken";
+
+/* GET USER PROFILE (Self) - SOFT AUTH FOR LEGACY COMPATIBILITY */
+router.get("/profile", catchAsync(async (req, res) => {
+  let user = null;
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      user = await User.findById(decoded.id).select("-passwordHash");
+    }
+  } catch (e) {
+    // Ignore invalid token
+  }
+
+  if (!user) {
+    // Return safe guest profile to prevent legacy crash 
+    return res.json({ 
+      name: "Guest", 
+      email: "guest@safetywatch.app", 
+      roles: ["guest"], 
+      areaCode: "DEFAULT", 
+      isVerified: false 
+    });
+  }
+  res.json(user);
+}));
+
+/* UPDATE USER PROFILE (Self) */
+router.patch("/profile", authMiddleware, catchAsync(async (req, res) => {
+  const { name, phone, profilePicture } = req.body;
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  if (name) user.name = name;
+  if (phone) user.phone = phone;
+  if (profilePicture) user.profilePicture = profilePicture;
+
+  await user.save();
+
+  res.json({
+    message: "Profile updated",
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      roles: user.roles,
+      createdAt: user.createdAt,
+      isVerified: user.isVerified,
+    },
+  });
+}));
 
 /* GET ALL USERS (Admin) */
 router.get("/", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
-    const users = await User.find().select("-passwordHash");
+    const user = await User.findById(req.user.id);
+    const isSuperAdmin = user.roles.includes("superadmin");
+
+    const query = {};
+    
+    // If NOT superadmin, filter by area code
+    if (!isSuperAdmin) {
+      if (!user.areaCode) {
+        return res.status(400).json({ message: "Admin has no assigned area code" });
+      }
+      query.areaCode = user.areaCode;
+    }
+
+    const users = await User.find(query).select("-passwordHash");
     res.json(users);
-  } catch {
+  } catch (error) {
+    console.error("Error fetching users:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -34,8 +108,8 @@ router.patch("/:id/promote", authMiddleware, requireAdminOnly, async (req, res) 
     if (!user.roles.includes("admin")) user.roles.push("admin");
 
     await user.save();
+    await logAudit(req, "Promoted user to admin", "user", req.params.id, user.email);
     res.json({ message: "Promoted", roles: user.roles });
-
   } catch {
     res.status(500).json({ error: "Server error" });
   }
@@ -45,23 +119,46 @@ router.patch("/:id/promote", authMiddleware, requireAdminOnly, async (req, res) 
 router.patch("/:id/demote", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    user.roles = user.roles.filter(r => r !== "admin");
+    user.roles = user.roles.filter((r) => r !== "admin");
     await user.save();
-
+    await logAudit(req, "Demoted admin to user", "user", req.params.id, user.email);
     res.json({ message: "Demoted", roles: user.roles });
   } catch {
     res.status(500).json({ error: "Server error" });
   }
 });
 
-/* DELETE USER (SUPERADMIN ONLY) */
+/* DELETE USER (SUPERADMIN ONLY + SELF-PROTECT) */
 router.delete("/:id", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
-    await Incident.deleteMany({ userId: req.params.id });
+    // 🚨 Prevent superadmin from deleting themselves
+    if (req.user.id.toString() === req.params.id) {
+      return res
+        .status(400)
+        .json({ message: "You cannot delete your own account" });
+    }
 
-    res.json({ message: "User deleted" });
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    await Incident.deleteMany({ userId: user._id });
+    await user.deleteOne();
+
+    await logAudit(req, "Deleted user profile and contributions", "user", req.params.id, user.email);
+    res.json({ message: "User deleted successfully" });
+  } catch {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/* GET AUDIT LOGS (Admin Only) */
+router.get("/audit/logs", authMiddleware, requireAdminOnly, async (req, res) => {
+  try {
+    const AuditLog = (await import("../models/AuditLog.js")).default;
+    const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(100);
+    res.json(logs);
   } catch {
     res.status(500).json({ error: "Server error" });
   }
