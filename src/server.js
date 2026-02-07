@@ -158,27 +158,20 @@ app.get("/api/health-test", (req, res) => {
 
 // CHUNKED APK DELIVERY: Stream the APK parts as a single file to bypass hosting size limits
 app.get("/SafetyWatch.apk", (req, res) => {
-  const parts = [
-    path.join(__dirname, '../public/SafetyWatch.apk.part1'),
-    path.join(__dirname, '../public/SafetyWatch.apk.part2'),
-    path.join(__dirname, '../public/SafetyWatch.apk.part3')
-  ];
+  const filePath = path.join(__dirname, '../public/SafetyWatch.apk');
 
-  if (!fs.existsSync(parts[0])) {
-    return res.status(404).json({ message: "APK parts not found. Please wait for deployment to complete." });
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: "APK not found. Please wait for deployment to complete." });
   }
 
   res.setHeader('Content-Disposition', 'attachment; filename="SafetyWatch.apk"');
   res.setHeader('Content-Type', 'application/vnd.android.package-archive');
 
-  console.log(`[APK_DOWNLOAD] Streaming reassembled APK to ${req.ip}`);
+  console.log(`[APK_DOWNLOAD] Streaming APK to ${req.ip}`);
 
   try {
-    parts.forEach(part => {
-      const data = fs.readFileSync(part);
-      res.write(data);
-    });
-    res.end();
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
   } catch (err) {
     console.error("[APK_DOWNLOAD_ERROR]", err);
     res.status(500).end();
