@@ -1,0 +1,3 @@
+com.safetywatch.app.test
+style WhiteBackgroundDialogTheme
+style WhiteBackgroundTheme

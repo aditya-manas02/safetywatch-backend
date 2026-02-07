@@ -5,8 +5,14 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import path from "path";
-import fs from "fs";
 import { fileURLToPath } from 'url';
+
+// Routes
+import authRoutes from "./routes/auth.js";
+import incidentRoutes from "./routes/incidents.js";
+import userRoutes from "./routes/userRoutes.js";
+import statsRoutes from "./routes/stats.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,9 +74,12 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/ping", (req, res) => {
-  res.status(200).send("pong");
-});
+/* ----------------------- ROUTES --------------------------- */
+app.use("/api/auth", authRoutes);
+app.use("/api/incidents", incidentRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/stats", statsRoutes);
+app.use("/api/upload", uploadRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ 
@@ -151,3 +160,4 @@ process.on("uncaughtException", (err) => {
   console.log("Gracefully shutting down...");
   process.exit(1);
 });
+

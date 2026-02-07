@@ -1,0 +1,19 @@
+{
+	"appId": "com.safetywatch.app",
+	"appName": "SafetyWatch",
+	"webDir": "dist",
+	"plugins": {
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#05070a",
+			"overlaysWebView": true
+		}
+	},
+	"packageClassList": [
+		"AppPlugin",
+		"CAPCameraPlugin",
+		"GeolocationPlugin",
+		"LocalNotificationsPlugin",
+		"StatusBarPlugin"
+	]
+}

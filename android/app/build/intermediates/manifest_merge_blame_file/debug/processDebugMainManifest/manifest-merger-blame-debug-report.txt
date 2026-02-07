@@ -1,0 +1,237 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.safetywatch.app"
+4    android:versionCode="12"
+5    android:versionName="1.4.2" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="23"
+9        android:targetSdkVersion="35" />
+10
+11    <!-- Permissions -->
+12    <uses-permission android:name="android.permission.INTERNET" />
+12-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:33:5-67
+12-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:33:22-64
+13    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+13-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:34:5-81
+13-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:34:22-78
+14    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+14-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:35:5-79
+14-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:35:22-76
+15    <uses-permission android:name="android.permission.CAMERA" />
+15-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:36:5-65
+15-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:36:22-62
+16    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+16-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:37:5-80
+16-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:37:22-77
+17    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+17-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:38:5-81
+17-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:38:22-78
+18    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+18-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:39:5-77
+18-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:39:22-74
+19
+20    <queries>
+20-->[:capacitor-camera] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\camera\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:7:5-11:15
+21        <intent>
+21-->[:capacitor-camera] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\camera\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:8:9-10:18
+22            <action android:name="android.media.action.IMAGE_CAPTURE" />
+22-->[:capacitor-camera] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\camera\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:9:13-73
+22-->[:capacitor-camera] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\camera\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:9:21-70
+23        </intent>
+24    </queries>
+25
+26    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+26-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:7:5-81
+26-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:7:22-78
+27    <uses-permission android:name="android.permission.WAKE_LOCK" />
+27-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:8:5-68
+27-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:8:22-65
+28    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+28-->[io.ionic.libs:iongeolocation-android:2.1.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\bdb6a654afddf7b88d445e06d6dfa878\transformed\iongeolocation-android-2.1.0\AndroidManifest.xml:7:5-79
+28-->[io.ionic.libs:iongeolocation-android:2.1.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\bdb6a654afddf7b88d445e06d6dfa878\transformed\iongeolocation-android-2.1.0\AndroidManifest.xml:7:22-76
+29
+30    <permission
+30-->[androidx.core:core:1.15.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\5f51ed623ec66baebfa6a053fe8a8b2a\transformed\core-1.15.0\AndroidManifest.xml:22:5-24:47
+31        android:name="com.safetywatch.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+31-->[androidx.core:core:1.15.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\5f51ed623ec66baebfa6a053fe8a8b2a\transformed\core-1.15.0\AndroidManifest.xml:23:9-81
+32        android:protectionLevel="signature" />
+32-->[androidx.core:core:1.15.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\5f51ed623ec66baebfa6a053fe8a8b2a\transformed\core-1.15.0\AndroidManifest.xml:24:9-44
+33
+34    <uses-permission android:name="com.safetywatch.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+34-->[androidx.core:core:1.15.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\5f51ed623ec66baebfa6a053fe8a8b2a\transformed\core-1.15.0\AndroidManifest.xml:26:5-97
+34-->[androidx.core:core:1.15.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\5f51ed623ec66baebfa6a053fe8a8b2a\transformed\core-1.15.0\AndroidManifest.xml:26:22-94
+35
+36    <application
+36-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:3:5-30:19
+37        android:allowBackup="true"
+37-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:4:9-35
+38        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+38-->[androidx.core:core:1.15.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\5f51ed623ec66baebfa6a053fe8a8b2a\transformed\core-1.15.0\AndroidManifest.xml:28:18-86
+39        android:debuggable="true"
+40        android:extractNativeLibs="false"
+41        android:icon="@mipmap/ic_launcher"
+41-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:5:9-43
+42        android:label="@string/app_name"
+42-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:6:9-41
+43        android:roundIcon="@mipmap/ic_launcher_round"
+43-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:7:9-54
+44        android:supportsRtl="true"
+44-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:8:9-35
+45        android:theme="@style/AppTheme" >
+45-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:9:9-40
+46        <activity
+46-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:10:9-21:20
+47            android:name="com.safetywatch.app.MainActivity"
+47-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:12:13-41
+48            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
+48-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:11:13-140
+49            android:exported="true"
+49-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:16:13-36
+50            android:label="@string/title_activity_main"
+50-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:13:13-56
+51            android:launchMode="singleTask"
+51-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:15:13-44
+52            android:theme="@style/AppTheme.NoActionBarLaunch" >
+52-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:14:13-62
+53            <intent-filter>
+53-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:17:13-20:29
+54                <action android:name="android.intent.action.MAIN" />
+54-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:18:17-69
+54-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:18:25-66
+55
+56                <category android:name="android.intent.category.LAUNCHER" />
+56-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:19:17-77
+56-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:19:27-74
+57            </intent-filter>
+58        </activity>
+59
+60        <provider
+61            android:name="androidx.core.content.FileProvider"
+61-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:24:13-62
+62            android:authorities="com.safetywatch.app.fileprovider"
+62-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:25:13-64
+63            android:exported="false"
+63-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:26:13-37
+64            android:grantUriPermissions="true" >
+64-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:27:13-47
+65            <meta-data
+65-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:28:13-112
+66                android:name="android.support.FILE_PROVIDER_PATHS"
+66-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:28:24-74
+67                android:resource="@xml/file_paths" />
+67-->D:\safe-neighborhood-watch-main11\android\app\src\main\AndroidManifest.xml:28:75-109
+68        </provider>
+69
+70        <receiver android:name="com.capacitorjs.plugins.localnotifications.TimedNotificationPublisher" />
+70-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:12:9-106
+70-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:12:19-103
+71        <receiver android:name="com.capacitorjs.plugins.localnotifications.NotificationDismissReceiver" />
+71-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:13:9-107
+71-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:13:19-104
+72        <receiver
+72-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:14:9-23:20
+73            android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationRestoreReceiver"
+73-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:15:13-103
+74            android:directBootAware="true"
+74-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:16:13-43
+75            android:exported="false" >
+75-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:17:13-37
+76            <intent-filter>
+76-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:18:13-22:29
+77                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+77-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:19:17-86
+77-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:19:25-83
+78                <action android:name="android.intent.action.BOOT_COMPLETED" />
+78-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:20:17-79
+78-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:20:25-76
+79                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+79-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:21:17-82
+79-->[:capacitor-local-notifications] D:\safe-neighborhood-watch-main11\node_modules\@capacitor\local-notifications\android\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:21:25-79
+80            </intent-filter>
+81        </receiver>
+82
+83        <activity
+83-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\3897ee7a3a7e64eb47ff9b7bb8256b24\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:9-173
+84            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+84-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\3897ee7a3a7e64eb47ff9b7bb8256b24\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:19-85
+85            android:exported="false"
+85-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\3897ee7a3a7e64eb47ff9b7bb8256b24\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:146-170
+86            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+86-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\3897ee7a3a7e64eb47ff9b7bb8256b24\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:86-145
+87
+88        <provider
+88-->[androidx.emoji2:emoji2:1.3.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\455628e39230ce08b70f281b4ac99c3c\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+89            android:name="androidx.startup.InitializationProvider"
+89-->[androidx.emoji2:emoji2:1.3.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\455628e39230ce08b70f281b4ac99c3c\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+90            android:authorities="com.safetywatch.app.androidx-startup"
+90-->[androidx.emoji2:emoji2:1.3.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\455628e39230ce08b70f281b4ac99c3c\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+91            android:exported="false" >
+91-->[androidx.emoji2:emoji2:1.3.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\455628e39230ce08b70f281b4ac99c3c\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+92            <meta-data
+92-->[androidx.emoji2:emoji2:1.3.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\455628e39230ce08b70f281b4ac99c3c\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+93                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+93-->[androidx.emoji2:emoji2:1.3.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\455628e39230ce08b70f281b4ac99c3c\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+94                android:value="androidx.startup" />
+94-->[androidx.emoji2:emoji2:1.3.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\455628e39230ce08b70f281b4ac99c3c\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+95            <meta-data
+95-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\91913\.gradle\caches\8.11.1\transforms\2086035d7e747a32c2be40e6ed7f404e\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:29:13-31:52
+96                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+96-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\91913\.gradle\caches\8.11.1\transforms\2086035d7e747a32c2be40e6ed7f404e\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:30:17-78
+97                android:value="androidx.startup" />
+97-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\91913\.gradle\caches\8.11.1\transforms\2086035d7e747a32c2be40e6ed7f404e\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:31:17-49
+98            <meta-data
+98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+99                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+99-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+100                android:value="androidx.startup" />
+100-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+101        </provider>
+102
+103        <meta-data
+103-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\697a983ff8b6be23efe7df3e3bbc5a94\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:9-122
+104            android:name="com.google.android.gms.version"
+104-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\697a983ff8b6be23efe7df3e3bbc5a94\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:20-65
+105            android:value="@integer/google_play_services_version" />
+105-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\91913\.gradle\caches\8.11.1\transforms\697a983ff8b6be23efe7df3e3bbc5a94\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:66-119
+106
+107        <receiver
+107-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+108            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+108-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+109            android:directBootAware="false"
+109-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+110            android:enabled="true"
+110-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+111            android:exported="true"
+111-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+112            android:permission="android.permission.DUMP" >
+112-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+113            <intent-filter>
+113-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+114                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+114-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+114-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+115            </intent-filter>
+116            <intent-filter>
+116-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+117                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+117-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+117-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+118            </intent-filter>
+119            <intent-filter>
+119-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+120                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+120-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+120-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+121            </intent-filter>
+122            <intent-filter>
+122-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+123                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+123-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+123-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\91913\.gradle\caches\8.11.1\transforms\0f3d68271fd414f74f11a6a9c308b287\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+124            </intent-filter>
+125        </receiver>
+126    </application>
+127
+128</manifest>

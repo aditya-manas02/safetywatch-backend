@@ -1,0 +1,17 @@
+{
+    "name": "SafetyWatch",
+    "short_name": "SafetyWatch",
+    "description": "Neighborhood Watch & Real-time Incident Reporting",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#09090b",
+    "theme_color": "#2e1065",
+    "icons": [
+        {
+            "src": "/sentinel_logo.png",
+            "sizes": "192x192 512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

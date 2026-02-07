@@ -1,0 +1,6 @@
+import{c,q as r,t as s,z as l,P as f,a_ as u}from"./index-B3N1CnN-.js";/**
+ * @license lucide-react v0.462.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const y=c("CircleCheck",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",{d:"m9 12 2 2 4-4",key:"dzmm74"}]]),m=r.forwardRef(({className:a,type:t,...e},o)=>s.jsx("input",{type:t,className:l("flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",a),ref:o,...e}));m.displayName="Input";var b="Label",n=r.forwardRef((a,t)=>s.jsx(f.label,{...a,ref:t,onMouseDown:e=>{var i;e.target.closest("button, input, select, textarea")||((i=a.onMouseDown)==null||i.call(a,e),!e.defaultPrevented&&e.detail>1&&e.preventDefault())}}));n.displayName=b;var d=n;const x=u("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"),g=r.forwardRef(({className:a,...t},e)=>s.jsx(d,{ref:e,className:l(x(),a),...t}));g.displayName=d.displayName;export{y as C,m as I,g as L};
