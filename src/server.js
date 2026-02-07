@@ -71,7 +71,7 @@ app.use((req, res, next) => {
    * This bypasses the backend 426 block (preventing Red Toasts/Crashes).
    * The blocking responsiblity is transferred to the client-side `AppUpdateOverlay`.
    */
-  const MIN_VERSION = '1.3.4';
+  const MIN_VERSION = '1.4.0';
 
   // Helper function for simple semver comparison (v1, v2 strings like '1.3.4')
   const isOutdated = (current, min) => {
