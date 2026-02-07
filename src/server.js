@@ -167,7 +167,7 @@ app.use("/api/news", newsRoutes);
 app.use("/api/area-codes", areaCodeRoutes);
 
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.3.4)", timestamp: new Date().toISOString() });
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.4.0)", timestamp: new Date().toISOString() });
 });
 
 /* ----------------------- ERROR HANDLING ------------------- */
