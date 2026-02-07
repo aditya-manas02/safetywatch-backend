@@ -97,8 +97,11 @@ app.use((req, res, next) => {
 
   if (isOutdated(appVersion, MIN_VERSION)) {
     console.warn(`[VERSION_BLOCK] Outdated App Blocking: ${appVersion || 'None'} | Min: ${MIN_VERSION}`);
+    // NUCLEAR PAYLOAD: Hit every possible keyword an old ErrorBoundary might look for
+    const upgradeMsg = "UPGRADE_REQUIRED_426: A new version (v1.4.0) is available. Please update required version 426 to continue.";
     return res.status(426).json({
-      message: "UPGRADE_REQUIRED_426: A new version (v1.4.0) is available. Please update to continue.",
+      message: upgradeMsg,
+      error: upgradeMsg, // Some old versions look for .error instead of .message
       requiredVersion: MIN_VERSION,
       downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk"
     });
