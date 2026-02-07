@@ -5,6 +5,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -143,6 +144,35 @@ app.get("/ping", (req, res) => {
 
 app.get("/api/health-test", (req, res) => {
   res.json({ message: "Direct health-test route is working", timestamp: new Date().toISOString() });
+});
+
+// CHUNKED APK DELIVERY: Stream the APK parts as a single file to bypass hosting size limits
+app.get("/SafetyWatch.apk", (req, res) => {
+  const parts = [
+    path.join(__dirname, '../public/SafetyWatch.apk.part1'),
+    path.join(__dirname, '../public/SafetyWatch.apk.part2'),
+    path.join(__dirname, '../public/SafetyWatch.apk.part3')
+  ];
+
+  if (!fs.existsSync(parts[0])) {
+    return res.status(404).json({ message: "APK parts not found. Please wait for deployment to complete." });
+  }
+
+  res.setHeader('Content-Disposition', 'attachment; filename="SafetyWatch.apk"');
+  res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+
+  console.log(`[APK_DOWNLOAD] Streaming reassembled APK to ${req.ip}`);
+
+  try {
+    parts.forEach(part => {
+      const data = fs.readFileSync(part);
+      res.write(data);
+    });
+    res.end();
+  } catch (err) {
+    console.error("[APK_DOWNLOAD_ERROR]", err);
+    res.status(500).end();
+  }
 });
 
 app.get("/api/debug-ping", (req, res) => {
