@@ -131,9 +131,9 @@ app.use(helmet());
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 2000, // relaxed for production dashboard concurrency
-  message: "Too many requests from this IP, please try again later. Dashboard traffic detected - limit increased.",
-  skip: (req) => req.method === "OPTIONS", // Ensure preflights are NEVER blocked
+  max: 5000, // Significantly increased to prevent false positives during intense testing/demos
+  message: "Too many requests from this IP, please try again later.",
+  skip: (req) => req.method === "OPTIONS" || req.url.startsWith("/api/health"), // Skip for health checks too
 });
 app.use(limiter);
 
