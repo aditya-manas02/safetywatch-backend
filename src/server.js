@@ -74,7 +74,7 @@ app.use((req, res, next) => {
    * To prevent the "System Interrupted" crash in older versions, we send
    * a very specific message string that legacy ErrorBoundaries can detect.
    */
-  const MIN_VERSION = '1.4.0';
+  const MIN_VERSION = '1.4.1';
   
   // Helper function for simple semver comparison
   const isOutdated = (current, min) => {
@@ -122,7 +122,7 @@ app.get("/api/health", (req, res) => {
     status: "ok", 
     message: "Server is healthy",
     uptime: process.uptime(),
-    minVersion: '1.4.0'
+    minVersion: '1.4.1'
   });
 });
 
@@ -211,7 +211,7 @@ app.use("/api/news", newsRoutes);
 app.use("/api/area-codes", areaCodeRoutes);
 
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.4.0)", timestamp: new Date().toISOString() });
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.4.1)", timestamp: new Date().toISOString() });
 });
 
 /* ----------------------- ERROR HANDLING ------------------- */
