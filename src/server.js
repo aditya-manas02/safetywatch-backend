@@ -4,6 +4,11 @@ import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 import authRoutes from "./routes/auth.js";
@@ -124,6 +129,7 @@ app.use(limiter);
 /* ----------------------- BODY ----------------------- */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public')); // Serve APK and other static assets
 
 /* ----------------------- LOGGING ------------------------ */
 app.use((req, res, next) => {
