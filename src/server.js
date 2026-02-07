@@ -64,26 +64,23 @@ app.use((req, res, next) => {
 
   /* 
    * LEGACY COMPATIBILITY MODE:
-   * We set MIN_VERSION to '1.3.0' to allow older APKs (v1.3.2) to at least boot.
-   * If we block with 426 too early, the app crashes before the webview can 
-   * load the new v1.4.0 logic from Vercel that shows the nice update prompt.
+   * We set MIN_VERSION to '1.4.0' to ensure all old APKs (< v1.4.0) are blocked.
+   * To prevent the "System Interrupted" crash in older versions, we send
+   * a very specific message string that legacy ErrorBoundaries can detect.
    */
-  const MIN_VERSION = '1.3.0';
-
-  // Helper function for simple semver comparison (v1, v2 strings like '1.3.4')
+  const MIN_VERSION = '1.4.0';
+  
+  // Helper function for simple semver comparison
   const isOutdated = (current, min) => {
-    // CRITICAL CHANGE: If header is missing, treat as outdated (v1.3.3 or below).
-    // This forces the client to handle the 426 block and show the update UI.
+    // If header is missing, treat as outdated (v1.3.3 or below)
     if (!current) return true; 
     
-    // Normalize: remove 'v' prefix if present
     const currClean = current.replace(/^v/, '');
     const minClean = min.replace(/^v/, '');
     
     const c = currClean.split('.').map(Number);
     const m = minClean.split('.').map(Number);
     
-    // Ensure we have at least 3 parts for comparison
     while (c.length < 3) c.push(0);
     while (m.length < 3) m.push(0);
 
@@ -101,7 +98,7 @@ app.use((req, res, next) => {
   if (isOutdated(appVersion, MIN_VERSION)) {
     console.warn(`[VERSION_BLOCK] Outdated App Blocking: ${appVersion || 'None'} | Min: ${MIN_VERSION}`);
     return res.status(426).json({
-      message: "Update Required",
+      message: "UPGRADE_REQUIRED_426: A new version (v1.4.0) is available. Please update to continue.",
       requiredVersion: MIN_VERSION,
       downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk"
     });
