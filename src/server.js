@@ -102,18 +102,28 @@ app.use((req, res, next) => {
   const appVersion = req.headers['x-app-version'];
 
   if (isOutdated(appVersion, MIN_VERSION)) {
-    console.warn(`[VERSION_BLOCK] Outdated App Blocking: ${appVersion || 'None'} | Min: ${MIN_VERSION}`);
-    // NUCLEAR PAYLOAD: Hit every possible keyword and casing an old ErrorBoundary might look for
-    const upgradeMsg = "Update Required (426) - UPGRADE REQUIRED";
+    console.warn(`[VERSION_BLOCK] Blocked outdated client: ${appVersion || 'NO_VERSION'} from ${req.ip}`);
     return res.status(426).json({
-      message: upgradeMsg,
-      error: upgradeMsg,
-      name: "VersionError", // Some old versions check error.name
+      message: "Update Required (426) - UPGRADE REQUIRED",
+      error: "Update Required (426) - UPGRADE REQUIRED",
+      name: "VersionError",
       status: 426,
-      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk"
+      currentVersion: appVersion || 'v0.0.0',
+      minRequiredVersion: MIN_VERSION,
+      downloadUrl: "https://safetywatch-backend.onrender.com/SafetyWatch.apk"
     });
   }
   next();
+});
+
+// Health check with version info
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ 
+    status: "ok", 
+    message: "Server is healthy",
+    uptime: process.uptime(),
+    minVersion: '1.4.0'
+  });
 });
 
 /* ----------------------- SECURITY & LIMITING ----------------------- */
