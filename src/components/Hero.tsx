@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Activity, Radio, AlertTriangle, Users, Shield, Flame, Car, UtilityPole, Volume2, UserSearch, Info, Zap, Download } from "lucide-react";
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
 import { App as CapacitorApp } from "@capacitor/app";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, CapacitorHttp } from "@capacitor/core";
 
 function AnimatedCounter({ value }: { value: number }) {
   const count = useMotionValue(0);
@@ -82,47 +82,81 @@ export default function Hero({
     }
 
     // 2. Fetch Version Info (Independent)
-    fetch(`${window.location.origin}/version.json?t=${Date.now()}`)
-      .then(res => res.ok ? res.json() : Promise.reject("Not OK"))
-      .then(data => {
+    try {
+      // Use standard fetch for version.json as it's usually on the same origin or public
+      const res = await fetch(`${window.location.origin}/version.json?t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
         setLatestVersion(data.version);
-        if (native) {
-          setIsOutdated(compareVersions(currentVersion, data.version));
-        }
-      })
-      .catch(err => console.warn("[HERO] Version check skipped:", err));
+        if (native) setIsOutdated(compareVersions(currentVersion, data.version));
+      }
+    } catch (err) {
+      console.warn("[HERO] Version check skipped:", err);
+    }
 
-    // 3. Fetch Stats (Independent)
+    // 3. Fetch Stats (Hybrid: Native HTTP vs Web Fetch)
     try {
       console.log(`[HERO] Syncing stats from ${API_BASE}...`);
-      const statsRes = await fetch(`${API_BASE}/api/stats/public`, {
-        headers: { "x-app-version": currentVersion }
-      });
-      if (statsRes.ok) {
-        setStats(await statsRes.json());
-      } else {
-        console.error(`[HERO] Stats sync failed: ${statsRes.status}`);
-        if (statsRes.status === 401 || statsRes.status === 403) {
-          console.warn("[HERO] Auth/CORS block on stats");
+      let statsData;
+
+      if (native) {
+        // Native HTTP Bypass
+        const options = {
+          url: `${API_BASE}/api/stats/public`,
+          headers: { "x-app-version": currentVersion, "Content-Type": "application/json" }
+        };
+        const response = await CapacitorHttp.get(options);
+
+        if (response.status >= 200 && response.status < 300) {
+          statsData = response.data;
+        } else {
+          throw new Error(`Native Fetch Failed: ${response.status}`);
         }
+      } else {
+        // Standard Web Fetch
+        const statsRes = await fetch(`${API_BASE}/api/stats/public`, {
+          headers: { "x-app-version": currentVersion }
+        });
+        if (!statsRes.ok) throw new Error(`Web Fetch Failed: ${statsRes.status}`);
+        statsData = await statsRes.json();
       }
+
+      setStats(statsData);
+      setErrorMsg(""); // Clear previous errors on success
+
     } catch (err: any) {
       console.error("[HERO] Stats network error:", err);
-      setErrorMsg(err.message || "Connection Failed");
-      // Fallback diagnostics
-      if (err.message?.includes("Failed to fetch")) {
-        console.warn("[DIAGNOSTIC] Possible CORS or Network restriction active on mobile.");
+      // Enhanced Diagnostics
+      const msg = err.message || "Connection Failed";
+      setErrorMsg(`${native ? '[NATIVE]' : '[WEB]'} ${msg}`);
+
+      if (msg.includes("Failed to fetch") || msg.includes("Network Error")) {
+        console.warn("[DIAGNOSTIC] Network layer blocked request.");
       }
     }
 
-    // 4. Fetch Latest Incidents (Independent)
+    // 4. Fetch Latest Incidents (Hybrid)
     try {
-      const latestRes = await fetch(`${API_BASE}/api/incidents/latest`, {
-        headers: { "x-app-version": currentVersion }
-      });
-      if (latestRes.ok) {
-        setLatest(await latestRes.json());
+      let latestData;
+
+      if (native) {
+        const options = {
+          url: `${API_BASE}/api/incidents/latest`,
+          headers: { "x-app-version": currentVersion, "Content-Type": "application/json" }
+        };
+        const response = await CapacitorHttp.get(options);
+        if (response.status >= 200 && response.status < 300) {
+          latestData = response.data;
+        }
+      } else {
+        const latestRes = await fetch(`${API_BASE}/api/incidents/latest`, {
+          headers: { "x-app-version": currentVersion }
+        });
+        if (latestRes.ok) latestData = await latestRes.json();
       }
+
+      if (latestData) setLatest(latestData);
+
     } catch (err) {
       console.error("[HERO] Latest incidents network error:", err);
     } finally {
