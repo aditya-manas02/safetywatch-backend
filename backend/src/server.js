@@ -66,7 +66,7 @@ app.use((req, res, next) => {
   // Use req.path to ignore query parameters
   const path = req.path;
 
-  // Skip version check for health checks, public stats, root, and anonymous data routes
+  // NUCLEAR BYPASS: Allow all anonymous landing page data to flow through regardless of version
   const isPublicRoute = 
     path === '/ping' || 
     path === '/' || 
@@ -75,6 +75,11 @@ app.use((req, res, next) => {
     path.includes('/api/stats/public') ||
     path.includes('/api/stats/pulse') ||
     path.includes('/api/incidents/latest') ||
+    path.includes('/api/incidents/popular') ||
+    path.includes('/api/incidents/near-me') ||
+    path.includes('/api/incidents/coords/all') ||
+    path.includes('/api/notifications/public') ||
+    path.includes('/api/news') ||
     path.includes('/version.json');
 
   if (isPublicRoute) {
