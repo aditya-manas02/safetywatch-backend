@@ -72,10 +72,10 @@ app.use((req, res, next) => {
     path === '/' || 
     path.startsWith('/api/health') || 
     path === '/SafetyWatch.apk' ||
-    path.startsWith('/api/stats/public') ||
-    path.startsWith('/api/stats/pulse') ||
-    path.startsWith('/api/incidents/latest') ||
-    path.startsWith('/version.json');
+    path.includes('/api/stats/public') ||
+    path.includes('/api/stats/pulse') ||
+    path.includes('/api/incidents/latest') ||
+    path.includes('/version.json');
 
   if (isPublicRoute) {
     return next();
