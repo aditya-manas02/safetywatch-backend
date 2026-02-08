@@ -73,20 +73,12 @@ app.use((req, res, next) => {
   // Use req.path to ignore query parameters
   const path = req.path;
 
-  // NUCLEAR BYPASS: Allow all anonymous landing page data to flow through regardless of version
+  // NUCLEAR BYPASS: Allow ONLY absolute minimum required routes
   const isPublicRoute = 
     path === '/ping' || 
     path === '/' || 
     path.startsWith('/api/health') || 
     path === '/SafetyWatch.apk' ||
-    path.includes('/api/stats/public') ||
-    path.includes('/api/stats/pulse') ||
-    path.includes('/api/incidents/latest') ||
-    path.includes('/api/incidents/popular') ||
-    path.includes('/api/incidents/near-me') ||
-    path.includes('/api/incidents/coords/all') ||
-    path.includes('/api/notifications/public') ||
-    path.includes('/api/news') ||
     path.includes('/version.json');
 
   if (isPublicRoute) {
@@ -94,20 +86,20 @@ app.use((req, res, next) => {
   }
 
   /* 
-   * LEGACY COMPATIBILITY MODE:
-   * We set MIN_VERSION to '1.4.0' to ensure all old APKs (< v1.4.0) are blocked.
-   * To prevent the "System Interrupted" crash in older versions, we send
-   * a very specific message string that legacy ErrorBoundaries can detect.
+   * STRICT ENFORCEMENT MODE:
+   * We set MIN_VERSION to '1.4.3' to ensure all old APKs are blocked.
+   * Sending status 426 Upgrade Required.
    */
-  const MIN_VERSION = '1.4.0';
+  const MIN_VERSION = '1.4.3';
   
   // Helper function for simple semver comparison
   const isOutdated = (current, min) => {
     // If header is missing, treat as outdated (v1.3.3 or below)
     if (!current) return true; 
     
-    const currClean = current.replace(/^v/, '');
-    const minClean = min.replace(/^v/, '');
+    // Clean version strings (remove - prefixes or v prefixes)
+    const currClean = current.replace(/^v/, '').split('-')[0];
+    const minClean = min.replace(/^v/, '').split('-')[0];
     
     const c = currClean.split('.').map(Number);
     const m = minClean.split('.').map(Number);
@@ -128,17 +120,16 @@ app.use((req, res, next) => {
 
   if (isOutdated(appVersion, MIN_VERSION)) {
     console.warn(`[VERSION_BLOCK] Outdated App Blocking: ${appVersion || 'None'} | Min: ${MIN_VERSION}`);
-    // NUCLEAR PAYLOAD: Hit every possible keyword and casing an old ErrorBoundary might look for
-    const upgradeMsg = "Update Required (426) - UPGRADE REQUIRED";
+    const upgradeMsg = "Update Required (426) - Please download v1.4.3";
     return res.status(426).json({
       message: upgradeMsg,
       error: upgradeMsg,
-      name: "VersionError", // Some old versions check error.name
+      name: "VersionError",
       status: 426,
-      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk",
+      downloadUrl: "https://safetywatch-backend.onrender.com/SafetyWatch.apk",
       debug: {
         path: path,
-        build: "B87-PATH-MATCH-FIX"
+        received: appVersion || "none"
       }
     });
   }
