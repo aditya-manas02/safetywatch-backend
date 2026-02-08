@@ -75,14 +75,29 @@ export function AppUpdateChecker() {
 
     const handleDownload = async () => {
         if (versionInfo?.url) {
+            console.log('[VERSION_CHECK] Initiating download from:', versionInfo.url);
             try {
-                // Use Capacitor Browser to open download link
-                await Browser.open({ url: versionInfo.url });
+                // For direct APK downloads, location.assign is often the most reliable 
+                // way to trigger the browser's/webview's native download handler.
+                window.location.assign(versionInfo.url);
+
+                // On some native platforms, we might need a backup
+                if (Capacitor.isNativePlatform()) {
+                    setTimeout(async () => {
+                        try {
+                            await Browser.open({ url: versionInfo.url });
+                        } catch (e) {
+                            console.error('[VERSION_CHECK] Browser.open fallback failed:', e);
+                        }
+                    }, 1000);
+                }
             } catch (error) {
-                console.error('[VERSION_CHECK] Failed to open download link:', error);
-                // Fallback to window.open
+                console.error('[VERSION_CHECK] Primary download method failed:', error);
+                // Fallback to _system link
                 window.open(versionInfo.url, '_system');
             }
+        } else {
+            console.error('[VERSION_CHECK] No download URL available in versionInfo');
         }
     };
 
