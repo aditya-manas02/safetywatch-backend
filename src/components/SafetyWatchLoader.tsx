@@ -1,12 +1,22 @@
 import { useEffect, useState } from "react";
 import { Shield } from "lucide-react";
 import { motion } from "framer-motion";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import packageJson from "../../package.json";
 
 export const SafetyWatchLoader = () => {
     const [progress, setProgress] = useState(0);
+    const [displayVersion, setDisplayVersion] = useState(packageJson.version);
 
     useEffect(() => {
+        // Fetch real version if on native
+        if (Capacitor.isNativePlatform()) {
+            CapacitorApp.getInfo().then(info => {
+                setDisplayVersion(info.version);
+            }).catch(err => console.error("Loader version fetch error:", err));
+        }
+
         const duration = 5000; // 5 seconds
         const startTime = Date.now();
 
@@ -65,7 +75,7 @@ export const SafetyWatchLoader = () => {
                     >
                         <div className="h-[1px] w-6 bg-blue-500" />
                         <p className="text-white font-mono tracking-[0.4em] text-[11px] font-bold uppercase drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
-                            v{packageJson.version} • SECURE SESSION
+                            v{displayVersion} • SECURE SESSION
                         </p>
                         <div className="h-[1px] w-6 bg-blue-500" />
                     </motion.div>

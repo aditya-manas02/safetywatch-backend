@@ -51,7 +51,8 @@ export default function Hero({
   const [appVersion, setAppVersion] = useState<string>("1.4.2");
   const [latestVersion, setLatestVersion] = useState<string>("1.4.2");
   const [isOutdated, setIsOutdated] = useState(false);
-  const [isWeb, setIsWeb] = useState(true);
+  // Initialize from Capacitor check immediately to prevent UI flicker
+  const [isWeb, setIsWeb] = useState(!Capacitor.isNativePlatform());
 
   useEffect(() => {
     loadData();
