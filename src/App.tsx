@@ -14,6 +14,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { App as CapacitorApp } from "@capacitor/app";
 import { SafetyWatchLoader } from "./components/SafetyWatchLoader";
+import { AppUpdateChecker } from "./components/AppUpdateChecker";
 
 // Lazy load pages for performance
 const Index = lazy(() => import("./pages/Index"));
@@ -69,6 +70,7 @@ const AppContent = () => {
 
   return (
     <AnimatedBackground>
+      <AppUpdateChecker />
       {!hideNavbar && <Navbar />}
       <main className={!hideNavbar ? "pt-[64px] md:pt-[72px]" : ""}>
         <Suspense fallback={<SafetyWatchLoader />}>
