@@ -30,10 +30,12 @@ const SafetyPulse = () => {
                 const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
                 const API_BASE = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 
+                const VERSION_HEADERS = { "x-app-version": "1.4.2" };
+
                 // 1. Fetch Stats & Pulse
                 const [pulseRes, statsRes] = await Promise.all([
-                    fetch(`${API_BASE}/api/stats/pulse`),
-                    fetch(`${API_BASE}/api/stats/public`)
+                    fetch(`${API_BASE}/api/stats/pulse`, { headers: VERSION_HEADERS }),
+                    fetch(`${API_BASE}/api/stats/public`, { headers: VERSION_HEADERS })
                 ]);
 
                 if (pulseRes.ok && statsRes.ok) {
@@ -47,7 +49,7 @@ const SafetyPulse = () => {
                 }
 
                 // 2. Fetch Real Announcements
-                const annRes = await fetch(`${API_BASE}/api/notifications/public`);
+                const annRes = await fetch(`${API_BASE}/api/notifications/public`, { headers: VERSION_HEADERS });
                 if (annRes.ok) {
                     const data = await annRes.json();
                     setAnnouncements((data || []).filter((a: any) =>
@@ -56,7 +58,7 @@ const SafetyPulse = () => {
                 }
 
                 // 3. Fetch Latest Incidents
-                const incRes = await fetch(`${API_BASE}/api/incidents/latest`);
+                const incRes = await fetch(`${API_BASE}/api/incidents/latest`, { headers: VERSION_HEADERS });
                 if (incRes.ok) {
                     const data = await incRes.json();
                     setLatestIncidents(data || []);

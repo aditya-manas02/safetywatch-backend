@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Download, AlertTriangle } from 'lucide-react';
@@ -23,6 +24,12 @@ export function AppUpdateChecker() {
     }, []);
 
     const checkForUpdates = async () => {
+        // Skip check if not on native platform (Android/iOS)
+        if (!Capacitor.isNativePlatform()) {
+            console.log('[VERSION_CHECK] Running on web platform, skipping native version check.');
+            return;
+        }
+
         try {
             // Get current app version
             const appInfo = await CapacitorApp.getInfo();

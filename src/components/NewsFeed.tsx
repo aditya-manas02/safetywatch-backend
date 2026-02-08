@@ -40,7 +40,9 @@ export default function NewsFeed() {
 
         try {
             // Add timestamp to bust cache
-            const res = await fetch(`${API_BASE}/news?t=${Date.now()}`);
+            const res = await fetch(`${API_BASE}/news?t=${Date.now()}`, {
+                headers: { "x-app-version": "1.4.2" }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setArticles(data.articles.slice(0, 5));
