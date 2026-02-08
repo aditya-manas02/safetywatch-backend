@@ -72,7 +72,7 @@ const AppContent = () => {
     <AnimatedBackground>
       <AppUpdateChecker />
       {!hideNavbar && <Navbar />}
-      <main className={!hideNavbar ? "pt-[64px] md:pt-[72px]" : ""}>
+      <main className={!hideNavbar ? "pt-[calc(64px+env(safe-area-inset-top))] md:pt-[72px]" : "pt-[env(safe-area-inset-top)]"}>
         <Suspense fallback={<SafetyWatchLoader />}>
           <Routes>
             <Route path="/" element={<Index />} />
