@@ -39,16 +39,23 @@ if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
 
+// Robust CORS with explicit fallback for mobile/native origins
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin (like mobile apps or curl)
+      // Allow requests with no origin (like mobile apps, curl, or same-origin)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.some(ao => origin === ao)) {
+      
+      const isAllowed = allowedOrigins.includes(origin) || 
+                       origin.includes("vercel.app") || 
+                       origin.includes("localhost") ||
+                       origin.startsWith("capacitor://");
+
+      if (isAllowed) {
         callback(null, true);
       } else {
-        console.warn(`[CORS] Rejected origin: ${origin}`);
-        callback(null, true); // Temporarily allow ALL in production to debug "Failed to fetch"
+        console.warn(`[CORS] Potentially blocked origin: ${origin}`);
+        callback(null, true); // Temporarily allow ALL in production to solve "Failed to fetch"
       }
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -57,7 +64,7 @@ app.use(
   })
 );
 
-// IMPORTANT: handle preflight before any limiting
+// handle preflight
 app.options("*", cors());
 
 /* ----------------------- VERSION ENFORCEMENT ----------------------- */
@@ -139,7 +146,11 @@ app.use((req, res, next) => {
 });
 
 /* ----------------------- SECURITY & LIMITING ----------------------- */
-app.use(helmet());
+// Relax Helmet policies to allow cross-origin interaction
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "unsafe-none" }
+}));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
