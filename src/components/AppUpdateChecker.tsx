@@ -115,98 +115,80 @@ export function AppUpdateChecker() {
     if (!showUpdate || !versionInfo) return null;
 
     return (
-        <AlertDialog open={showUpdate} onOpenChange={isMandatory ? undefined : setShowUpdate}>
-            <AlertDialogContent className="max-w-md">
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2">
-                        {isMandatory ? (
-                            <>
-                                <AlertTriangle className="h-5 w-5 text-destructive" />
-                                Update Required
-                            </>
-                        ) : (
-                            <>
-                                <Download className="h-5 w-5 text-primary" />
-                                Update Available
-                            </>
-                        )}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription className="space-y-3 text-left">
-                        <div>
-                            <p className="text-sm text-muted-foreground">
-                                {isMandatory
-                                    ? 'You must update to continue using SafetyWatch. Your current version is no longer supported.'
-                                    : 'A new version of SafetyWatch is available!'}
-                            </p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-sm">
-                                <span className="font-medium">Current Version:</span> {currentVersion}
-                            </p>
-                            <p className="text-sm">
-                                <span className="font-medium">Latest Version:</span> {versionInfo.version}
-                            </p>
-                            {isMandatory && (
-                                <p className="text-sm text-destructive font-medium">
-                                    Updates are mandatory to ensure security and performance.
-                                </p>
-                            )}
-                        </div>
-                        {versionInfo.notes && (
-                            <div className="rounded-md bg-muted p-3">
-                                <p className="text-sm font-medium mb-1">What's New:</p>
-                                <p className="text-sm text-muted-foreground">{versionInfo.notes}</p>
-                            </div>
-                        )}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="flex flex-col gap-2 mt-4">
-                    {!isMandatory && (
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowUpdate(false)}
-                            className="w-full"
-                        >
-                            Remind Me Later
-                        </Button>
+        <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            padding: '20px'
+        }}>
+            <div style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                padding: '24px',
+                maxWidth: '400px',
+                width: '100%',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+                textAlign: 'left'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <AlertTriangle style={{ color: '#ef4444', width: '24px', height: '24px' }} />
+                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Update Required</h2>
+                </div>
+
+                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '16px' }}>
+                    You must update to continue using SafetyWatch. Your current version ({currentVersion}) is no longer supported.
+                </p>
+
+                <div style={{ backgroundColor: '#f1f5f9', borderRadius: '8px', padding: '12px', marginBottom: '20px' }}>
+                    {versionInfo.notes && (
+                        <p style={{ fontSize: '13px', margin: 0 }}><strong>What's New:</strong> {versionInfo.notes}</p>
                     )}
-                    <Button
-                        variant={isMandatory ? "destructive" : "default"}
-                        className="w-full flex items-center justify-center gap-2"
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <a
+                        href={versionInfo.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            fontWeight: '600',
+                            textDecoration: 'none',
+                            textAlign: 'center'
+                        }}
                         onClick={() => {
-                            if (!versionInfo?.url) return;
-                            console.log('[VERSION_CHECK] Update button clicked. URL:', versionInfo.url);
-
-                            // 1. Try direct location change (usually best for downloads)
-                            window.location.href = versionInfo.url;
-
-                            // 2. Try window.open as backup
+                            console.log('[VERSION_CHECK] Button link clicked');
+                            // In case browser blocks direct Link, try programmatic too
                             setTimeout(() => {
-                                window.open(versionInfo.url, '_blank');
-                            }, 500);
-
-                            // 3. Native fallback
-                            if (Capacitor.isNativePlatform()) {
-                                handleDownload();
-                            }
+                                window.location.href = versionInfo.url;
+                            }, 100);
                         }}
                     >
-                        <Download className="h-4 w-4" />
-                        {isMandatory ? 'Update Now (Required)' : 'Download Update'}
-                    </Button>
-                    {/* Extra security: very small direct link if everything else fails */}
-                    <div className="text-[10px] text-center mt-2 text-muted-foreground">
-                        Trouble? <a
-                            href={versionInfo.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="underline text-primary"
-                        >
-                            Click here to download directly
-                        </a>
-                    </div>
+                        <Download size={18} />
+                        Update Now (Required)
+                    </a>
                 </div>
-            </AlertDialogContent>
-        </AlertDialog>
+
+                <div style={{ marginTop: '16px', textAlign: 'center' }}>
+                    <a
+                        href={versionInfo.url}
+                        style={{ fontSize: '11px', color: '#3b82f6', textDecoration: 'underline' }}
+                    >
+                        Alternative Direct Download Link
+                    </a>
+                </div>
+            </div>
+        </div>
     );
 }

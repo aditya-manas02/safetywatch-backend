@@ -1,9 +1,6 @@
 {
+    "cleanUrls": true,
     "rewrites": [
-        {
-            "source": "/android/(.*)",
-            "destination": "/android/$1"
-        },
         {
             "source": "/(.*)",
             "destination": "/index.html"

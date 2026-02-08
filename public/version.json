@@ -1,6 +1,6 @@
 {
     "version": "1.4.2",
     "minVersion": "1.4.2",
-    "url": "/android/SafetyWatch.apk",
+    "url": "/SafetyWatch.apk",
     "notes": "Version 1.4.2 includes critical bug fixes, improved performance, and the restored fluid loading screen."
 }
