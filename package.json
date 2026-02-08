@@ -13,6 +13,7 @@
   "dependencies": {
     "@capacitor/android": "8.0.2",
     "@capacitor/app": "latest",
+    "@capacitor/browser": "^8.0.0",
     "@capacitor/camera": "latest",
     "@capacitor/core": "8.0.2",
     "@capacitor/geolocation": "latest",
