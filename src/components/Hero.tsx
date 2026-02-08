@@ -62,53 +62,60 @@ export default function Hero({
   }, []);
 
   async function loadData() {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
     const API_BASE = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 
-    try {
-      // 1. Get current app version and platform info
-      let current = "1.4.2";
-      const native = Capacitor.isNativePlatform();
-      setIsWeb(!native);
+    // 1. Determine platform and version immediately
+    let currentVersion = "1.4.2";
+    const native = Capacitor.isNativePlatform();
+    setIsWeb(!native);
 
-      if (native) {
-        try {
-          const appInfo = await CapacitorApp.getInfo();
-          current = appInfo.version;
-          setAppVersion(current);
-        } catch (e) {
-          console.error("Hero app info error:", e);
-        }
+    if (native) {
+      try {
+        const appInfo = await CapacitorApp.getInfo();
+        currentVersion = appInfo.version;
+        setAppVersion(currentVersion);
+      } catch (e) {
+        console.warn("[HERO] Native app info failed:", e);
       }
+    }
 
-      // 2. Fetch latest version info from server
-      const versionRes = await fetch(`/version.json?t=${Date.now()}`);
-      if (versionRes.ok) {
-        const versionData = await versionRes.json();
-        setLatestVersion(versionData.version);
-
-        // 3. Compare for visibility logic
+    // 2. Fetch Version Info (Independent)
+    fetch(`${window.location.origin}/version.json?t=${Date.now()}`)
+      .then(res => res.ok ? res.json() : Promise.reject("Not OK"))
+      .then(data => {
+        setLatestVersion(data.version);
         if (native) {
-          const outdated = compareVersions(current, versionData.version);
-          setIsOutdated(outdated);
+          setIsOutdated(compareVersions(currentVersion, data.version));
         }
-      }
+      })
+      .catch(err => console.warn("[HERO] Version check skipped:", err));
 
-      // 4. Fetch Stats and Latest incidents with proper headers
+    // 3. Fetch Stats (Independent)
+    try {
+      console.log(`[HERO] Syncing stats from ${API_BASE}...`);
       const statsRes = await fetch(`${API_BASE}/api/stats/public`, {
-        headers: { "x-app-version": current }
+        headers: { "x-app-version": currentVersion }
       });
-      const statsJson = await statsRes.json();
-
-      const latestRes = await fetch(`${API_BASE}/api/incidents/latest`, {
-        headers: { "x-app-version": current }
-      });
-      const latestJson = await latestRes.json();
-
-      setStats(statsJson);
-      setLatest(latestJson);
+      if (statsRes.ok) {
+        setStats(await statsRes.json());
+      } else {
+        console.error(`[HERO] Stats sync failed: ${statsRes.status}`);
+      }
     } catch (err) {
-      console.log("Hero Load Error:", err);
+      console.error("[HERO] Stats network error:", err);
+    }
+
+    // 4. Fetch Latest Incidents (Independent)
+    try {
+      const latestRes = await fetch(`${API_BASE}/api/incidents/latest`, {
+        headers: { "x-app-version": currentVersion }
+      });
+      if (latestRes.ok) {
+        setLatest(await latestRes.json());
+      }
+    } catch (err) {
+      console.error("[HERO] Latest incidents network error:", err);
     } finally {
       setLoading(false);
     }
