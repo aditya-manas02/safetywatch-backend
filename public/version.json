@@ -1,6 +1,6 @@
 {
     "version": "1.4.3",
-    "minVersion": "1.4.2",
+    "minVersion": "1.4.1",
     "url": "https://safetywatch-backend.onrender.com/SafetyWatch.apk",
     "notes": "Version 1.4.3 includes Live Overview loading fix and improved error handling for better user experience."
 }
