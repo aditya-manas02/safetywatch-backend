@@ -63,15 +63,18 @@ app.options("*", cors());
 /* ----------------------- VERSION ENFORCEMENT ----------------------- */
 // Discontinue legacy versions (< 1.3.4) by requiring a header
 app.use((req, res, next) => {
+  // Use req.path to ignore query parameters
+  const path = req.path;
+
   // Skip version check for health checks, public stats, root, and the APK download route itself
   const isPublicRoute = 
-    req.url === '/ping' || 
-    req.url === '/' || 
-    req.url.startsWith('/api/health') || 
-    req.url === '/SafetyWatch.apk' ||
-    req.url === '/api/stats/public' ||
-    req.url === '/api/stats/pulse' ||
-    req.url.startsWith('/version.json');
+    path === '/ping' || 
+    path === '/' || 
+    path.startsWith('/api/health') || 
+    path === '/SafetyWatch.apk' ||
+    path.startsWith('/api/stats/public') ||
+    path.startsWith('/api/stats/pulse') ||
+    path.startsWith('/version.json');
 
   if (isPublicRoute) {
     return next();
