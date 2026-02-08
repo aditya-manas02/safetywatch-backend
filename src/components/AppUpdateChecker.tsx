@@ -123,33 +123,38 @@ export function AppUpdateChecker() {
                         )}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <div className="flex flex-col gap-2 mt-4">
-                    <a
-                        href={versionInfo.url}
-                        target="_system"
-                        className={cn(
-                            buttonVariants({ variant: "destructive" }),
-                            "w-full flex items-center justify-center gap-2"
-                        )}
-                        onClick={(e) => {
-                            // If it's native, we want to ensure it goes to the external browser
-                            if (Capacitor.isNativePlatform()) {
-                                e.preventDefault();
-                                handleDownload();
-                            }
-                        }}
+                <div className="flex flex-col gap-3 mt-6">
+                    <Button
+                        onClick={handleDownload}
+                        className="w-full py-6 text-lg font-bold shadow-lg shadow-destructive/20"
+                        variant="destructive"
                     >
-                        <Download className="h-4 w-4" />
-                        Update Now (Required)
-                    </a>
-                    <div className="text-[10px] text-center mt-2 text-muted-foreground">
-                        Trouble? <a
-                            href={versionInfo.url}
-                            target="_system"
-                            className="underline text-primary"
-                        >
-                            Click here to open in browser
-                        </a>
+                        <Download className="h-5 w-5 mr-2" />
+                        Update Now (Opens Chrome)
+                    </Button>
+
+                    <div className="space-y-4 pt-2">
+                        <p className="text-[11px] text-center text-muted-foreground leading-relaxed">
+                            Clicking the button will redirect you to your web browser to download the updated SafetyWatch.apk.
+                        </p>
+
+                        <div className="flex flex-col gap-2">
+                            <a
+                                href={versionInfo.url}
+                                target="_system"
+                                className="text-[12px] text-center text-primary underline font-medium block p-2 rounded-md hover:bg-primary/5"
+                                onClick={(e) => {
+                                    console.log('[VERSION_CHECK] Manual link click');
+                                    // We don't preventDefault here to let target="_system" work
+                                }}
+                            >
+                                Having trouble? Click here to open in Chrome
+                            </a>
+
+                            <p className="text-[9px] text-center text-muted-foreground break-all opacity-70">
+                                {versionInfo.url}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </AlertDialogContent>
