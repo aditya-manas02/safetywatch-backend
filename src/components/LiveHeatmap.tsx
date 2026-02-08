@@ -21,7 +21,8 @@ export default function LiveHeatmap() {
 
     async function loadHeatmap() {
       try {
-        const res = await fetch("http://localhost:4000/api/incidents/coords/all");
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
+        const res = await fetch(`${baseUrl}/api/incidents/coords/all`);
         const data = await res.json();
 
         const heatPoints = data.map((p: { latitude: number; longitude: number }) => [p.latitude, p.longitude, 0.8]);

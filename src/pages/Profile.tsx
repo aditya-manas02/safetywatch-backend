@@ -89,7 +89,7 @@ export default function Profile() {
 
         const fetchProfile = async () => {
             try {
-                const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+                const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
                 const token = localStorage.getItem("token");
                 if (!token) return;
 
@@ -151,7 +151,7 @@ export default function Profile() {
     const fetchMyReports = async () => {
         try {
             setLoadingReports(true);
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
             const token = localStorage.getItem("token");
             if (!token) return;
 
@@ -175,7 +175,7 @@ export default function Profile() {
         setSaving(true);
 
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
             const token = localStorage.getItem("token");
 
             const res = await fetch(`${baseUrl}/api/users/profile`, {
@@ -230,7 +230,7 @@ export default function Profile() {
         formData.append("image", file);
 
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
             const token = localStorage.getItem("token");
 
             // 1. Upload Image
@@ -297,7 +297,7 @@ export default function Profile() {
         setChangingPassword(true);
 
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
 
             const res = await fetch(`${baseUrl}/api/auth/change-password`, {
                 method: "POST",
@@ -331,7 +331,7 @@ export default function Profile() {
         setSendingOtp(true);
 
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
 
             const res = await fetch(`${baseUrl}/api/auth/request-password-otp`, {
                 method: "POST",
@@ -373,7 +373,7 @@ export default function Profile() {
         setResettingPassword(true);
 
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
 
             const res = await fetch(`${baseUrl}/api/auth/reset-password-otp`, {
                 method: "POST",

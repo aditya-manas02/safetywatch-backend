@@ -57,7 +57,7 @@ export default function Support() {
     setIsSubmitting(true);
 
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const res = await fetch(`${baseUrl}/api/support`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

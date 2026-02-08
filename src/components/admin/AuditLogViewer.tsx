@@ -10,7 +10,7 @@ export default function AuditLogViewer() {
     useEffect(() => {
         async function fetchLogs() {
             try {
-                const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+                const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
                 const token = localStorage.getItem("token");
                 const res = await fetch(`${baseUrl}/api/users/audit/logs`, {
                     headers: { Authorization: `Bearer ${token}` }

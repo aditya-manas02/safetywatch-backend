@@ -38,7 +38,7 @@ export default function ReportManager() {
     const [suspensionDays, setSuspensionDays] = useState("7");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
     const token = localStorage.getItem("token");
 
     const fetchReports = async () => {

@@ -21,7 +21,7 @@ export default function CreateAnnouncement() {
     const fetchHistory = useCallback(async () => {
         setLoadingHistory(true);
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
             const token = localStorage.getItem("token");
             const res = await fetch(`${baseUrl}/api/notifications?history=true`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -46,7 +46,7 @@ export default function CreateAnnouncement() {
 
         setDeletingId(id);
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
             const token = localStorage.getItem("token");
             const res = await fetch(`${baseUrl}/api/notifications/${id}`, {
                 method: "DELETE",
@@ -72,7 +72,7 @@ export default function CreateAnnouncement() {
 
         setLoading(true);
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
             const token = localStorage.getItem("token");
             let normalizedLink = link.trim();
             if (normalizedLink && !normalizedLink.startsWith("http") && !normalizedLink.startsWith("/")) {

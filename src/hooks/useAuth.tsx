@@ -62,12 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // SIGN UP (Node backend)
   // ---------------------------
   const signUp = async (email: string, password: string, name: string, phone?: string) => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    console.log("Auth API Call [SignUp] using Base URL:", baseUrl || "UNDEFINED (Falling back to window.origin or failing)");
-
-    if (!baseUrl || baseUrl === window.location.origin) {
-      console.warn("CRITICAL: VITE_API_BASE_URL is missing! Requests may fail on production.");
-    }
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
+    console.log("Auth API Call [SignUp] using Base URL:", baseUrl);
 
     try {
       const resp = await fetch(`${baseUrl}/api/auth/signup`, {
@@ -96,11 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // SIGN IN (Node backend)
   // ---------------------------
   const signIn = async (email: string, password: string) => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-
-    if (!baseUrl || baseUrl === window.location.origin) {
-      return { error: new Error("Server configuration error: Base API URL is missing.") };
-    }
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
 
     try {
       const resp = await fetch(`${baseUrl}/api/auth/login`, {
@@ -176,10 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // RESEND OTP
   // ---------------------------
   const resendOtp = async (email: string) => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    if (!baseUrl || baseUrl === window.location.origin) {
-      return { error: new Error("Server configuration error: Base API URL is missing.") };
-    }
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
 
     try {
       const resp = await fetch(`${baseUrl}/api/auth/resend-otp`, {
@@ -208,10 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // FORGOT PASSWORD
   // ---------------------------
   const forgotPassword = async (email: string) => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    if (!baseUrl || baseUrl === window.location.origin) {
-      return { error: new Error("Server configuration error: Base API URL is missing.") };
-    }
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
 
     try {
       const resp = await fetch(`${baseUrl}/api/auth/forgot-password`, {

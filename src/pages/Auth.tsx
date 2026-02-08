@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address").max(255),

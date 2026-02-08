@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, Mail, CheckCircle2, Star, Trash2, Clock, Filter, MessageSquare, User, ExternalLink, Send, ArrowUpRight } from "lucide-react";
+import { Loader2, Mail, CheckCircle2, Star, Trash2, Clock, Filter, MessageSquare, User, ExternalLink, Send, ArrowUpRight, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,7 @@ export default function SupportManager() {
   async function fetchMessages() {
     setLoading(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const token = localStorage.getItem("token");
       const res = await fetch(`${baseUrl}/api/support`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -37,7 +37,7 @@ export default function SupportManager() {
 
   async function updateStatus(id: string, status: string) {
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const token = localStorage.getItem("token");
       const res = await fetch(`${baseUrl}/api/support/${id}`, {
         method: "PATCH",
@@ -60,7 +60,7 @@ export default function SupportManager() {
   async function deleteMessage(id: string) {
     if (!window.confirm("Delete this ticket permanently?")) return;
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const token = localStorage.getItem("token");
       const res = await fetch(`${baseUrl}/api/support/${id}`, {
         method: "DELETE",

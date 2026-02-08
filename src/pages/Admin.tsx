@@ -47,7 +47,7 @@ export default function Admin() {
   const fetchIncidents = useCallback(async () => {
     setLoadingIncidents(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const token = localStorage.getItem("token");
       const res = await fetch(`${baseUrl}/api/incidents`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -66,7 +66,7 @@ export default function Admin() {
   const fetchUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const token = localStorage.getItem("token");
       const res = await fetch(`${baseUrl}/api/users`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -119,7 +119,7 @@ export default function Admin() {
   /* ---------------- BULK UPDATE ---------------- */
   const handleBulkUpdate = async (ids: string[], status: string, isImportant?: boolean) => {
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const token = localStorage.getItem("token");
       const res = await fetch(`${baseUrl}/api/incidents/bulk-status`, {
         method: "PATCH",
@@ -142,7 +142,7 @@ export default function Admin() {
   /* ---------------- DELETE INCIDENT ---------------- */
   async function deleteIncident(id: string) {
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const token = localStorage.getItem("token");
       const res = await fetch(`${baseUrl}/api/incidents/${id}`, {
         method: "DELETE",
@@ -162,7 +162,7 @@ export default function Admin() {
   /* ---------------- UPDATE STATUS ---------------- */
   async function updateIncidentStatus(id: string, status: Incident['status']) {
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const token = localStorage.getItem("token");
       const res = await fetch(`${baseUrl}/api/incidents/${id}/status`, {
         method: "PATCH",
@@ -186,7 +186,7 @@ export default function Admin() {
   /* ---------------- TOGGLE IMPORTANT ---------------- */
   async function toggleIncidentImportance(id: string, isImportant: boolean) {
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const token = localStorage.getItem("token");
       const res = await fetch(`${baseUrl}/api/incidents/${id}/status`, {
         method: "PATCH",
@@ -213,7 +213,7 @@ export default function Admin() {
 
   async function fetchUserIncidents(id: string) {
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
       const token = localStorage.getItem("token");
       const res = await fetch(`${baseUrl}/api/users/${id}/incidents`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -418,19 +418,19 @@ export default function Admin() {
             incidents={userIncidents}
             onClose={() => setSelectedUser(null)}
             onPromote={async (id: string) => {
-              const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+              const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
               const token = localStorage.getItem("token");
               const res = await fetch(`${baseUrl}/api/users/${id}/promote`, { method: "PATCH", headers: { Authorization: `Bearer ${token}` } });
               if (res.ok) { toast({ title: "User Promoted" }); fetchUsers(); setSelectedUser(null); }
             }}
             onDemote={async (id: string) => {
-              const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+              const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
               const token = localStorage.getItem("token");
               const res = await fetch(`${baseUrl}/api/users/${id}/demote`, { method: "PATCH", headers: { Authorization: `Bearer ${token}` } });
               if (res.ok) { toast({ title: "Admin Role Removed" }); fetchUsers(); setSelectedUser(null); }
             }}
             onDelete={async (id: string) => {
-              const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+              const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
               const token = localStorage.getItem("token");
               const res = await fetch(`${baseUrl}/api/users/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
               if (res.ok) { toast({ title: "User Deleted" }); fetchUsers(); setSelectedUser(null); }

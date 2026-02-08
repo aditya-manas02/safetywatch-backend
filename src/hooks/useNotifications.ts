@@ -23,7 +23,7 @@ export function useNotifications() {
 
         setLoading(true);
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
             const res = await fetch(`${baseUrl}/api/notifications`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -48,7 +48,7 @@ export function useNotifications() {
 
         const token = localStorage.getItem("token");
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
             await fetch(`${baseUrl}/api/notifications/${id}/read`, {
                 method: "PATCH",
                 headers: { Authorization: `Bearer ${token}` }
@@ -67,7 +67,7 @@ export function useNotifications() {
         setUnreadCount(0);
 
         try {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
             // This only marks personal notifications as read in DB
             await fetch(`${baseUrl}/api/notifications/read-all`, {
                 method: "PATCH",

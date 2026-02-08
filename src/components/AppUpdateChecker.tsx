@@ -36,8 +36,9 @@ export function AppUpdateChecker() {
             const current = appInfo.version;
             setCurrentVersion(current);
 
-            // Fetch latest version info with cache busting
-            const response = await fetch(`/version.json?t=${Date.now()}`);
+            // Fetch latest version info with cache busting from production
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
+            const response = await fetch(`${baseUrl}/version.json?t=${Date.now()}`);
             if (!response.ok) throw new Error('Failed to fetch version.json');
             const data: VersionInfo = await response.json();
             setVersionInfo(data);

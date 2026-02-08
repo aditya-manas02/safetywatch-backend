@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:4000") + "/api";
+const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
+const API_BASE = baseUrl + "/api";
 
 interface Group {
   _id: string;

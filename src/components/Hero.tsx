@@ -101,9 +101,16 @@ export default function Hero({
         setStats(await statsRes.json());
       } else {
         console.error(`[HERO] Stats sync failed: ${statsRes.status}`);
+        if (statsRes.status === 401 || statsRes.status === 403) {
+          console.warn("[HERO] Auth/CORS block on stats");
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("[HERO] Stats network error:", err);
+      // Fallback diagnostics
+      if (err.message?.includes("Failed to fetch")) {
+        console.warn("[DIAGNOSTIC] Possible CORS or Network restriction active on mobile.");
+      }
     }
 
     // 4. Fetch Latest Incidents (Independent)

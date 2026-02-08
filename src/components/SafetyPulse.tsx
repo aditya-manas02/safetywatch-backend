@@ -27,8 +27,8 @@ const SafetyPulse = () => {
     useEffect(() => {
         const fetchPulse = async () => {
             try {
-                const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
-                const API_BASE = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+                const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
+                const API_BASE = (baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl) + "/api";
 
                 const VERSION_HEADERS = { "x-app-version": "1.4.2" };
 

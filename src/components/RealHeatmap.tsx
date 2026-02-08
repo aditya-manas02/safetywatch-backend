@@ -5,7 +5,8 @@ import "leaflet.heat";
 import { motion } from "framer-motion";
 import { MapPin, Loader2 } from "lucide-react";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:4000") + "/api";
+const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://safetywatch-backend.onrender.com";
+const API_BASE = baseUrl + "/api";
 
 export default function RealHeatmap() {
   const mapRef = useRef<L.Map | null>(null);
