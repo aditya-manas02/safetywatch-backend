@@ -3,8 +3,9 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Download, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface VersionInfo {
     version: string;
@@ -123,24 +124,31 @@ export function AppUpdateChecker() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="flex flex-col gap-2 mt-4">
-                    <Button
-                        onClick={handleDownload}
-                        className="w-full"
-                        variant="destructive"
+                    <a
+                        href={versionInfo.url}
+                        target="_system"
+                        className={cn(
+                            buttonVariants({ variant: "destructive" }),
+                            "w-full flex items-center justify-center gap-2"
+                        )}
+                        onClick={(e) => {
+                            // If it's native, we want to ensure it goes to the external browser
+                            if (Capacitor.isNativePlatform()) {
+                                e.preventDefault();
+                                handleDownload();
+                            }
+                        }}
                     >
-                        <Download className="h-4 w-4 mr-2" />
+                        <Download className="h-4 w-4" />
                         Update Now (Required)
-                    </Button>
+                    </a>
                     <div className="text-[10px] text-center mt-2 text-muted-foreground">
                         Trouble? <a
                             href={versionInfo.url}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                handleDownload();
-                            }}
+                            target="_system"
                             className="underline text-primary"
                         >
-                            Click here to download directly
+                            Click here to open in browser
                         </a>
                     </div>
                 </div>
