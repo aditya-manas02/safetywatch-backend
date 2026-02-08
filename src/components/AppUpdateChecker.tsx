@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Browser } from '@capacitor/browser';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, AlertTriangle } from 'lucide-react';
 
 interface VersionInfo {
     version: string;
@@ -15,6 +16,7 @@ export function AppUpdateChecker() {
     const [showUpdate, setShowUpdate] = useState(false);
     const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
     const [currentVersion, setCurrentVersion] = useState<string>('');
+    const [isMandatory, setIsMandatory] = useState(false);
 
     useEffect(() => {
         checkForUpdates();
@@ -32,9 +34,14 @@ export function AppUpdateChecker() {
             const data: VersionInfo = await response.json();
             setVersionInfo(data);
 
-            // Compare versions
-            if (isOutdated(current, data.version)) {
+            // Check if update is available
+            const updateAvailable = isOutdated(current, data.version);
+            // Check if current version is below minimum required version
+            const belowMinimum = isOutdated(current, data.minVersion);
+
+            if (updateAvailable) {
                 setShowUpdate(true);
+                setIsMandatory(belowMinimum);
             }
         } catch (error) {
             console.error('[VERSION_CHECK] Failed to check for updates:', error);
@@ -60,26 +67,44 @@ export function AppUpdateChecker() {
         return false;
     };
 
-    const handleDownload = () => {
+    const handleDownload = async () => {
         if (versionInfo?.url) {
-            window.open(versionInfo.url, '_blank');
+            try {
+                // Use Capacitor Browser to open download link
+                await Browser.open({ url: versionInfo.url });
+            } catch (error) {
+                console.error('[VERSION_CHECK] Failed to open download link:', error);
+                // Fallback to window.open
+                window.open(versionInfo.url, '_system');
+            }
         }
     };
 
     if (!showUpdate || !versionInfo) return null;
 
     return (
-        <AlertDialog open={showUpdate} onOpenChange={setShowUpdate}>
+        <AlertDialog open={showUpdate} onOpenChange={isMandatory ? undefined : setShowUpdate}>
             <AlertDialogContent className="max-w-md">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2">
-                        <Download className="h-5 w-5 text-primary" />
-                        Update Available
+                        {isMandatory ? (
+                            <>
+                                <AlertTriangle className="h-5 w-5 text-destructive" />
+                                Update Required
+                            </>
+                        ) : (
+                            <>
+                                <Download className="h-5 w-5 text-primary" />
+                                Update Available
+                            </>
+                        )}
                     </AlertDialogTitle>
                     <AlertDialogDescription className="space-y-3 text-left">
                         <div>
                             <p className="text-sm text-muted-foreground">
-                                A new version of SafetyWatch is available!
+                                {isMandatory
+                                    ? 'You must update to continue using SafetyWatch. Your current version is no longer supported.'
+                                    : 'A new version of SafetyWatch is available!'}
                             </p>
                         </div>
                         <div className="space-y-1">
@@ -89,6 +114,11 @@ export function AppUpdateChecker() {
                             <p className="text-sm">
                                 <span className="font-medium">Latest Version:</span> {versionInfo.version}
                             </p>
+                            {isMandatory && (
+                                <p className="text-sm text-destructive font-medium">
+                                    Minimum Required: {versionInfo.minVersion}
+                                </p>
+                            )}
                         </div>
                         {versionInfo.notes && (
                             <div className="rounded-md bg-muted p-3">
@@ -98,22 +128,25 @@ export function AppUpdateChecker() {
                         )}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => setShowUpdate(false)}
-                        className="w-full sm:w-auto"
-                    >
-                        Later
-                    </Button>
+                <div className="flex flex-col gap-2 mt-4">
+                    {!isMandatory && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowUpdate(false)}
+                            className="w-full"
+                        >
+                            Remind Me Later
+                        </Button>
+                    )}
                     <Button
                         onClick={handleDownload}
-                        className="w-full sm:w-auto"
+                        className="w-full"
+                        variant={isMandatory ? "destructive" : "default"}
                     >
                         <Download className="h-4 w-4 mr-2" />
-                        Download Update
+                        {isMandatory ? 'Update Now (Required)' : 'Download Update'}
                     </Button>
-                </AlertDialogFooter>
+                </div>
             </AlertDialogContent>
         </AlertDialog>
     );
