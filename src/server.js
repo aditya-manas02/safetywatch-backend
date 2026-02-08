@@ -123,7 +123,11 @@ app.use((req, res, next) => {
       error: upgradeMsg,
       name: "VersionError", // Some old versions check error.name
       status: 426,
-      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk"
+      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch.apk",
+      debug: {
+        path: path,
+        build: "B87-PATH-MATCH-FIX"
+      }
     });
   }
   next();
