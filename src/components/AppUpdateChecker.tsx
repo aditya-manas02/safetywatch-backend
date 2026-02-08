@@ -39,10 +39,11 @@ export function AppUpdateChecker() {
 
             setCurrentVersion(current);
 
-            // Fetch latest version info
-            const response = await fetch('/version.json');
+            // Fetch latest version info with cache busting
+            const response = await fetch(`/version.json?t=${Date.now()}`);
             if (!response.ok) throw new Error('Failed to fetch version.json');
             const data: VersionInfo = await response.json();
+            console.log('[VERSION_CHECK] Fetched data:', data);
             setVersionInfo(data);
 
             // Check if update is available
@@ -169,24 +170,40 @@ export function AppUpdateChecker() {
                             Remind Me Later
                         </Button>
                     )}
-                    <a
-                        href={versionInfo.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={cn(
-                            buttonVariants({ variant: isMandatory ? "destructive" : "default" }),
-                            "w-full flex items-center justify-center gap-2 no-underline"
-                        )}
+                    <Button
+                        variant={isMandatory ? "destructive" : "default"}
+                        className="w-full flex items-center justify-center gap-2"
                         onClick={() => {
+                            if (!versionInfo?.url) return;
                             console.log('[VERSION_CHECK] Update button clicked. URL:', versionInfo.url);
+
+                            // 1. Try direct location change (usually best for downloads)
+                            window.location.href = versionInfo.url;
+
+                            // 2. Try window.open as backup
+                            setTimeout(() => {
+                                window.open(versionInfo.url, '_blank');
+                            }, 500);
+
+                            // 3. Native fallback
+                            if (Capacitor.isNativePlatform()) {
+                                handleDownload();
+                            }
                         }}
                     >
                         <Download className="h-4 w-4" />
                         {isMandatory ? 'Update Now (Required)' : 'Download Update'}
-                    </a>
+                    </Button>
                     {/* Extra security: very small direct link if everything else fails */}
                     <div className="text-[10px] text-center mt-2 text-muted-foreground">
-                        Trouble? <a href={versionInfo.url} className="underline text-primary">Click here to download directly</a>
+                        Trouble? <a
+                            href={versionInfo.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline text-primary"
+                        >
+                            Click here to download directly
+                        </a>
                     </div>
                 </div>
             </AlertDialogContent>

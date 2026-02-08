@@ -1,6 +1,6 @@
 {
     "version": "1.4.2",
     "minVersion": "1.4.2",
-    "url": "https://safetywatch.vercel.app/android/SafetyWatch.apk",
+    "url": "/android/SafetyWatch.apk",
     "notes": "Version 1.4.2 includes critical bug fixes, improved performance, and the restored fluid loading screen."
 }
