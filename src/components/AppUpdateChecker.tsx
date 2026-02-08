@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
-import { buttonVariants } from '@/components/ui/button';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Download, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,29 +25,33 @@ export function AppUpdateChecker() {
     }, []);
 
     const checkForUpdates = async () => {
-        // Skip check if not on native platform (Android/iOS)
-        if (!Capacitor.isNativePlatform()) {
-            console.log('[VERSION_CHECK] Running on web platform, skipping native version check.');
-            return;
-        }
-
         try {
-            // Get current app version
-            const appInfo = await CapacitorApp.getInfo();
-            const current = appInfo.version;
+            // Get current app version (defaults to 1.0.0 for web testing)
+            let current = '1.0.0';
+            try {
+                if (Capacitor.isNativePlatform()) {
+                    const appInfo = await CapacitorApp.getInfo();
+                    current = appInfo.version;
+                }
+            } catch (e) {
+                console.log('[VERSION_CHECK] Native version check failed, using web default.');
+            }
+
             setCurrentVersion(current);
 
             // Fetch latest version info
             const response = await fetch('/version.json');
+            if (!response.ok) throw new Error('Failed to fetch version.json');
             const data: VersionInfo = await response.json();
             setVersionInfo(data);
 
             // Check if update is available
             const updateAvailable = isOutdated(current, data.version);
+            console.log(`[VERSION_CHECK] Current: ${current}, Latest: ${data.version}, Update Available: ${updateAvailable}`);
 
             if (updateAvailable) {
                 setShowUpdate(true);
-                // Force mandatory update as per user request: "user can only enter the app when they have the latest version"
+                // Force mandatory update as per user request
                 setIsMandatory(true);
             }
         } catch (error) {
@@ -155,41 +159,36 @@ export function AppUpdateChecker() {
                         )}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="flex-col sm:flex-col gap-2 mt-4">
+                <div className="flex flex-col gap-2 mt-4">
                     {!isMandatory && (
-                        <AlertDialogAction
-                            asChild
-                            className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowUpdate(false)}
+                            className="w-full"
                         >
-                            <button onClick={() => setShowUpdate(false)}>
-                                Remind Me Later
-                            </button>
-                        </AlertDialogAction>
+                            Remind Me Later
+                        </Button>
                     )}
-                    <AlertDialogAction asChild>
-                        <a
-                            href={versionInfo.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download="SafetyWatch.apk"
-                            className={cn(
-                                buttonVariants({ variant: isMandatory ? "destructive" : "default" }),
-                                "w-full pointer-events-auto flex items-center justify-center gap-2"
-                            )}
-                            onClick={(e) => {
-                                console.log('[VERSION_CHECK] Manual click triggered for:', versionInfo.url);
-                                // We don't preventDefault here to allow the link to work naturally
-                                if (Capacitor.isNativePlatform()) {
-                                    e.preventDefault();
-                                    handleDownload();
-                                }
-                            }}
-                        >
-                            <Download className="h-4 w-4" />
-                            {isMandatory ? 'Update Now (Required)' : 'Download Update'}
-                        </a>
-                    </AlertDialogAction>
-                </AlertDialogFooter>
+                    <a
+                        href={versionInfo.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(
+                            buttonVariants({ variant: isMandatory ? "destructive" : "default" }),
+                            "w-full flex items-center justify-center gap-2 no-underline"
+                        )}
+                        onClick={() => {
+                            console.log('[VERSION_CHECK] Update button clicked. URL:', versionInfo.url);
+                        }}
+                    >
+                        <Download className="h-4 w-4" />
+                        {isMandatory ? 'Update Now (Required)' : 'Download Update'}
+                    </a>
+                    {/* Extra security: very small direct link if everything else fails */}
+                    <div className="text-[10px] text-center mt-2 text-muted-foreground">
+                        Trouble? <a href={versionInfo.url} className="underline text-primary">Click here to download directly</a>
+                    </div>
+                </div>
             </AlertDialogContent>
         </AlertDialog>
     );
