@@ -66,7 +66,7 @@ app.use((req, res, next) => {
   // Use req.path to ignore query parameters
   const path = req.path;
 
-  // Skip version check for health checks, public stats, root, and the APK download route itself
+  // Skip version check for health checks, public stats, root, and anonymous data routes
   const isPublicRoute = 
     path === '/ping' || 
     path === '/' || 
@@ -74,6 +74,7 @@ app.use((req, res, next) => {
     path === '/SafetyWatch.apk' ||
     path.startsWith('/api/stats/public') ||
     path.startsWith('/api/stats/pulse') ||
+    path.startsWith('/api/incidents/latest') ||
     path.startsWith('/version.json');
 
   if (isPublicRoute) {
