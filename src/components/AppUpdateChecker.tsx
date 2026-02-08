@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
 import { Download, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface VersionInfo {
     version: string;
@@ -154,25 +155,41 @@ export function AppUpdateChecker() {
                         )}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <div className="flex flex-col gap-2 mt-4">
+                <AlertDialogFooter className="flex-col sm:flex-col gap-2 mt-4">
                     {!isMandatory && (
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowUpdate(false)}
-                            className="w-full"
+                        <AlertDialogAction
+                            asChild
+                            className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80"
                         >
-                            Remind Me Later
-                        </Button>
+                            <button onClick={() => setShowUpdate(false)}>
+                                Remind Me Later
+                            </button>
+                        </AlertDialogAction>
                     )}
-                    <Button
-                        onClick={handleDownload}
-                        className="w-full"
-                        variant={isMandatory ? "destructive" : "default"}
-                    >
-                        <Download className="h-4 w-4 mr-2" />
-                        {isMandatory ? 'Update Now (Required)' : 'Download Update'}
-                    </Button>
-                </div>
+                    <AlertDialogAction asChild>
+                        <a
+                            href={versionInfo.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download="SafetyWatch.apk"
+                            className={cn(
+                                buttonVariants({ variant: isMandatory ? "destructive" : "default" }),
+                                "w-full pointer-events-auto flex items-center justify-center gap-2"
+                            )}
+                            onClick={(e) => {
+                                console.log('[VERSION_CHECK] Manual click triggered for:', versionInfo.url);
+                                // We don't preventDefault here to allow the link to work naturally
+                                if (Capacitor.isNativePlatform()) {
+                                    e.preventDefault();
+                                    handleDownload();
+                                }
+                            }}
+                        >
+                            <Download className="h-4 w-4" />
+                            {isMandatory ? 'Update Now (Required)' : 'Download Update'}
+                        </a>
+                    </AlertDialogAction>
+                </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
     );
