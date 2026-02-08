@@ -181,22 +181,45 @@ app.get("/api/health-test", (req, res) => {
 
 // CHUNKED APK DELIVERY: Stream the APK parts as a single file to bypass hosting size limits
 app.get("/SafetyWatch.apk", (req, res) => {
+  const apkPath = path.join(__dirname, '../public/SafetyWatch.apk');
   const parts = [
     path.join(__dirname, '../public/SafetyWatch.apk.part1'),
     path.join(__dirname, '../public/SafetyWatch.apk.part2'),
     path.join(__dirname, '../public/SafetyWatch.apk.part3')
   ];
 
-  if (!fs.existsSync(parts[0])) {
-    return res.status(404).json({ message: "APK parts not found. Please wait for deployment to complete." });
+  // PRIORITY: Serve full APK if it exists (most robust)
+  if (fs.existsSync(apkPath)) {
+    console.log(`[APK_DOWNLOAD] Sending full APK via res.download to ${req.ip}`);
+    return res.download(apkPath, 'SafetyWatch.apk', {
+      headers: {
+        'Content-Type': 'application/vnd.android.package-archive',
+      }
+    });
   }
 
+  // FALLBACK: Stream parts if full APK is missing
+  if (!fs.existsSync(parts[0])) {
+    return res.status(404).json({ message: "APK not found. Please wait for deployment to complete." });
+  }
+
+  console.log(`[APK_DOWNLOAD] Streaming reassembled APK to ${req.ip}`);
   res.setHeader('Content-Disposition', 'attachment; filename="SafetyWatch.apk"');
   res.setHeader('Content-Type', 'application/vnd.android.package-archive');
 
-  console.log(`[APK_DOWNLOAD] Streaming reassembled APK to ${req.ip}`);
-
+  // CRITICAL: Set Content-Length to avoid "stuck at 100%" in mobile browsers
   try {
+    let totalSize = 0;
+    parts.forEach(part => {
+      if (fs.existsSync(part)) {
+        totalSize += fs.statSync(part).size;
+      }
+    });
+
+    if (totalSize > 0) {
+      res.setHeader('Content-Length', totalSize);
+    }
+
     parts.forEach(part => {
       const data = fs.readFileSync(part);
       res.write(data);
@@ -204,7 +227,11 @@ app.get("/SafetyWatch.apk", (req, res) => {
     res.end();
   } catch (err) {
     console.error("[APK_DOWNLOAD_ERROR]", err);
-    res.status(500).end();
+    if (!res.headersSent) {
+      res.status(500).end();
+    } else {
+      res.end();
+    }
   }
 });
 
