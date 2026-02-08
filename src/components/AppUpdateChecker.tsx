@@ -55,6 +55,8 @@ export function AppUpdateChecker() {
     };
 
     const isOutdated = (current: string, latest: string): boolean => {
+        if (!current || !latest) return false;
+
         const currClean = current.replace(/^v/, '');
         const latestClean = latest.replace(/^v/, '');
 
@@ -74,30 +76,33 @@ export function AppUpdateChecker() {
     };
 
     const handleDownload = async () => {
-        if (versionInfo?.url) {
-            console.log('[VERSION_CHECK] Initiating download from:', versionInfo.url);
-            try {
-                // For direct APK downloads, location.assign is often the most reliable 
-                // way to trigger the browser's/webview's native download handler.
-                window.location.assign(versionInfo.url);
+        if (!versionInfo?.url) {
+            console.error('[VERSION_CHECK] No download URL available');
+            return;
+        }
 
-                // On some native platforms, we might need a backup
-                if (Capacitor.isNativePlatform()) {
-                    setTimeout(async () => {
-                        try {
-                            await Browser.open({ url: versionInfo.url });
-                        } catch (e) {
-                            console.error('[VERSION_CHECK] Browser.open fallback failed:', e);
-                        }
-                    }, 1000);
-                }
-            } catch (error) {
-                console.error('[VERSION_CHECK] Primary download method failed:', error);
-                // Fallback to _system link
-                window.open(versionInfo.url, '_system');
+        console.log('[VERSION_CHECK] Initiating download:', versionInfo.url);
+
+        try {
+            if (Capacitor.isNativePlatform()) {
+                // For native apps, Browser.open is the most reliable way to trigger 
+                // the external browser for a file download.
+                await Browser.open({ url: versionInfo.url });
+            } else {
+                // For web, simple window.open or a direct temporary link click
+                const link = document.createElement('a');
+                link.href = versionInfo.url;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.download = 'SafetyWatch.apk';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
-        } else {
-            console.error('[VERSION_CHECK] No download URL available in versionInfo');
+        } catch (error) {
+            console.error('[VERSION_CHECK] Download failed:', error);
+            // Final fallback
+            window.open(versionInfo.url, '_blank');
         }
     };
 
