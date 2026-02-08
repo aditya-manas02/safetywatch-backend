@@ -78,15 +78,20 @@ export function AppUpdateChecker() {
 
     const handleDownload = async () => {
         if (versionInfo?.url) {
-            console.log('[VERSION_CHECK] Initiating native download via Browser API:', versionInfo.url);
+            console.log('[VERSION_CHECK] Initiating native download redirect:', versionInfo.url);
             try {
-                // For native apps, Browser.open is the most reliable way to trigger 
-                // the system's external browser for a file download.
-                await Browser.open({ url: versionInfo.url });
+                // 1. Primary: Capacitor Browser API (Opens system browser)
+                await Browser.open({ url: versionInfo.url, windowName: '_system' });
             } catch (error) {
                 console.error('[VERSION_CHECK] Browser.open failed:', error);
-                // Fallback
-                window.open(versionInfo.url, '_system');
+                try {
+                    // 2. Secondary: window.open with _system
+                    window.open(versionInfo.url, '_system');
+                } catch (e2) {
+                    console.error('[VERSION_CHECK] window.open failed:', e2);
+                    // 3. Last resort: location.replace
+                    window.location.href = versionInfo.url;
+                }
             }
         }
     };
