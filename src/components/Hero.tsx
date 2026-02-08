@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Activity, Radio, AlertTriangle, Users, Shield, Flame, Car, UtilityPole, Volume2, UserSearch, Info, Zap, Download } from "lucide-react";
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 
 function AnimatedCounter({ value }: { value: number }) {
   const count = useMotionValue(0);
@@ -46,6 +48,10 @@ export default function Hero({
   const [stats, setStats] = useState<Stats | null>(null);
   const [latest, setLatest] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
+  const [appVersion, setAppVersion] = useState<string>("1.4.2");
+  const [latestVersion, setLatestVersion] = useState<string>("1.4.2");
+  const [isOutdated, setIsOutdated] = useState(false);
+  const [isWeb, setIsWeb] = useState(true);
 
   useEffect(() => {
     loadData();
@@ -59,13 +65,42 @@ export default function Hero({
     const API_BASE = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 
     try {
+      // 1. Get current app version and platform info
+      let current = "1.4.2";
+      const native = Capacitor.isNativePlatform();
+      setIsWeb(!native);
+
+      if (native) {
+        try {
+          const appInfo = await CapacitorApp.getInfo();
+          current = appInfo.version;
+          setAppVersion(current);
+        } catch (e) {
+          console.error("Hero app info error:", e);
+        }
+      }
+
+      // 2. Fetch latest version info from server
+      const versionRes = await fetch(`/version.json?t=${Date.now()}`);
+      if (versionRes.ok) {
+        const versionData = await versionRes.json();
+        setLatestVersion(versionData.version);
+
+        // 3. Compare for visibility logic
+        if (native) {
+          const outdated = compareVersions(current, versionData.version);
+          setIsOutdated(outdated);
+        }
+      }
+
+      // 4. Fetch Stats and Latest incidents with proper headers
       const statsRes = await fetch(`${API_BASE}/api/stats/public`, {
-        headers: { "x-app-version": "1.4.2" }
+        headers: { "x-app-version": current }
       });
       const statsJson = await statsRes.json();
 
       const latestRes = await fetch(`${API_BASE}/api/incidents/latest`, {
-        headers: { "x-app-version": "1.4.2" }
+        headers: { "x-app-version": current }
       });
       const latestJson = await latestRes.json();
 
@@ -76,6 +111,18 @@ export default function Hero({
     } finally {
       setLoading(false);
     }
+  }
+
+  function compareVersions(current: string, latest: string): boolean {
+    const c = current.replace(/^v/, "").split(".").map(Number);
+    const l = latest.replace(/^v/, "").split(".").map(Number);
+    while (c.length < 3) c.push(0);
+    while (l.length < 3) l.push(0);
+    for (let i = 0; i < 3; i++) {
+      if (c[i] < l[i]) return true;
+      if (c[i] > l[i]) return false;
+    }
+    return false;
   }
 
   const getTypeIcon = (type: string) => {
@@ -154,21 +201,26 @@ export default function Hero({
             </motion.button>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1, duration: 1 }}
-            className="mt-8 flex justify-center lg:justify-start"
-          >
-            <a
-              href="/android/SafetyWatch.apk"
-              download
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              <span className="underline underline-offset-4">Download Android App (v1.4.2)</span>
-            </a>
-          </motion.div>
+          <AnimatePresence>
+            {(isWeb || isOutdated) && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.5 }}
+                className="mt-8 flex justify-center lg:justify-start overflow-hidden"
+              >
+                <a
+                  href="/SafetyWatch.apk"
+                  download
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group/dl"
+                >
+                  <Download className="h-4 w-4 group-hover/dl:animate-bounce" />
+                  <span className="underline underline-offset-4 font-medium">Download Android App (v{latestVersion})</span>
+                </a>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* RIGHT SIDE: LIVE DASHBOARD */}
