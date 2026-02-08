@@ -1,7 +1,7 @@
 // d:\safe-neighborhood-watch-main11\frontend\src\components\Hero.tsx
 
 import { useEffect, useState } from "react";
-import { Activity, Radio, AlertTriangle, Users, Shield, Flame, Car, UtilityPole, Volume2, UserSearch, Info, Zap } from "lucide-react";
+import { Activity, Radio, AlertTriangle, Users, Shield, Flame, Car, UtilityPole, Volume2, UserSearch, Info, Zap, Download } from "lucide-react";
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
 
 function AnimatedCounter({ value }: { value: number }) {
@@ -59,10 +59,14 @@ export default function Hero({
     const API_BASE = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 
     try {
-      const statsRes = await fetch(`${API_BASE}/api/stats/public`);
+      const statsRes = await fetch(`${API_BASE}/api/stats/public`, {
+        headers: { "x-app-version": "1.4.2" }
+      });
       const statsJson = await statsRes.json();
 
-      const latestRes = await fetch(`${API_BASE}/api/incidents/latest`);
+      const latestRes = await fetch(`${API_BASE}/api/incidents/latest`, {
+        headers: { "x-app-version": "1.4.2" }
+      });
       const latestJson = await latestRes.json();
 
       setStats(statsJson);
@@ -149,6 +153,22 @@ export default function Hero({
               View Feed
             </motion.button>
           </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1, duration: 1 }}
+            className="mt-8 flex justify-center lg:justify-start"
+          >
+            <a
+              href="/android/SafetyWatch.apk"
+              download
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              <span className="underline underline-offset-4">Download Android App (v1.4.2)</span>
+            </a>
+          </motion.div>
         </motion.div>
 
         {/* RIGHT SIDE: LIVE DASHBOARD */}

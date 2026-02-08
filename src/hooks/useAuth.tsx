@@ -72,7 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const resp = await fetch(`${baseUrl}/api/auth/signup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-version": "1.4.2"
+        },
         body: JSON.stringify({ email, password, name, phone }),
       });
 
@@ -102,7 +105,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const resp = await fetch(`${baseUrl}/api/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-version": "1.4.2"
+        },
         body: JSON.stringify({ email, password }),
       });
 
@@ -141,7 +147,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const resp = await fetch(`${baseUrl}/api/auth/verify-otp`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-version": "1.4.2"
+        },
         body: JSON.stringify({ email, otp }),
       });
 
@@ -175,7 +184,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const resp = await fetch(`${baseUrl}/api/auth/resend-otp`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-version": "1.4.2"
+        },
         body: JSON.stringify({ email }),
       });
 
@@ -204,7 +216,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const resp = await fetch(`${baseUrl}/api/auth/forgot-password`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-version": "1.4.2"
+        },
         body: JSON.stringify({ email }),
       });
 

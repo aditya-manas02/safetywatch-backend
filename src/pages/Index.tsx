@@ -61,7 +61,9 @@ export default function Index() {
   ---------------------------- */
   const fetchFocusedIncident = useCallback(async (id: string) => {
     try {
-      const resp = await fetch(`${API_BASE}/incidents/${id}`);
+      const resp = await fetch(`${API_BASE}/incidents/${id}`, {
+        headers: { "x-app-version": "1.4.2" }
+      });
       if (resp.ok) {
         const data = await resp.json();
         setFocusedIncident(mapIncident(data));
@@ -73,7 +75,9 @@ export default function Index() {
   const fetchPopular = useCallback(async () => {
     setLoadingPopular(true);
     try {
-      const resp = await fetch(`${API_BASE}/incidents/popular`);
+      const resp = await fetch(`${API_BASE}/incidents/popular`, {
+        headers: { "x-app-version": "1.4.2" }
+      });
       const data = await resp.json();
       const filtered = (data || []).map(mapIncident).filter((i: Incident) =>
         (i.status === 'approved' || i.isImportant) && i.status !== 'problem solved'
@@ -92,7 +96,9 @@ export default function Index() {
   const fetchNearby = useCallback(async (lat: number, lng: number) => {
     setLoadingNearby(true);
     try {
-      const resp = await fetch(`${API_BASE}/incidents/near-me?lat=${lat}&lng=${lng}&radius=10`);
+      const resp = await fetch(`${API_BASE}/incidents/near-me?lat=${lat}&lng=${lng}&radius=10`, {
+        headers: { "x-app-version": "1.4.2" }
+      });
       const data = await resp.json();
       const filtered = (data || []).map(mapIncident).filter((i: Incident) =>
         (i.status === 'approved' || i.isImportant) && i.status !== 'problem solved'
@@ -114,7 +120,10 @@ export default function Index() {
     try {
       const token = localStorage.getItem("token");
       const resp = await fetch(`${API_BASE}/incidents/my-reports`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-app-version": "1.4.2"
+        }
       });
       const data = await resp.json();
       setMyReports((data || []).map(mapIncident));
@@ -200,7 +209,10 @@ export default function Index() {
         const token = localStorage.getItem("token");
         const uploadResp = await fetch(`${API_BASE}/upload`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "x-app-version": "1.4.2"
+          },
           body: form,
         });
         const uploadData = await uploadResp.json();
@@ -214,7 +226,11 @@ export default function Index() {
       const token = localStorage.getItem("token");
       const resp = await fetch(`${API_BASE}/incidents`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "x-app-version": "1.4.2"
+        },
         body: JSON.stringify({ ...report, imageUrl }),
       });
       if (!resp.ok) throw new Error("Failed to submit");

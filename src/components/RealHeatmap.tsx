@@ -53,7 +53,9 @@ export default function RealHeatmap() {
 
     async function loadHeatPoints() {
       try {
-        const res = await fetch(`${API_BASE}/incidents/coords/all`);
+        const res = await fetch(`${API_BASE}/incidents/coords/all`, {
+          headers: { "x-app-version": "1.4.2" }
+        });
         if (!res.ok) throw new Error("Failed to fetch coordinates");
         const data = await res.json();
 

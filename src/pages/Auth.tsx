@@ -170,7 +170,10 @@ const Auth = () => {
     try {
       const res = await fetch(`${API_BASE}/api/support`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-version": "1.4.2"
+        },
         body: JSON.stringify({
           name: supportName,
           email: supportEmail,

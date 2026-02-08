@@ -3,15 +3,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import Navbar from "./components/Navbar";
 import { useLocation } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import ChatBot from "./components/ChatBot";
 import AnimatedBackground from "./components/AnimatedBackground";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { SplashScreen } from "@capacitor/splash-screen";
+import { App as CapacitorApp } from "@capacitor/app";
+import { SafetyWatchLoader } from "./components/SafetyWatchLoader";
 
 // Lazy load pages for performance
 const Index = lazy(() => import("./pages/Index"));
@@ -25,21 +27,51 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[60vh] w-full">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
+
 
 const AppContent = () => {
   const location = useLocation();
   const hideNavbar = ["/admin", "/auth"].some(path => location.pathname.startsWith(path));
 
+  const { isLoading } = useAuth();
+  const [minLoadTimePassed, setMinLoadTimePassed] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinLoadTimePassed(true);
+    }, 5000); // 5 seconds minimum load time
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle Hardware Back Button
+  useEffect(() => {
+    const backListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      // If we are on the text root path or auth page, ask to exit
+      if (location.pathname === '/' || location.pathname === '/auth') {
+        const confirmExit = window.confirm("Do you want to exit SafetyWatch?");
+        if (confirmExit) {
+          CapacitorApp.exitApp();
+        }
+      } else {
+        // Otherwise go back in history
+        window.history.back();
+      }
+    });
+
+    return () => {
+      backListener.then(handler => handler.remove());
+    };
+  }, [location.pathname]);
+
+  if (isLoading || !minLoadTimePassed) {
+    return <SafetyWatchLoader />;
+  }
+
   return (
     <AnimatedBackground>
       {!hideNavbar && <Navbar />}
       <main className={!hideNavbar ? "pt-[64px] md:pt-[72px]" : ""}>
-        <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={<SafetyWatchLoader />}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
