@@ -1,21 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 
-const API_BASE = "http://localhost:4000/api";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:4000") + "/api";
+
+interface Group {
+  _id: string;
+  name: string;
+  description: string;
+  members: (string | { _id: string })[];
+}
 
 export default function CommunityGroups() {
   const { user } = useAuth();
-  const [groups, setGroups] = useState<any[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
 
-  useEffect(() => { load(); }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/groups`);
@@ -24,7 +29,9 @@ export default function CommunityGroups() {
       console.error(err);
       toast({ title: "Error loading groups", variant: "destructive" });
     } finally { setLoading(false); }
-  }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   async function createGroup() {
     if (!user) return toast({ title: "Sign in to create", variant: "destructive" });
@@ -42,35 +49,38 @@ export default function CommunityGroups() {
       toast({ title: "Group created" });
       setName(""); setDesc("");
       load();
-    } catch (err:any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error";
       console.error(err);
-      toast({ title: err.message || "Error", variant: "destructive" });
+      toast({ title: message, variant: "destructive" });
     } finally { setCreating(false); }
   }
 
-  async function join(id:string) {
+  async function join(id: string) {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/groups/${id}/join`, { method: "POST", headers: { Authorization: `Bearer ${token}` }});
+      const res = await fetch(`${API_BASE}/groups/${id}/join`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw await res.json();
       toast({ title: "Joined group" });
       load();
-    } catch (err:any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error joining";
       console.error(err);
-      toast({ title: err.message || "Error joining", variant: "destructive" });
+      toast({ title: message, variant: "destructive" });
     }
   }
 
-  async function leave(id:string) {
+  async function leave(id: string) {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/groups/${id}/leave`, { method: "POST", headers: { Authorization: `Bearer ${token}` }});
+      const res = await fetch(`${API_BASE}/groups/${id}/leave`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw await res.json();
       toast({ title: "Left group" });
       load();
-    } catch (err:any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error leaving";
       console.error(err);
-      toast({ title: err.message || "Error leaving", variant: "destructive" });
+      toast({ title: message, variant: "destructive" });
     }
   }
 
@@ -79,8 +89,8 @@ export default function CommunityGroups() {
       <h3 className="text-lg font-semibold mb-4">Community Watch Groups</h3>
 
       <div className="mb-4">
-        <input className="w-full p-2 border rounded mb-2" placeholder="Group name" value={name} onChange={(e)=>setName(e.target.value)} />
-        <input className="w-full p-2 border rounded mb-2" placeholder="Short description" value={desc} onChange={(e)=>setDesc(e.target.value)} />
+        <input className="w-full p-2 border rounded mb-2" placeholder="Group name" value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="w-full p-2 border rounded mb-2" placeholder="Short description" value={desc} onChange={(e) => setDesc(e.target.value)} />
         <div className="flex gap-2">
           <Button onClick={createGroup} disabled={creating}>{creating ? "Creating..." : "Create Group"}</Button>
         </div>
@@ -97,8 +107,8 @@ export default function CommunityGroups() {
                   <div className="text-xs text-slate-400 mt-1">Members: {g.members?.length ?? "-"}</div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <Button variant="ghost" onClick={()=> window.location.href = `/groups/${g._id}`}>View</Button>
-                  {user && (g.members || []).some((m:any) => m === user.id || m._id === user.id) ? (
+                  <Button variant="ghost" onClick={() => window.location.href = `/groups/${g._id}`}>View</Button>
+                  {user && (g.members || []).some((m) => (typeof m === 'string' ? m : m._id) === user.id) ? (
                     <Button variant="destructive" onClick={() => leave(g._id)}>Leave</Button>
                   ) : (
                     <Button onClick={() => join(g._id)}>Join</Button>

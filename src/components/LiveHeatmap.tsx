@@ -4,44 +4,41 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 
 export default function LiveHeatmap() {
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
-    if (mapRef.current) return; // prevent reinit
+    if (mapRef.current) return;
 
-    // Initialize map
     mapRef.current = L.map("heatmap-container", {
-      center: [20.5937, 78.9629], // India center
+      center: [20.5937, 78.9629],
       zoom: 5,
       zoomControl: false,
     });
 
-    // Add tile layer
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
     }).addTo(mapRef.current);
 
+    async function loadHeatmap() {
+      try {
+        const res = await fetch("http://localhost:4000/api/incidents/coords/all");
+        const data = await res.json();
+
+        const heatPoints = data.map((p: { latitude: number; longitude: number }) => [p.latitude, p.longitude, 0.8]);
+
+        // @ts-expect-error - L.heatLayer is added by leafet.heat plugin and not in base types
+        L.heatLayer(heatPoints, {
+          radius: 28,
+          blur: 20,
+          maxZoom: 17,
+        }).addTo(mapRef.current);
+      } catch (err) {
+        console.error("Heatmap load error:", err);
+      }
+    }
+
     loadHeatmap();
   }, []);
-
-  async function loadHeatmap() {
-    try {
-      const res = await fetch("http://localhost:4000/api/incidents/coords/all");
-      const data = await res.json();
-
-      const heatPoints = data.map((p: any) => [p.latitude, p.longitude, 0.8]);
-
-      // Add heat layer
-      // @ts-ignore
-      L.heatLayer(heatPoints, {
-        radius: 28,
-        blur: 20,
-        maxZoom: 17,
-      }).addTo(mapRef.current);
-    } catch (err) {
-      console.error("Heatmap load error:", err);
-    }
-  }
 
   return (
     <div

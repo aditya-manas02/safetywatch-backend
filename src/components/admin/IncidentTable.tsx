@@ -1,13 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
+import { Incident } from "@/types";
 
 export interface IncidentTableProps {
-  incidents: any[];
-  onView: (incident: any) => void;
+  incidents: Incident[];
+  onView: (incident: Incident) => void;
 }
 
-const statusColor: any = {
+const statusColor: Record<string, string> = {
   pending: "bg-yellow-600",
   approved: "bg-green-600",
   rejected: "bg-red-600",
