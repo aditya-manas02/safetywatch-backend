@@ -36,12 +36,11 @@ export function AppUpdateChecker() {
 
             // Check if update is available
             const updateAvailable = isOutdated(current, data.version);
-            // Check if current version is below minimum required version
-            const belowMinimum = isOutdated(current, data.minVersion);
 
             if (updateAvailable) {
                 setShowUpdate(true);
-                setIsMandatory(belowMinimum);
+                // Force mandatory update as per user request: "user can only enter the app when they have the latest version"
+                setIsMandatory(true);
             }
         } catch (error) {
             console.error('[VERSION_CHECK] Failed to check for updates:', error);
@@ -116,7 +115,7 @@ export function AppUpdateChecker() {
                             </p>
                             {isMandatory && (
                                 <p className="text-sm text-destructive font-medium">
-                                    Minimum Required: {versionInfo.minVersion}
+                                    Updates are mandatory to ensure security and performance.
                                 </p>
                             )}
                         </div>
