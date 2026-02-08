@@ -48,6 +48,7 @@ export default function Hero({
   const [stats, setStats] = useState<Stats | null>(null);
   const [latest, setLatest] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string>("");
   const [appVersion, setAppVersion] = useState<string>("1.4.2");
   const [latestVersion, setLatestVersion] = useState<string>("1.4.2");
   const [isOutdated, setIsOutdated] = useState(false);
@@ -107,6 +108,7 @@ export default function Hero({
       }
     } catch (err: any) {
       console.error("[HERO] Stats network error:", err);
+      setErrorMsg(err.message || "Connection Failed");
       // Fallback diagnostics
       if (err.message?.includes("Failed to fetch")) {
         console.warn("[DIAGNOSTIC] Possible CORS or Network restriction active on mobile.");
@@ -124,7 +126,8 @@ export default function Hero({
     } catch (err) {
       console.error("[HERO] Latest incidents network error:", err);
     } finally {
-      setLoading(false);
+      // Only stop loading if we actually got stats, otherwise keep showing error/loading state
+      if (stats) setLoading(false);
     }
   }
 
@@ -268,8 +271,12 @@ export default function Hero({
             </div>
 
             {loading ? (
-              <div className="h-64 flex items-center justify-center text-muted-foreground animate-pulse font-bold tracking-widest text-xs">
-                ESTABLISHING SECURE CONNECTION...
+              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground animate-pulse font-bold tracking-widest text-xs gap-4">
+                <p>ESTABLISHING SECURE CONNECTION...</p>
+                {/* Visual debug for connectivity issues */}
+                <p className="text-[10px] text-rose-500 max-w-[80%] text-center normal-case opacity-80">
+                  {errorMsg}
+                </p>
               </div>
             ) : (
               <div className="relative z-10">
