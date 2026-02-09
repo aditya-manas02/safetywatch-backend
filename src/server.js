@@ -118,6 +118,20 @@ app.use((req, res, next) => {
   };
 
   const appVersion = req.headers['x-app-version'];
+  const origin = req.headers['origin'] || '';
+
+  // EXEMPTION LOGIC: Skip check for standard web browsers
+  // Native apps use capacitor://localhost or http://localhost origin
+  const isNativeOrigin = origin.startsWith('capacitor://') || 
+                        origin === 'http://localhost' || 
+                        origin === 'https://localhost';
+  
+  // If it's a known web origin and NO version header is present, it's the website
+  const isWebBrowser = !appVersion && !isNativeOrigin;
+
+  if (isWebBrowser) {
+    return next();
+  }
 
   if (isOutdated(appVersion, MIN_VERSION)) {
     console.warn(`[VERSION_BLOCK] Outdated App Blocking: ${appVersion || 'None'} | Min: ${MIN_VERSION}`);
