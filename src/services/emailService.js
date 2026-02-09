@@ -154,7 +154,17 @@ const sendViaBrevo = async (to, subject, html, text = null, retries = 2) => {
  */
 const sendViaResend = async (to, subject, html, text = null) => {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
+  let from = process.env.EMAIL_FROM || "onboarding@resend.dev";
+  
+  // Resend only allows sending from verified domains or onboarding@resend.dev
+  // If the configured email is a public domain (gmail, yahoo, etc.), force onboarding email
+  const publicDomains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "aol.com"];
+  const senderDomain = from.split("@")[1]?.toLowerCase();
+  
+  if (senderDomain && publicDomains.includes(senderDomain)) {
+    console.log(`[EMAIL] Notice: Cannot send from ${from} via Resend (Public Domain). Using onboarding@resend.dev`);
+    from = "onboarding@resend.dev";
+  }
   
   console.log(`[EMAIL] Attempting via RESEND to: ${to}...`);
 

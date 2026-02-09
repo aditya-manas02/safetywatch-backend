@@ -1,0 +1,25 @@
+---------------------------------------------------------
+             EMAIL DEBUGGING TOOL
+---------------------------------------------------------
+Current Time: 2026-02-09T20:24:16.991Z
+Node Environment: undefined
+
+[CONFIGURATION CHECK]
+- BREVO_API_KEY: Γ£à Present (xkeys...)
+- RESEND_API_KEY: Γ£à Present
+- SMTP_USER: Γ£à Present (safetywatch4neighbour@gmail.com)
+- SMTP_PASS: Γ£à Present
+- EMAIL_FROM: safetywatch4neighbour@gmail.com
+
+[TEST EXECUTION]
+Attempting to send OTP (123456) to: abb9baa09@gmail.com
+[EMAIL] Attempting via BREVO to: abb9baa09@gmail.com from: safetywatch4neighbour@gmail.com...
+[EMAIL] Γ£à Brevo success on attempt 1: <202602092024.63899867882@smtp-relay.mailin.fr>
+
+[RESULT] (Time: 1269ms)
+Γ£à SUCCESS: Email sent successfully!
+Details: {
+  "messageId": "<202602092024.63899867882@smtp-relay.mailin.fr>"
+}
+
+---------------------------------------------------------
