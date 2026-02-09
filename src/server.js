@@ -118,36 +118,50 @@ app.use((req, res, next) => {
   };
 
   const appVersion = req.headers['x-app-version'];
-  const origin = req.headers['origin'] || '';
-  const xRequestedWith = req.headers['x-requested-with'] || '';
+  const origin = (req.headers['origin'] || '').toLowerCase();
+  const referer = (req.headers['referer'] || '').toLowerCase();
+  const xRequestedWith = (req.headers['x-requested-with'] || '').toLowerCase();
+  const userAgent = (req.headers['user-agent'] || '').toLowerCase();
 
   // EXEMPTION LOGIC: Skip check for standard web browsers
-  // 1. Requests from the official Vercel domain
-  // 2. Requests from local development browsers (which have ports like :5173)
-  // 3. Any request that doesn't have native-only markers when originating from web domains
-  const isWebDomain = origin.includes('vercel.app') || origin.includes('safetywatch.live');
-  const isLocalBrowser = origin.includes('localhost:') || origin.includes('127.0.0.1:');
-  const isExplicitNative = xRequestedWith === 'com.safetywatch.app' || origin.startsWith('capacitor://');
+  // We want to exempt anything that looks like a browser hits from Vercel or localhost
+  const isWebDomain = origin.includes('vercel.app') || 
+                      origin.includes('safetywatch.live') ||
+                      referer.includes('vercel.app') ||
+                      referer.includes('safetywatch.live');
+  
+  const isLocalBrowser = origin.includes('localhost:') || 
+                        origin.includes('127.0.0.1:') ||
+                        referer.includes('localhost:') ||
+                        referer.includes('127.0.0.1:');
 
+  // Explicit Native Markers (Capacitor/Native Shell)
+  const isExplicitNative = xRequestedWith === 'com.safetywatch.app' || 
+                           origin.startsWith('capacitor://') ||
+                           userAgent.includes('capacitor');
+
+  // If it's a web domain and NOT explicitly a native shell, allow it
   const isWebBrowser = (isWebDomain || isLocalBrowser) && !isExplicitNative;
 
   if (isWebBrowser) {
-    // console.log(`[VERSION_BYPASS] Web browser detected from ${origin}. Allowing entry.`);
     return next();
   }
 
+
   if (isOutdated(appVersion, MIN_VERSION)) {
-    console.warn(`[VERSION_BLOCK] Outdated App Blocking: ${appVersion || 'None'} | Min: ${MIN_VERSION}`);
+    console.warn(`[VERSION_BLOCK] User blocked: ${appVersion || 'none'} | Path: ${path} | Origin: ${origin} | Referer: ${referer}`);
     const upgradeMsg = "Update Required (426) - Please download v1.4.3";
     return res.status(426).json({
       message: upgradeMsg,
       error: upgradeMsg,
       name: "VersionError",
       status: 426,
-      downloadUrl: "https://safetywatch-backend.onrender.com/SafetyWatch.apk",
       debug: {
         path: path,
-        received: appVersion || "none"
+        received: appVersion || "none",
+        origin: origin || "none",
+        referer: referer || "none",
+        isWeb: isWebBrowser
       }
     });
   }
