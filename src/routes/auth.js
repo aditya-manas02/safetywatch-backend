@@ -465,8 +465,9 @@ router.post("/resend-otp", catchAsync(async (req, res) => {
   if (!success) {
     console.error("[RESEND-OTP] Email delivery failed:", emailError);
     return res.status(500).json({ 
-      message: "Failed to resend OTP email. This usually happens if the email service API key is invalid or the sender is unverified.",
+      message: "Failed to resend OTP email. Please report this to admin (Missing API Keys).",
       error: emailError?.message || "All delivery methods failed",
+      details: emailError,
       rateLimit: rateLimitInfo.rateLimit
     });
   }
@@ -517,8 +518,9 @@ router.post("/forgot-password", catchAsync(async (req, res) => {
     if (!success) {
       console.error("[FORGOT-PASSWORD] Email delivery failed:", emailError);
       return res.status(500).json({ 
-        message: "Failed to send password reset email. This usually happens if the email service API key is invalid or the sender is unverified.",
-        error: emailError?.message || "All delivery methods failed"
+      message: "Failed to send password reset email. Please report this to admin (Missing API Keys).",
+      error: emailError?.message || "All delivery methods failed",
+      details: emailError
       });
     }
 
@@ -579,6 +581,12 @@ router.post("/request-password-otp", async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
+    // Verify email domain validity first
+    const emailVal = await validateEmailDomain(email);
+    if (!emailVal.valid) {
+      return res.status(400).json({ message: emailVal.message });
+    }
+
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
@@ -587,7 +595,7 @@ router.post("/request-password-otp", async (req, res) => {
     }
 
     // Check OTP rate limit
-    const rateLimitInfo = await checkRateLimit(user, 'otp', 10, 1);
+    const rateLimitInfo = await checkRateLimit(user, 'otp', 50, 1);
     if (rateLimitInfo.limited) {
       return res.status(429).json({ message: rateLimitInfo.message, rateLimit: rateLimitInfo.rateLimit });
     }
@@ -607,8 +615,9 @@ router.post("/request-password-otp", async (req, res) => {
     if (!success) {
       console.error("[OTP] Email delivery failed:", emailError);
       return res.status(500).json({ 
-        message: "Failed to send OTP email. This usually happens if the email service API key is invalid or the sender is unverified.",
+        message: "Failed to send OTP email. Please report this to admin (Missing API Keys).",
         error: emailError?.message || "All delivery methods failed",
+        details: emailError,
         rateLimit: rateLimitInfo.rateLimit
       });
     }

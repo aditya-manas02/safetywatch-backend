@@ -1,0 +1,59 @@
+---------------------------------------------------------
+             EMAIL DEBUGGING TOOL
+---------------------------------------------------------
+Current Time: 2026-02-09T20:11:41.627Z
+Node Environment: undefined
+
+[CONFIGURATION CHECK]
+- BREVO_API_KEY: Γ£à Present (xkeys...)
+- RESEND_API_KEY: Γ£à Present
+- SMTP_USER: Γ£à Present (safetywatch4neighbour@gmail.com)
+- SMTP_PASS: Γ£à Present
+- EMAIL_FROM: safetywatch4neighbour@gmail.com
+
+[TEST EXECUTION]
+Attempting to send OTP (123456) to: abb9baa09@gmail.com
+[EMAIL] Attempting via BREVO to: abb9baa09@gmail.com from: safetywatch4neighbour@gmail.com...
+[EMAIL] Γ¥î Brevo API Error (attempt 1/2): {
+  status: 401,
+  message: 'API Key is not enabled',
+  code: 'unauthorized',
+  details: { message: 'API Key is not enabled', code: 'unauthorized' }
+}
+[EMAIL] Γ¥î BREVO AUTH ERROR: Likely invalid key or unverified sender: safetywatch4neighbour@gmail.com
+[EMAIL] Attempting via RESEND to: abb9baa09@gmail.com...
+SMTP Server is ready to take our messages
+[EMAIL] Resend error: The gmail.com domain is not verified. Please, add and verify your domain on https://resend.com/domains
+[EMAIL] Attempting via SMTP to: abb9baa09@gmail.com...
+[EMAIL] SMTP success: <510588f1-263b-bb9a-5e99-fb1719c31ed0@gmail.com>
+
+[RESULT] (Time: 4818ms)
+Γ£à SUCCESS: Email sent successfully!
+Details: {
+  "accepted": [
+    "abb9baa09@gmail.com"
+  ],
+  "rejected": [],
+  "ehlo": [
+    "SIZE 35882577",
+    "8BITMIME",
+    "AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH",
+    "ENHANCEDSTATUSCODES",
+    "PIPELINING",
+    "CHUNKING",
+    "SMTPUTF8"
+  ],
+  "envelopeTime": 956,
+  "messageTime": 915,
+  "messageSize": 4418,
+  "response": "250 2.0.0 OK  1770667907 d9443c01a7336-2aa3ec42e2asm114293155ad.53 - gsmtp",
+  "envelope": {
+    "from": "safetywatch4neighbour@gmail.com",
+    "to": [
+      "abb9baa09@gmail.com"
+    ]
+  },
+  "messageId": "<510588f1-263b-bb9a-5e99-fb1719c31ed0@gmail.com>"
+}
+
+---------------------------------------------------------
