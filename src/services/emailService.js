@@ -133,6 +133,7 @@ const sendViaBrevo = async (to, subject, html, text = null, retries = 2) => {
         
         // Don't retry on authentication errors
         if (response.status === 401 || response.status === 403) {
+          console.error(`[EMAIL] ❌ BREVO AUTH ERROR: Likely invalid key or unverified sender: ${fromEmail}`);
           return { success: false, error: data };
         }
         
