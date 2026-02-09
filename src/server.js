@@ -68,12 +68,11 @@ app.use(
 app.options("*", cors());
 
 /* ----------------------- VERSION ENFORCEMENT ----------------------- */
-// Discontinue legacy versions (< 1.3.4) by requiring a header
+// STRICT ENFORCEMENT: All native requests must pass this check.
 app.use((req, res, next) => {
-  // Use req.path to ignore query parameters
   const path = req.path;
 
-  // NUCLEAR BYPASS: Allow OPTIONS preflight and absolute minimum required routes
+  // NUCLEAR BYPASS: Absolute minimum required routes only
   const isPublicRoute = 
     req.method === 'OPTIONS' ||
     path === '/ping' || 
@@ -83,32 +82,27 @@ app.use((req, res, next) => {
     path.startsWith('/SafetyWatch-v') ||
     path.includes('/version.json');
 
-  if (isPublicRoute) {
-    return next();
-  }
+  if (isPublicRoute) return next();
 
-  /* 
-   * STRICT ENFORCEMENT MODE:
-   * We set MIN_VERSION to '1.4.5' to ensure all old APKs are blocked.
-   * Sending status 426 Upgrade Required.
-   */
   const MIN_VERSION = '1.4.5';
+  const appVersion = req.headers['x-app-version'];
+  const userAgent = (req.headers['user-agent'] || '').toLowerCase();
+  const xRequestedWith = (req.headers['x-requested-with'] || '').toLowerCase();
+  const origin = (req.headers['origin'] || '').toLowerCase();
   
-  // Helper function for simple semver comparison
+  // NATIVE DETECTION: If it's a native shell, we FORCE the version check.
+  const isNative = xRequestedWith === 'com.safetywatch.app' || 
+                   origin.startsWith('capacitor://') ||
+                   userAgent.includes('capacitor');
+
   const isOutdated = (current, min) => {
-    // If header is missing, treat as outdated (v1.3.3 or below)
     if (!current) return true; 
-    
-    // Clean version strings (remove - prefixes or v prefixes)
     const currClean = current.replace(/^v/, '').split('-')[0];
     const minClean = min.replace(/^v/, '').split('-')[0];
-    
     const c = currClean.split('.').map(Number);
     const m = minClean.split('.').map(Number);
-    
     while (c.length < 3) c.push(0);
     while (m.length < 3) m.push(0);
-
     for (let i = 0; i < 3; i++) {
         const cv = isNaN(c[i]) ? 0 : c[i];
         const mv = isNaN(m[i]) ? 0 : m[i];
@@ -118,55 +112,18 @@ app.use((req, res, next) => {
     return false;
   };
 
-  const appVersion = req.headers['x-app-version'];
-  const origin = (req.headers['origin'] || '').toLowerCase();
-  const referer = (req.headers['referer'] || '').toLowerCase();
-  const xRequestedWith = (req.headers['x-requested-with'] || '').toLowerCase();
-  const userAgent = (req.headers['user-agent'] || '').toLowerCase();
-
-  // EXEMPTION LOGIC: Skip check for standard web browsers
-  // We want to exempt anything that looks like browser hits from Vercel or localhost
-  const isWebDomain = origin.includes('vercel.app') || 
-                      origin.includes('safetywatch.live') ||
-                      referer.includes('vercel.app') ||
-                      referer.includes('safetywatch.live');
-  
-  const isLocalBrowser = origin.includes('localhost:') || 
-                        origin.includes('127.0.0.1:') ||
-                        referer.includes('localhost:') ||
-                        referer.includes('127.0.0.1:');
-
-  // Explicit Native Markers (Capacitor/Native Shell)
-  const isExplicitNative = xRequestedWith === 'com.safetywatch.app' || 
-                           origin.startsWith('capacitor://') ||
-                           userAgent.includes('capacitor');
-
-  // If it's a web browser hitting from a known domain, AND not an explicit native shell, allow it.
-  // Also allow ANY request that lacks native-only markers IF it has a standard browser User-Agent
-  // and no version header (implied old web version or direct browse).
-  const isWebBrowser = (isWebDomain || isLocalBrowser) && !isExplicitNative;
-
-  if (isWebBrowser) {
-    return next();
-  }
-
-
-  if (isOutdated(appVersion, MIN_VERSION)) {
-    console.warn(`[VERSION_BLOCK] User blocked: ${appVersion || 'none'} | Path: ${path} | Origin: ${origin} | Referer: ${referer}`);
+  // If it's native and outdated, BLOCK. 
+  // We no longer exempt vercel.app referers for native shells.
+  if (isNative && isOutdated(appVersion, MIN_VERSION)) {
+    console.warn(`[VERSION_BLOCK] Native User blocked: ${appVersion || 'none'} | Path: ${path}`);
     return res.status(426).json({
-      message: `SafetyWatch Update Required: Your version (${appVersion || 'legacy'}) is discontinued. Please download the latest version v${MIN_VERSION} here: https://safetywatch.vercel.app/SafetyWatch-v1.4.5.apk`,
+      message: `SafetyWatch Update Required: Your version (${appVersion || 'legacy'}) is discontinued.`,
       currentVersion: appVersion,
       requiredVersion: MIN_VERSION,
-      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch-v1.4.5.apk",
-      debug: {
-        path: path,
-        received: appVersion || "none",
-        origin: origin || "none",
-        referer: referer || "none",
-        isWeb: isWebBrowser
-      }
+      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch-v1.4.5.apk"
     });
   }
+
   next();
 });
 
