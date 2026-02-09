@@ -252,7 +252,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.4.2)", timestamp: new Date().toISOString() });
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.4.5-FINAL)", timestamp: new Date().toISOString() });
 });
 
 /* ----------------------- ERROR HANDLING ------------------- */
