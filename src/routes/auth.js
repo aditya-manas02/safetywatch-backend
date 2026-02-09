@@ -1,6 +1,8 @@
+```javascript
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { protect } from "../middleware/auth.js";
 import User from "../models/User.js";
 import dotenv from "dotenv";
 import { z } from "zod";
@@ -691,7 +693,7 @@ router.post("/reset-password-otp", async (req, res) => {
 -------------------------------------------------- */
 
 // Assign area code to user (after login)
-router.post("/assign-area-code", async (req, res) => {
+router.post("/assign-area-code", protect, async (req, res) => {
   try {
     const { email, areaCode } = req.body;
 
@@ -795,7 +797,7 @@ router.post("/verify-area-code", async (req, res) => {
 });
 
 // Leave area code (for users who want to change/exit)
-router.post("/leave-area-code", catchAsync(async (req, res) => {
+router.post("/leave-area-code", protect, catchAsync(async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
