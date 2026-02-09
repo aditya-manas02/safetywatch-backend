@@ -95,10 +95,10 @@ app.use((req, res, next) => {
 
   /* 
    * STRICT ENFORCEMENT MODE:
-   * We set MIN_VERSION to '1.4.3' to ensure all old APKs are blocked.
+   * We set MIN_VERSION to '1.4.5' to ensure all old APKs are blocked.
    * Sending status 426 Upgrade Required.
    */
-  const MIN_VERSION = '1.4.3';
+  const MIN_VERSION = '1.4.5';
   
   // Helper function for simple semver comparison
   const isOutdated = (current, min) => {
@@ -159,7 +159,7 @@ app.use((req, res, next) => {
 
   if (isOutdated(appVersion, MIN_VERSION)) {
     console.warn(`[VERSION_BLOCK] User blocked: ${appVersion || 'none'} | Path: ${path} | Origin: ${origin} | Referer: ${referer}`);
-    const upgradeMsg = "Update Required (426) - Please download v1.4.3";
+    const upgradeMsg = "Update Required (426) - Please download v1.4.5";
     return res.status(426).json({
       message: upgradeMsg,
       error: upgradeMsg,
