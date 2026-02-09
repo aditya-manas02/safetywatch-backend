@@ -80,6 +80,8 @@ app.use((req, res, next) => {
     path === '/' || 
     path.startsWith('/api/health') || 
     path === '/SafetyWatch.apk' ||
+    path === '/api/auth/login' ||
+    path === '/api/auth/signup' ||
     path.includes('/version.json');
 
   if (isPublicRoute) {
@@ -124,7 +126,7 @@ app.use((req, res, next) => {
   const userAgent = (req.headers['user-agent'] || '').toLowerCase();
 
   // EXEMPTION LOGIC: Skip check for standard web browsers
-  // We want to exempt anything that looks like a browser hits from Vercel or localhost
+  // We want to exempt anything that looks like browser hits from Vercel or localhost
   const isWebDomain = origin.includes('vercel.app') || 
                       origin.includes('safetywatch.live') ||
                       referer.includes('vercel.app') ||
@@ -140,7 +142,9 @@ app.use((req, res, next) => {
                            origin.startsWith('capacitor://') ||
                            userAgent.includes('capacitor');
 
-  // If it's a web domain and NOT explicitly a native shell, allow it
+  // If it's a web browser hitting from a known domain, AND not an explicit native shell, allow it.
+  // Also allow ANY request that lacks native-only markers IF it has a standard browser User-Agent
+  // and no version header (implied old web version or direct browse).
   const isWebBrowser = (isWebDomain || isLocalBrowser) && !isExplicitNative;
 
   if (isWebBrowser) {
