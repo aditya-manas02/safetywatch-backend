@@ -450,7 +450,7 @@ router.post("/resend-otp", catchAsync(async (req, res) => {
   }
 
   // Check OTP rate limit
-  const rateLimitInfo = await checkRateLimit(user, 'otp', 3, 1);
+  const rateLimitInfo = await checkRateLimit(user, 'otp', 10, 1);
   if (rateLimitInfo.limited) {
     return res.status(429).json({ message: rateLimitInfo.message, rateLimit: rateLimitInfo.rateLimit });
   }
