@@ -1,4 +1,10 @@
 import express from "express";
+console.log("[STARTUP] Express imported");
+process.on("uncaughtException", (err) => {
+  console.error("[CRITICAL STARTUP ERROR]", err);
+  process.exit(1);
+});
+
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -22,9 +28,14 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import aiChatRoutes from "./routes/aiChatRoutes.js";
 import newsRoutes from "./routes/news.js";
 import areaCodeRoutes from "./routes/areaCodeRoutes.js";
+console.log("[STARTUP] All routes imported");
+
 
 dotenv.config();
+console.log("[STARTUP] Dotenv configured");
 const app = express();
+console.log("[STARTUP] Express app initialized");
+
 
 /* ----------------------- CORS & PREFLIGHT ----------------------- */
 const allowedOrigins = [
@@ -308,9 +319,11 @@ mongoose.connection.on("error", (err) => {
   console.error("MongoDB runtime error:", err.message);
 });
 
-app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT}`)
-);
+console.log(`[STARTUP] Attempting to listen on PORT: ${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[STARTUP] SUCCESS: Server running on port ${PORT}`);
+});
+
 
 /* ----------------------- PROCESS HANDLERS ----------------- */
 process.on("unhandledRejection", (reason, promise) => {
