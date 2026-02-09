@@ -30,14 +30,14 @@ router.post("/", chatLimiter, async (req, res) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     
     let model;
-    // Attempting both prefixed and non-prefixed as the SDK behavior can vary by version/environment
+    // CONFIRMED MODELS from user diagnostics: gemini-2.5-flash, gemini-2.0-flash, gemini-flash-latest
     const modelsToTry = [
-        "models/gemini-1.5-flash", 
-        "models/gemini-1.5-pro", 
-        "models/gemini-pro",
-        "gemini-1.5-flash", 
-        "gemini-1.5-pro", 
-        "gemini-pro"
+        "models/gemini-2.5-flash", 
+        "models/gemini-2.0-flash",
+        "models/gemini-flash-latest",
+        "models/gemini-1.5-flash", // Keep as fallback
+        "gemini-2.5-flash",
+        "gemini-2.0-flash"
     ];
     let lastError = null;
 
@@ -74,7 +74,7 @@ router.post("/", chatLimiter, async (req, res) => {
     // FINAL FALLBACK: Direct REST API 
     // This is the absolute cleanest way to call Gemini and will reveal the raw Google error.
     try {
-        const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
         const restResponse = await fetch(restUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
