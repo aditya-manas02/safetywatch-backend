@@ -14,10 +14,10 @@ router.get("/", authMiddleware, requireAdminOnly, catchAsync(async (req, res) =>
   const user = await User.findById(req.user.id);
   const isSuperAdmin = user.roles.includes("superadmin");
 
-  // Base Query: If not superadmin, restrict to areaCode
+  // Base Query: If not superadmin AND has areaCode, restrict to areaCode
+  // If admin has no areaCode, show all stats (like superadmin) to prevent dashboard breakage
   const baseQuery = {};
-  if (!isSuperAdmin) {
-    if (!user.areaCode) return res.status(400).json({ message: "Area code requirement for stats" });
+  if (!isSuperAdmin && user.areaCode) {
     baseQuery.areaCode = user.areaCode;
   }
 
