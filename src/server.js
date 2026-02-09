@@ -80,14 +80,8 @@ app.use((req, res, next) => {
     path === '/' || 
     path.startsWith('/api/health') || 
     path === '/SafetyWatch.apk' ||
-    path === '/api/auth/login' ||
-    path === '/api/auth/signup' ||
-    path.includes('/version.json') ||
-    path.startsWith('/api/incidents/popular') ||
-    path.startsWith('/api/incidents/near-me') ||
-    path.startsWith('/api/incidents/my-reports') ||
-    path.startsWith('/api/incidents/coords/all') ||
-    path.startsWith('/api/news');
+    path.startsWith('/SafetyWatch-v') ||
+    path.includes('/version.json');
 
   if (isPublicRoute) {
     return next();
@@ -297,7 +291,7 @@ app.get("/api/health", (req, res) => {
     status: "ok", 
     message: "Server is healthy",
     uptime: process.uptime(),
-    minVersion: '1.4.2'
+    minVersion: '1.4.5'
   });
 });
 
