@@ -119,17 +119,20 @@ app.use((req, res, next) => {
 
   const appVersion = req.headers['x-app-version'];
   const origin = req.headers['origin'] || '';
+  const xRequestedWith = req.headers['x-requested-with'] || '';
 
   // EXEMPTION LOGIC: Skip check for standard web browsers
-  // Native apps use capacitor://localhost or http://localhost origin
-  const isNativeOrigin = origin.startsWith('capacitor://') || 
-                        origin === 'http://localhost' || 
-                        origin === 'https://localhost';
-  
-  // If it's a known web origin and NO version header is present, it's the website
-  const isWebBrowser = !appVersion && !isNativeOrigin;
+  // 1. Requests from the official Vercel domain
+  // 2. Requests from local development browsers (which have ports like :5173)
+  // 3. Any request that doesn't have native-only markers when originating from web domains
+  const isWebDomain = origin.includes('vercel.app') || origin.includes('safetywatch.live');
+  const isLocalBrowser = origin.includes('localhost:') || origin.includes('127.0.0.1:');
+  const isExplicitNative = xRequestedWith === 'com.safetywatch.app' || origin.startsWith('capacitor://');
+
+  const isWebBrowser = (isWebDomain || isLocalBrowser) && !isExplicitNative;
 
   if (isWebBrowser) {
+    // console.log(`[VERSION_BYPASS] Web browser detected from ${origin}. Allowing entry.`);
     return next();
   }
 
