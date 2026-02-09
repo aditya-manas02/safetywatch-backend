@@ -2,5 +2,5 @@
     "version": "1.4.3",
     "minVersion": "1.4.3",
     "url": "https://safetywatch-backend.onrender.com/SafetyWatch.apk",
-    "notes": "Version 1.4.3 Ready"
+    "notes": "Version 1.4.3 (Fixed Native Permissions)"
 }
