@@ -153,12 +153,11 @@ app.use((req, res, next) => {
 
   if (isOutdated(appVersion, MIN_VERSION)) {
     console.warn(`[VERSION_BLOCK] User blocked: ${appVersion || 'none'} | Path: ${path} | Origin: ${origin} | Referer: ${referer}`);
-    const upgradeMsg = "Update Required (426) - Please download v1.4.5";
     return res.status(426).json({
-      message: upgradeMsg,
-      error: upgradeMsg,
-      name: "VersionError",
-      status: 426,
+      message: `SafetyWatch Update Required: Your version (${appVersion || 'legacy'}) is discontinued. Please download the latest version v${MIN_VERSION} here: https://safetywatch.vercel.app/SafetyWatch-v1.4.5.apk`,
+      currentVersion: appVersion,
+      requiredVersion: MIN_VERSION,
+      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch-v1.4.5.apk",
       debug: {
         path: path,
         received: appVersion || "none",
