@@ -222,7 +222,7 @@ async function checkRateLimit(user, type, limit, windowHours) {
     };
   }
 
-  user[countField] += 1;
+  user[countField] = (user[countField] || 0) + 1;
   await user.save();
   
   return { 
