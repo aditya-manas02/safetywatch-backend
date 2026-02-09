@@ -212,11 +212,34 @@ router.patch("/:id/toggle-status", authMiddleware, requireSuperAdmin, async (req
       return res.status(404).json({ error: "Area code not found" });
     }
 
+    const wasActive = areaCode.isActive;
     areaCode.isActive = !areaCode.isActive;
     await areaCode.save();
 
+    // If deactivating, reset all users with this area code to DEFAULT
+    if (wasActive && !areaCode.isActive) {
+      const userCount = await User.countDocuments({ areaCode: areaCode.code });
+      
+      if (userCount > 0) {
+        // Reset users to DEFAULT area code
+        await User.updateMany(
+          { areaCode: areaCode.code },
+          { $set: { areaCode: "DEFAULT" } }
+        );
+
+        // Update DEFAULT area code statistics
+        const defaultArea = await AreaCode.findOne({ code: "DEFAULT" });
+        if (defaultArea) {
+          defaultArea.totalUsers += userCount;
+          await defaultArea.save();
+        }
+
+        console.log(`Reset ${userCount} users to DEFAULT from deactivated area code ${areaCode.code}`);
+      }
+    }
+
     res.json({
-      message: `Area code ${areaCode.isActive ? 'activated' : 'deactivated'} successfully`,
+      message: `Area code ${areaCode.isActive ? 'activated' : 'deactivated'} successfully${!areaCode.isActive && areaCode.totalUsers > 0 ? `. ${areaCode.totalUsers} users reset to DEFAULT.` : ''}`,
       areaCode
     });
   } catch (error) {
