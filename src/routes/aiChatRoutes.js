@@ -68,45 +68,66 @@ router.post("/", chatLimiter, async (req, res) => {
         }
     }
 
-    // FINAL FALLBACK: Simple generateContent with models/ prefix
+    // FINAL CONSOLE LOG FOR RENDER
+    console.warn("[AI] SDK Methods exhausted. Attempting Direct REST API Bypassing SDK...");
+
+    // FINAL FALLBACK: Direct REST API 
+    // This is the absolute cleanest way to call Gemini and will reveal the raw Google error.
     try {
-        console.log("[AI] Attempting Final Simple Fallback with models/ prefix...");
-        const simpleModel = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
-        const result = await simpleModel.generateContent(`Nexus AI context: ${SYSTEM_PROMPT}\nUser: ${message}`);
-        const response = await result.response;
-        return res.json({ reply: response.text() });
-    } catch (finalErr) {
-        console.error("STABLE API ERROR (ALL FALLBACKS FAILED):", {
-            message: finalErr.message,
-            stack: finalErr.stack,
-            original: lastError?.message
+        const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const restResponse = await fetch(restUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: `Nexus Assistant Context: ${SYSTEM_PROMPT}\n\nUser: ${message}` }] }],
+                generationConfig: { maxOutputTokens: 500 }
+            })
         });
 
-        let msg = finalErr.message || "Unknown error";
+        const restData = await restResponse.json();
+        
+        if (restResponse.ok && restData.candidates?.[0]?.content?.parts?.[0]?.text) {
+            console.log("[AI] REST API SUCCESS");
+            return res.json({ reply: restData.candidates[0].content.parts[0].text });
+        } else {
+            console.error("[AI] REST API FAILED:", restData);
+            throw new Error(restData.error?.message || "REST API returned empty response");
+        }
+    } catch (restErr) {
+        console.error("STABLE API ERROR (REST FALLBACK ALSO FAILED):", {
+            message: restErr.message,
+            apiKeySuffix: apiKey.slice(-4)
+        });
+
+        let msg = restErr.message || "Unknown error";
         if (msg.includes("404") || msg.includes("not found")) {
-            msg = "Models not found. This indicates the 'Generative Language API' (not just basic Generative AI) is not enabled, or the project is incorrectly configured. Please visit: https://aistudio.google.com/app/apikey";
+            msg = "Models not accessible. This is usually caused by the 'Generative Language API' not being enabled in the Google Cloud Project. Please use AI Studio to generate a key: https://aistudio.google.com/app/apikey";
         }
 
         res.status(500).json({ message: "AI Maintenance: " + msg });
     }
   } catch (error) {
-    console.error("General API Error:", error);
+    console.error("General AI Route Error:", error);
     res.status(500).json({ message: "An unexpected error occurred: " + error.message });
   }
 });
 
-// Diagnostic route
+// Diagnostic route - Enhanced to list models
 router.get("/debug", chatLimiter, async (req, res) => {
     try {
         const apiKey = process.env.GEMINI_API_KEY?.trim();
         if (!apiKey) return res.status(500).json({ message: "API Key missing" });
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        // SDK listModels is not public on all versions, try a direct fetch or trial
+        // Try to list models via REST to see what's actually enabled
+        const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+        const listRes = await fetch(listUrl);
+        const listData = await listRes.json();
+
         res.json({ 
-            message: "Diagnostic logic initiated. Check server logs for detailed trial outputs.",
-            env_key_suffix: apiKey.slice(-4),
-            sdk_version: "0.24.1"
+            status: listRes.ok ? "Success" : "Failed",
+            key_suffix: apiKey.slice(-4),
+            google_response: listData,
+            advice: "If 'models' is empty or error is 404, enable the 'Generative Language API' in Google Cloud Console."
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
