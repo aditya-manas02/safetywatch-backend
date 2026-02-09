@@ -73,8 +73,9 @@ app.use((req, res, next) => {
   // Use req.path to ignore query parameters
   const path = req.path;
 
-  // NUCLEAR BYPASS: Allow ONLY absolute minimum required routes
+  // NUCLEAR BYPASS: Allow OPTIONS preflight and absolute minimum required routes
   const isPublicRoute = 
+    req.method === 'OPTIONS' ||
     path === '/ping' || 
     path === '/' || 
     path.startsWith('/api/health') || 
