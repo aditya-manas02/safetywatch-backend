@@ -82,7 +82,12 @@ app.use((req, res, next) => {
     path === '/SafetyWatch.apk' ||
     path === '/api/auth/login' ||
     path === '/api/auth/signup' ||
-    path.includes('/version.json');
+    path.includes('/version.json') ||
+    path.startsWith('/api/incidents/popular') ||
+    path.startsWith('/api/incidents/near-me') ||
+    path.startsWith('/api/incidents/my-reports') ||
+    path.startsWith('/api/incidents/coords/all') ||
+    path.startsWith('/api/news');
 
   if (isPublicRoute) {
     return next();
