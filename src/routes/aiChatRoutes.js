@@ -29,38 +29,52 @@ router.post("/", chatLimiter, async (req, res) => {
     // Use the latest stable 1.5 Flash model
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Using gemini-1.5-flash for maximum stability
-    const model = genAI.getGenerativeModel(
-        { model: "gemini-1.5-flash" }
-    );
-
-    const chat = model.startChat({
-      history: [
-        { role: "user", parts: [{ text: "Context: " + SYSTEM_PROMPT }] },
-        { role: "model", parts: [{ text: "Understood." }] },
-        ...(history || []).map((msg) => ({
-          role: msg.role === "user" ? "user" : "model",
-          parts: [{ text: msg.content }],
-        })),
-      ],
-    });
-
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    res.json({ reply: response.text() });
-
-  } catch (error) {
-    console.error("STABLE API ERROR:", error);
-    
-    // If it STILL fails with 404, it's definitely a Google propagation delay
-    let msg = error.message || "Unknown error";
-    if (msg.includes("404")) {
-        msg = "The API was just enabled! Google takes 2-5 minutes to update their servers globally. Please wait 2 minutes and try again.";
+    let model;
+    try {
+      // Try gemini-1.5-flash first
+      model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const chat = model.startChat({
+        history: [
+          { role: "user", parts: [{ text: "System Protocol: Act as Nexus AI, the intelligent neighborhood security core. Keep responses concise, professional, and security-focused. " + SYSTEM_PROMPT }] },
+          { role: "model", parts: [{ text: "Understood." }] },
+          ...(history || []).map((msg) => ({
+            role: msg.role === "user" ? "user" : "model",
+            parts: [{ text: msg.content }],
+          })),
+        ],
+      });
+      const result = await chat.sendMessage(message);
+      const response = await result.response;
+      return res.json({ reply: response.text() });
+    } catch (firstError) {
+      console.warn("Flash model failed, trying fallback...", firstError.message);
+      
+      // Fallback to gemini-pro if Flash fails (or if it's a 404)
+      try {
+        model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const chatFallback = model.startChat({
+          history: [
+            { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
+            { role: "model", parts: [{ text: "Understood." }] }
+          ]
+        });
+        const result = await chatFallback.sendMessage(message);
+        const response = await result.response;
+        return res.json({ reply: response.text() });
+      } catch (finalError) {
+        console.error("STABLE API ERROR:", finalError);
+        
+        let msg = finalError.message || "Unknown error";
+        if (msg.includes("404")) {
+            msg = "The API project configuration might be incorrect or models are still propagating. Please check your Google Cloud Console.";
+        }
+        res.status(500).json({ message: "AI Maintenance: " + msg });
+      }
     }
-
-    res.status(500).json({ 
-      message: "AI Maintenance: " + msg
-    });
+  } catch (error) {
+    // This catch block handles errors from the initial API key check or other unexpected issues
+    console.error("General API Error:", error);
+    res.status(500).json({ message: "An unexpected error occurred: " + error.message });
   }
 });
 
