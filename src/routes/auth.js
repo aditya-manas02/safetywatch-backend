@@ -303,7 +303,7 @@ router.post("/signup", catchAsync(async (req, res) => {
   const { success, error: emailError } = await sendOTPEmail(email, otp);
   
   if (!success) {
-    console.error(`[SIGNUP] Email failed for ${email}:`, emailError);
+    console.error("[SIGNUP] Email delivery failed:", emailError);
     
     // Cleanup: If this was a new user, remove them so they can try again with a corrected email
     // If it was an existing unverified user, we keep them but still report the failure
@@ -312,9 +312,10 @@ router.post("/signup", catchAsync(async (req, res) => {
       await User.deleteOne({ _id: user._id });
     }
 
-    return res.status(400).json({
-      message: "Verification email could not be delivered. Please check if your email address is correct.",
-      details: emailError?.message
+    return res.status(500).json({
+      message: "Registration semi-successful. User account created, but the verification email could not be delivered. This usually happens if the email service API key is invalid or the sender is unverified.",
+      error: emailError?.message || "All delivery methods failed",
+      details: emailError
     });
   }
 
@@ -462,10 +463,10 @@ router.post("/resend-otp", catchAsync(async (req, res) => {
 
   const { success, error: emailError } = await sendOTPEmail(email, otp);
   if (!success) {
+    console.error("[RESEND-OTP] Email delivery failed:", emailError);
     return res.status(500).json({ 
-      message: `Failed to send OTP email: ${emailError?.message || "Unknown error"}`,
-      code: emailError?.code,
-      command: emailError?.command,
+      message: "Failed to resend OTP email. This usually happens if the email service API key is invalid or the sender is unverified.",
+      error: emailError?.message || "All delivery methods failed",
       rateLimit: rateLimitInfo.rateLimit
     });
   }
@@ -512,11 +513,14 @@ router.post("/forgot-password", catchAsync(async (req, res) => {
   console.log(`GENERATED TEMP PASSWORD: ${tempPassword}`);
   console.log("------------------------------------------");
 
-  const sent = await sendPasswordResetEmail(email, tempPassword);
-
-  if (!sent) {
-    console.error("Failed to send reset email to:", email);
-  }
+    const { success, error: emailError } = await sendPasswordResetEmail(email, tempPassword);
+    if (!success) {
+      console.error("[FORGOT-PASSWORD] Email delivery failed:", emailError);
+      return res.status(500).json({ 
+        message: "Failed to send password reset email. This usually happens if the email service API key is invalid or the sender is unverified.",
+        error: emailError?.message || "All delivery methods failed"
+      });
+    }
 
   res.json({ 
     message: "If an account exists, a reset email has been sent.",
@@ -598,11 +602,13 @@ router.post("/request-password-otp", async (req, res) => {
     await user.save();
 
     // Send OTP email
-    const { success } = await sendOTPEmail(email, otp);
+    const { success, error: emailError } = await sendOTPEmail(email, otp);
     
     if (!success) {
+      console.error("[OTP] Email delivery failed:", emailError);
       return res.status(500).json({ 
-        message: "Failed to send OTP email. Please try again.",
+        message: "Failed to send OTP email. This usually happens if the email service API key is invalid or the sender is unverified.",
+        error: emailError?.message || "All delivery methods failed",
         rateLimit: rateLimitInfo.rateLimit
       });
     }
@@ -613,7 +619,11 @@ router.post("/request-password-otp", async (req, res) => {
     });
   } catch (err) {
     console.error("Request Password OTP Error:", err);
-    res.status(500).json({ message: "Server error during OTP request" });
+    res.status(500).json({ 
+      message: "Internal Server Error during OTP request", 
+      details: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 });
 
