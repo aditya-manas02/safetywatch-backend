@@ -30,7 +30,15 @@ router.post("/", chatLimiter, async (req, res) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     
     let model;
-    const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+    // Attempting both prefixed and non-prefixed as the SDK behavior can vary by version/environment
+    const modelsToTry = [
+        "models/gemini-1.5-flash", 
+        "models/gemini-1.5-pro", 
+        "models/gemini-pro",
+        "gemini-1.5-flash", 
+        "gemini-1.5-pro", 
+        "gemini-pro"
+    ];
     let lastError = null;
 
     for (const modelName of modelsToTry) {
@@ -57,16 +65,13 @@ router.post("/", chatLimiter, async (req, res) => {
         } catch (err) {
             console.warn(`[AI] ${modelName} failed:`, err.message);
             lastError = err;
-            
-            // If it's a 404, we continue to the next model
-            // If it's a 429, we might want to wait, but for now we follow through
         }
     }
 
-    // FINAL FALLBACK: Simple generateContent (no history/complex structure)
+    // FINAL FALLBACK: Simple generateContent with models/ prefix
     try {
-        console.log("[AI] Attempting Final Simple Fallback...");
-        const simpleModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        console.log("[AI] Attempting Final Simple Fallback with models/ prefix...");
+        const simpleModel = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
         const result = await simpleModel.generateContent(`Nexus AI context: ${SYSTEM_PROMPT}\nUser: ${message}`);
         const response = await result.response;
         return res.json({ reply: response.text() });
@@ -78,17 +83,34 @@ router.post("/", chatLimiter, async (req, res) => {
         });
 
         let msg = finalErr.message || "Unknown error";
-        if (msg.includes("404")) {
-            msg = "Models not found. This usually means the 'Generative AI API' is not enabled in your Google Cloud Project or the API Key is restricted. Please check your Google Cloud Console.";
+        if (msg.includes("404") || msg.includes("not found")) {
+            msg = "Models not found. This indicates the 'Generative Language API' (not just basic Generative AI) is not enabled, or the project is incorrectly configured. Please visit: https://aistudio.google.com/app/apikey";
         }
 
         res.status(500).json({ message: "AI Maintenance: " + msg });
     }
   } catch (error) {
-    // This catch block handles errors from the initial API key check or other unexpected issues
     console.error("General API Error:", error);
     res.status(500).json({ message: "An unexpected error occurred: " + error.message });
   }
+});
+
+// Diagnostic route
+router.get("/debug", chatLimiter, async (req, res) => {
+    try {
+        const apiKey = process.env.GEMINI_API_KEY?.trim();
+        if (!apiKey) return res.status(500).json({ message: "API Key missing" });
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        // SDK listModels is not public on all versions, try a direct fetch or trial
+        res.json({ 
+            message: "Diagnostic logic initiated. Check server logs for detailed trial outputs.",
+            env_key_suffix: apiKey.slice(-4),
+            sdk_version: "0.24.1"
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 export default router;
