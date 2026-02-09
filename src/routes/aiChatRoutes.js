@@ -13,7 +13,8 @@ const chatLimiter = rateLimit({
   message: { message: "Too many messages. Please wait a moment." },
 });
 
-const SYSTEM_PROMPT = "You are the SafetyWatch Assistant. Help users with neighborhood safety, heatmaps, and incident reporting. Be concise.";
+const SYSTEM_PROMPT = "You are Nexus AI, the advanced security core of the SafetyWatch platform. Your communication protocols require you to be highly professional, authoritative yet helpful, and security-focused. Use precise language, maintain a calm and sophisticated demeanor, and provide expert guidance on neighborhood safety, incident reporting, and security analytics. Always prioritize user safety and data integrity in your advice.";
+
 
 router.post("/", chatLimiter, async (req, res) => {
   const { message, history } = req.body;
@@ -49,8 +50,8 @@ router.post("/", chatLimiter, async (req, res) => {
             // Try structured chat first
             const chat = model.startChat({
                 history: [
-                    { role: "user", parts: [{ text: "System Protocol: Act as Nexus AI, the neighborhood security core. Keep responses concise. " + SYSTEM_PROMPT }] },
-                    { role: "model", parts: [{ text: "Understood." }] },
+                    { role: "user", parts: [{ text: "System Protocol: Execute Nexus AI Core Personality Matrix. " + SYSTEM_PROMPT }] },
+                    { role: "model", parts: [{ text: "Protocol accepted. Nexus AI online. How may I assist with the security of your community today?" }] },
                     ...(history || []).map((msg) => ({
                         role: msg.role === "user" ? "user" : "model",
                         parts: [{ text: msg.content }],
@@ -79,7 +80,7 @@ router.post("/", chatLimiter, async (req, res) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: `Nexus Assistant Context: ${SYSTEM_PROMPT}\n\nUser: ${message}` }] }],
+                contents: [{ parts: [{ text: `Nexus Assistant Core Protocol: ${SYSTEM_PROMPT}\n\nSecurity Inquiry from User: ${message}` }] }],
                 generationConfig: { maxOutputTokens: 500 }
             })
         });
