@@ -722,9 +722,9 @@ router.post("/assign-area-code", authMiddleware, async (req, res) => {
     // Check if user is admin and verify they have access to this area code
     if (user.roles.includes("admin") && !user.roles.includes("superadmin")) {
       if (!user.assignedAreaCodes || !user.assignedAreaCodes.includes(areaCode.toUpperCase())) {
-        return res.status(403).json({ 
-          message: "You do not have access to this area code. Please contact your administrator." 
-        });
+        // Demote admin to normal user when accessing unauthorized area code
+        user.roles = user.roles.filter(role => role !== "admin");
+        console.log(`[AREA-CODE] Admin ${user.email} demoted to user for accessing ${areaCode.toUpperCase()}`);
       }
     }
 
