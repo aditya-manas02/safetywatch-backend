@@ -121,7 +121,7 @@ app.use((req, res, next) => {
       message: `SafetyWatch Update Required: Your version (${appVersion || 'legacy'}) is discontinued.`,
       currentVersion: appVersion,
       requiredVersion: MIN_VERSION,
-      downloadUrl: "https://safetywatch.vercel.app/SafetyWatch-v1.4.5.apk"
+      downloadUrl: "https://safetywatch-backend.onrender.com/SafetyWatch.apk"
     });
   }
 
