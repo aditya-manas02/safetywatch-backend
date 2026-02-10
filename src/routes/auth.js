@@ -692,7 +692,7 @@ router.post("/reset-password-otp", async (req, res) => {
 -------------------------------------------------- */
 
 // Assign area code to user (after login)
-router.post("/assign-area-code", protect, async (req, res) => {
+router.post("/assign-area-code", authMiddleware, async (req, res) => {
   try {
     const { email, areaCode } = req.body;
 
