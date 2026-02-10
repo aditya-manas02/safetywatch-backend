@@ -1,6 +1,6 @@
 {
     "version": "1.4.5",
     "minVersion": "1.4.5",
-    "url": "https://safetywatch.vercel.app/SafetyWatch-v1.4.5.apk",
-    "notes": "Version 1.4.5 includes critical security updates and layout fixes. Update is mandatory."
+    "url": "https://safetywatch-backend.onrender.com/SafetyWatch.apk",
+    "notes": "v1.4.5: Nexus AI Security Update. New branding, refined performance, and mandatory stability patch."
 }
