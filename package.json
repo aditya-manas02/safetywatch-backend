@@ -1,6 +1,6 @@
 {
   "name": "safetywatch-backend",
-  "version": "1.0.0",
+  "version": "1.4.6",
   "type": "module",
   "main": "src/server.js",
   "engines": {
