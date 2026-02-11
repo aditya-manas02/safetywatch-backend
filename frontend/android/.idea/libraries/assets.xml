@@ -1,0 +1,44 @@
+<component name="libraryTable">
+  <library name="assets">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/tabs-mDaWOw3r.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/Profile-1gKRhh8s.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/IncidentChat-RkbnP1bL.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/Leaderboard-BXB9j-4-.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/Auth-6BzIJMHZ.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/Index-DQXBQufJ.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/trophy-CQitCBsb.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/MapPicker-nbV8ldKY.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/leaflet-Dgihpmma.css.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/lock-nQYNuLCP.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/index-B5-vr4F7.css.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/card-DL60HYWW.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/textarea-B5OW2GNF.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/Admin-Bn5gLHe-.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/web-BCp-QCce.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/camera-CMGVi29a.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/PrivacyPolicy-CgSAYDBo.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/web--MV9nKre.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/trending-up-DPtVYkDV.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/splash.png.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/web-XqXLrbaq.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/flag-DXOonIlX.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/trash-2-DfLUaFOp.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/leaflet-BUBDoZC5.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/arrow-left-CD51jgb9.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/shield-DtZ3B99i.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/calendar-BfDza8rj.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/mail-pZ1AV0Xa.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/NotFound-BydIuOhV.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/index-B4BSlAr-.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/Inbox-DR0_zVYU.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/web-CG--g0-W.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/Support-CE7T5E8h.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/TermsOfService-D2Mv8SiP.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/phone-YLpwcwNY.js.jar!/" />
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/users-DI1_qnp6.js.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

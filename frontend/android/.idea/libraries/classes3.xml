@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="classes3">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/capacitor-cordova-android-plugins/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
