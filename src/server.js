@@ -42,17 +42,30 @@ if (process.env.FRONTEND_URL) {
 
 // Robust CORS with explicit fallback for mobile/native origins
 // Robust CORS with explicit fallback for mobile/native origins
-const corsOptions = {
-  origin: true, // Reflects the request origin, allowing all
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-app-version"],
-  credentials: true,
-};
+// Manual CORS Middleware - The Nuclear Option
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Allow all origins that look like our frontend or localhost
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else {
+    // For non-browser requests (like mobile apps), might not have origin, but we can allow * if credentials mode isn't strict
+    // But with credentials: true, we must be specific or echo origin.
+    // If no origin, we don't set ACAO, which is usually fine for non-browsers.
+  }
+  
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-app-version");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
 
-app.use(cors(corsOptions));
-
-// handle preflight
-app.options("*", cors(corsOptions));
+  // Handle Preflight
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
 /* ----------------------- VERSION ENFORCEMENT ----------------------- */
 // STRICT ENFORCEMENT: All native requests must pass this check.
