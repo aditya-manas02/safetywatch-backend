@@ -41,32 +41,33 @@ if (process.env.FRONTEND_URL) {
 }
 
 // Robust CORS with explicit fallback for mobile/native origins
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or same-origin)
-      if (!origin) return callback(null, true);
-      
-      const isAllowed = allowedOrigins.includes(origin) || 
-                       origin.includes("vercel.app") || 
-                       origin.includes("localhost") ||
-                       origin.startsWith("capacitor://");
+// Robust CORS with explicit fallback for mobile/native origins
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, or same-origin)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.includes(origin) || 
+                     origin.includes("vercel.app") || 
+                     origin.includes("localhost") ||
+                     origin.startsWith("capacitor://");
 
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        console.warn(`[CORS] Potentially blocked origin: ${origin}`);
-        callback(null, true); // Temporarily allow ALL in production to solve "Failed to fetch"
-      }
-    },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-app-version"],
-    credentials: true,
-  })
-);
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Potentially blocked origin: ${origin}`);
+      callback(null, true); // Temporarily allow ALL in production to solve "Failed to fetch"
+    }
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-app-version"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 // handle preflight
-app.options("*", cors());
+app.options("*", cors(corsOptions));
 
 /* ----------------------- VERSION ENFORCEMENT ----------------------- */
 // STRICT ENFORCEMENT: All native requests must pass this check.
