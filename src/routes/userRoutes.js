@@ -164,4 +164,17 @@ router.get("/audit/logs", authMiddleware, requireAdminOnly, async (req, res) => 
   }
 });
 
+/* ADMIN: LIFT SUSPENSION (ADMIN ONLY) */
+router.patch("/:id/unsuspend", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  user.isSuspended = false;
+  user.suspensionExpiresAt = undefined;
+  await user.save();
+
+  await logAudit(req, `Admin lifted suspension for user ${user.email}`, "admin_action", user._id);
+  res.json({ message: "Suspension lifted successfully" });
+}));
+
 export default router;

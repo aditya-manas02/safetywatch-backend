@@ -377,7 +377,9 @@ router.post("/login", catchAsync(async (req, res) => {
       profilePicture: user.profilePicture,
       areaCode: user.areaCode,
       assignedAreaCodes: user.assignedAreaCodes || [],
-      hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT", // Flag to check if user needs to enter area code
+      hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
+      isSuspended: user.isSuspended,
+      suspensionExpiresAt: user.suspensionExpiresAt,
     },
 
   });
@@ -423,6 +425,8 @@ router.post("/verify-otp", catchAsync(async (req, res) => {
       areaCode: user.areaCode,
       assignedAreaCodes: user.assignedAreaCodes || [],
       hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
+      isSuspended: user.isSuspended,
+      suspensionExpiresAt: user.suspensionExpiresAt,
     },
 
   });
