@@ -9,6 +9,10 @@ import Notification from "../models/Notification.js";
 import IncidentMessage from "../models/IncidentMessage.js";
 import User from "../models/User.js";
 import Report from "../models/Report.js";
+import multer from "multer";
+import cloudinary from "../config/cloudinary.js";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
@@ -625,7 +629,7 @@ router.delete("/:id/messages/:otherUserId", authMiddleware, catchAsync(async (re
 }));
 
 /* ---------------- REPORT CHAT/USER ---------------- */
-router.post("/:id/report", authMiddleware, catchAsync(async (req, res) => {
+router.post("/:id/report", authMiddleware, upload.single("screenshot"), catchAsync(async (req, res) => {
   const { id: incidentId } = req.params;
   const { reportedUserId, messageId, reason } = req.body;
 
@@ -648,13 +652,34 @@ router.post("/:id/report", authMiddleware, catchAsync(async (req, res) => {
     createdAt: m.createdAt
   }));
 
+  let screenshotUrl = null;
+  if (req.file) {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "reports" },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+      screenshotUrl = result.secure_url;
+    } catch (uploadError) {
+      console.error("Screenshot upload failed:", uploadError);
+      // We continue without the screenshot if upload fails, or you could return an error
+    }
+  }
+
   const report = await Report.create({
     reporterId: req.user.id,
     reportedUserId,
     incidentId,
     messageId,
     reason,
-    chatSnapshot
+    chatSnapshot,
+    screenshot: screenshotUrl
   });
 
   await logAudit(req, `Created report against user ${reportedUserId} for incident ${incidentId}`, "user_report", reportedUserId);

@@ -21,6 +21,7 @@ const reportSchema = new mongoose.Schema({
     content: String,
     createdAt: Date
   }],
+  screenshot: { type: String }, // URL of the uploaded screenshot
   reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   reviewedAt: { type: Date }
 }, { timestamps: true });
