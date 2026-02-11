@@ -766,6 +766,15 @@ router.post("/admin/reports/:reportId/action", authMiddleware, requireAdminOnly,
   res.json({ message: `Action '${action}' applied successfully` });
 }));
 
+/* ---------------- ADMIN: DELETE ALL RESOLVED REPORTS ---------------- */
+router.delete("/admin/reports/resolved", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
+  const result = await Report.deleteMany({ status: "resolved" });
+  
+  await logAudit(req, `Admin deleted all resolved reports: ${result.deletedCount} items`, "admin_action", "mass_action");
+
+  res.json({ message: "All resolved reports deleted successfully", count: result.deletedCount });
+}));
+
 /* ---------------- ADMIN: DELETE REPORT ---------------- */
 router.delete("/admin/reports/:reportId", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
   const { reportId } = req.params;
