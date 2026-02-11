@@ -43,22 +43,7 @@ if (process.env.FRONTEND_URL) {
 // Robust CORS with explicit fallback for mobile/native origins
 // Robust CORS with explicit fallback for mobile/native origins
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, or same-origin)
-    if (!origin) return callback(null, true);
-    
-    const isAllowed = allowedOrigins.includes(origin) || 
-                     origin.includes("vercel.app") || 
-                     origin.includes("localhost") ||
-                     origin.startsWith("capacitor://");
-
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.warn(`[CORS] Potentially blocked origin: ${origin}`);
-      callback(null, true); // Temporarily allow ALL in production to solve "Failed to fetch"
-    }
-  },
+  origin: true, // Reflects the request origin, allowing all
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "x-app-version"],
   credentials: true,
