@@ -24,6 +24,8 @@ import newsRoutes from "./routes/news.js";
 import areaCodeRoutes from "./routes/areaCodeRoutes.js";
 
 dotenv.config();
+console.log("[STARTUP] Environment variables loaded.");
+
 const app = express();
 
 
@@ -247,12 +249,12 @@ app.get("/api/health", (req, res) => {
     status: "ok", 
     message: "Server is healthy",
     uptime: process.uptime(),
-    minVersion: '1.4.5'
+    minVersion: '1.4.6'
   });
 });
 
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.4.5-FINAL)", timestamp: new Date().toISOString() });
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.4.6-LIVE)", timestamp: new Date().toISOString() });
 });
 
 /* ----------------------- ERROR HANDLING ------------------- */
@@ -308,9 +310,10 @@ mongoose.connection.on("error", (err) => {
   console.error("MongoDB runtime error:", err.message);
 });
 
-app.listen(PORT, "0.0.0.0", () =>
-  console.log(`Server running on port ${PORT}`)
-);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`[STARTUP] SafetyWatch Server v1.4.6 is now ONLINE on port ${PORT}`);
+  console.log(`[STARTUP] Binding: 0.0.0.0:${PORT}`);
+});
 
 
 /* ----------------------- PROCESS HANDLERS ----------------- */
