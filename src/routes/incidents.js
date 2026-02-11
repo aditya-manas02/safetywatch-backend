@@ -653,23 +653,32 @@ router.post("/:id/report", authMiddleware, upload.single("screenshot"), catchAsy
   }));
 
   let screenshotUrl = null;
+  console.log(`[REPORT_DEBUG] Processing report for incident ${incidentId}. Has file? ${!!req.file}`);
+  
   if (req.file) {
+    console.log(`[REPORT_DEBUG] File detected: ${req.file.originalname} (${req.file.size} bytes)`);
     try {
       const result = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           { folder: "reports" },
           (error, result) => {
-            if (error) reject(error);
+            if (error) {
+                console.error("[REPORT_DEBUG] Cloudinary Upload Error:", error);
+                reject(error);
+            }
             else resolve(result);
           }
         );
         uploadStream.end(req.file.buffer);
       });
       screenshotUrl = result.secure_url;
+      console.log(`[REPORT_DEBUG] Upload successful. URL: ${screenshotUrl}`);
     } catch (uploadError) {
-      console.error("Screenshot upload failed:", uploadError);
+      console.error("[REPORT_DEBUG] Screenshot upload failed catch block:", uploadError);
       // We continue without the screenshot if upload fails, or you could return an error
     }
+  } else {
+    console.log("[REPORT_DEBUG] No file attached to request.");
   }
 
   const report = await Report.create({
