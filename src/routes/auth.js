@@ -761,6 +761,33 @@ router.post("/assign-area-code", authMiddleware, async (req, res) => {
   }
 });
 
+// Leave current area code (clears area code and demotes admins)
+router.post("/leave-area-code", authMiddleware, catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  // 1. Clear Area Code
+  user.areaCode = undefined;
+
+  // 2. Demote Admin (but NOT SuperAdmin)
+  if (user.roles.includes("admin") && !user.roles.includes("superadmin")) {
+    user.roles = user.roles.filter(role => role !== "admin");
+    console.log(`[LEAVE_AREA] Admin ${user.email} demoted to user.`);
+  }
+
+  await user.save();
+
+  res.json({ 
+    message: "Successfully left the area and roles updated.",
+    user: {
+      id: user._id,
+      email: user.email,
+      roles: user.roles,
+      areaCode: user.areaCode
+    }
+  });
+}));
+
 // Verify area code (check if valid and active)
 router.post("/verify-area-code", async (req, res) => {
   try {
