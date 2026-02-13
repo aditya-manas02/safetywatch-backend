@@ -44,6 +44,7 @@ export const authMiddleware = async (req, res, next) => {
       email: user.email,
       name: user.name,
       roles: user.roles,
+      areaCode: user.areaCode,
       isSuperAdmin: user.roles.includes("superadmin"),
       isAdmin: user.roles.includes("admin") || user.roles.includes("superadmin")
     };
