@@ -17,4 +17,7 @@ const notificationSchema = new mongoose.Schema({
   link: { type: String, default: null },
 }, { timestamps: true });
 
+// Automatically delete notifications after 48 hours (172800 seconds)
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 172800 });
+
 export default mongoose.model("Notification", notificationSchema);
