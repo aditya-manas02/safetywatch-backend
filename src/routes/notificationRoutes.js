@@ -12,6 +12,10 @@ router.get("/public", catchAsync(async (req, res) => {
   
   const announcements = await Notification.find({ 
     userId: null,
+    $or: [
+      { targetAreaCodes: { $exists: false } }, 
+      { targetAreaCodes: { $size: 0 } }
+    ],
     createdAt: { $gte: filterWindow }
   })
     .sort({ createdAt: -1 })
@@ -57,7 +61,14 @@ router.get("/", catchAsync(async (req, res) => {
   let query = {
     $or: [
       { userId: userId },
-      { userId: null }
+      { 
+        userId: null,
+        $or: [
+          { targetAreaCodes: { $exists: false } }, 
+          { targetAreaCodes: { $size: 0 } },
+          { targetAreaCodes: user.areaCode } // Include if user's area code is in target list
+        ]
+      }
     ]
   };
 
@@ -99,9 +110,29 @@ router.patch("/read-all", authMiddleware, catchAsync(async (req, res) => {
 
 /* ----------------- CREATE ANNOUNCEMENT (ADMIN) ------------------ */
 router.post("/announcement", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
-  const { title, message, link } = req.body;
+  const { title, message, link, targetAreaCodes } = req.body;
   if (!title || !message) {
     return res.status(400).json({ message: "Title and message are required" });
+  }
+
+  // Determine target area codes
+  let finalTargetCodes = [];
+
+  if (req.user.isSuperAdmin) {
+    // Super Admin can specify codes or leave empty for global
+    if (targetAreaCodes && Array.isArray(targetAreaCodes)) {
+      finalTargetCodes = targetAreaCodes;
+    }
+  } else {
+    // Normal Admin: FORCE to their assigned area code
+    if (req.user.areaCode && req.user.areaCode !== "DEFAULT") {
+      finalTargetCodes = [req.user.areaCode];
+    } else {
+      // Fallback: If normal admin has no area code (unlikely but possible), strict restriction?
+      // For now, let's assume they MUST have one. If not, maybe block or allow?
+      // Let's block to be safe.
+      return res.status(403).json({ message: "You must have an assigned area code to broadcast." });
+    }
   }
 
   const announcement = await Notification.create({
@@ -109,7 +140,8 @@ router.post("/announcement", authMiddleware, requireAdminOnly, catchAsync(async 
     title,
     message,
     type: "announcement",
-    link
+    link,
+    targetAreaCodes: finalTargetCodes
   });
 
   res.status(201).json(announcement);

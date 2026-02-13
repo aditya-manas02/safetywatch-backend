@@ -15,6 +15,7 @@ const notificationSchema = new mongoose.Schema({
   },
   isRead: { type: Boolean, default: false },
   link: { type: String, default: null },
+  targetAreaCodes: [{ type: String, uppercase: true }], // If empty, it's global (or strictly for global if userId is null)
 }, { timestamps: true });
 
 // Automatically delete notifications after 48 hours (172800 seconds)
