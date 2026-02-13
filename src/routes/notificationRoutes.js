@@ -7,12 +7,12 @@ const router = express.Router();
 
 /* ----------------- GET PUBLIC ANNOUNCEMENTS ------------------ */
 router.get("/public", catchAsync(async (req, res) => {
-  // Only return global announcements (userId: null) from the last 72 hours
-  const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
+  // Only return global announcements (userId: null) from the last 48 hours
+  const filterWindow = new Date(Date.now() - 48 * 60 * 60 * 1000);
   
   const announcements = await Notification.find({ 
     userId: null,
-    createdAt: { $gte: seventyTwoHoursAgo }
+    createdAt: { $gte: filterWindow }
   })
     .sort({ createdAt: -1 })
     .limit(20);
@@ -26,7 +26,7 @@ import jwt from "jsonwebtoken";
 
 router.get("/", catchAsync(async (req, res) => {
   const { history } = req.query;
-  const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
+  const filterWindow = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
   // SOFT AUTH CHECK
   let userId = null;
@@ -63,7 +63,7 @@ router.get("/", catchAsync(async (req, res) => {
 
   // If not requesting history (or not admin), filter by 72h window
   if (history !== "true" || !user.roles.includes("admin")) {
-    query.createdAt = { $gte: seventyTwoHoursAgo };
+    query.createdAt = { $gte: filterWindow };
   }
 
   const notifications = await Notification.find(query)
