@@ -25,6 +25,7 @@ import areaCodeRoutes from "./routes/areaCodeRoutes.js";
 import pollRoutes from "./routes/pollRoutes.js";
 import challengeRoutes from "./routes/challengeRoutes.js";
 import adRoutes from "./routes/adRoutes.js";
+import circleRoutes from "./routes/circleRoutes.js";
 
 dotenv.config();
 console.log("[STARTUP] Environment variables loaded.");
@@ -249,6 +250,7 @@ app.use("/api/area-codes", areaCodeRoutes);
 app.use("/api/polls", pollRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/ads", adRoutes);
+app.use("/api/circles", circleRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ 
