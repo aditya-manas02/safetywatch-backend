@@ -1,12 +1,12 @@
 import express from "express";
 import Challenge from "../models/Challenge.js";
 import ChallengeParticipation from "../models/ChallengeParticipation.js";
-import { authenticateUser, authorizeAdmin } from "../middleware/auth.js";
+import { authMiddleware, requireAdminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
 
 // Get active challenges for a user's area
-router.get("/active", authenticateUser, async (req, res) => {
+router.get("/active", authMiddleware, async (req, res) => {
   try {
     const userAreaCode = req.user.areaCode;
     const now = new Date();
@@ -43,7 +43,7 @@ router.get("/active", authenticateUser, async (req, res) => {
 });
 
 // Admin: Create a new challenge
-router.post("/", authenticateUser, authorizeAdmin, async (req, res) => {
+router.post("/", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
     const { title, description, type, targetValue, areaCode, endDate, icon, points } = req.body;
     
@@ -66,7 +66,7 @@ router.post("/", authenticateUser, authorizeAdmin, async (req, res) => {
 });
 
 // Admin: Toggle challenge status
-router.patch("/:id/toggle", authenticateUser, authorizeAdmin, async (req, res) => {
+router.patch("/:id/toggle", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
     const challenge = await Challenge.findById(req.params.id);
     if (!challenge) return res.status(404).json({ message: "Challenge not found" });
