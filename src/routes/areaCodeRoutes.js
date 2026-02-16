@@ -324,4 +324,32 @@ router.delete("/:id", authMiddleware, requireSuperAdmin, async (req, res) => {
   }
 });
 
+// Get single area code details with users and incidents (SuperAdmin only)
+router.get("/:id/details", authMiddleware, requireSuperAdmin, async (req, res) => {
+  try {
+    const areaCode = await AreaCode.findById(req.params.id)
+      .populate("createdBy", "name email")
+      .populate("assignedAdmins", "name email");
+
+    if (!areaCode) {
+      return res.status(404).json({ error: "Area code not found" });
+    }
+
+    // Fetch users for this area
+    const users = await User.find({ areaCode: areaCode.code }).select("-passwordHash");
+
+    // Fetch incidents for this area
+    const incidents = await Incident.find({ areaCode: areaCode.code }).sort({ createdAt: -1 });
+
+    res.json({
+      areaCode,
+      users,
+      incidents
+    });
+  } catch (error) {
+    console.error("Error fetching area details:", error);
+    res.status(500).json({ error: "Failed to fetch area details" });
+  }
+});
+
 export default router;
