@@ -4,7 +4,7 @@ const circleSchema = new mongoose.Schema({
   name: { type: String, required: true },
   type: { 
     type: String, 
-    enum: ["Family", "Friends", "Hostel"], 
+    enum: ["Family", "Friends", "Hostel", "Roommates", "Colleagues", "Travel", "Neighborhood", "Other"], 
     required: true 
   },
   inviteCode: { type: String, required: true, unique: true },
