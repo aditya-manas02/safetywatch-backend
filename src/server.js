@@ -25,7 +25,6 @@ import areaCodeRoutes from "./routes/areaCodeRoutes.js";
 import pollRoutes from "./routes/pollRoutes.js";
 import challengeRoutes from "./routes/challengeRoutes.js";
 import adRoutes from "./routes/adRoutes.js";
-import Stats from "./models/Stats.js";
 
 dotenv.config();
 console.log("[STARTUP] Environment variables loaded.");
