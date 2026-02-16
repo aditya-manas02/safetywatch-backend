@@ -14,6 +14,11 @@ const incidentSchema = new mongoose.Schema({
   allowMessages: { type: Boolean, default: true },
   areaCode: { type: String, uppercase: true, trim: true, required: true }, // Area code for location-based filtering
   acknowledgements: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  helpfulUpvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  resolutionVotes: {
+    yes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    no: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
+  },
   locationPoint: {
     type: {
       type: String,

@@ -786,4 +786,57 @@ router.delete("/admin/reports/:reportId", authMiddleware, requireAdminOnly, catc
   res.json({ message: "Report deleted successfully" });
 }));
 
+/* ---------------- UPVOTE INCIDENT ---------------- */
+router.patch("/:id/upvote", authMiddleware, catchAsync(async (req, res) => {
+  const incident = await Incident.findById(req.params.id);
+  if (!incident) return res.status(404).json({ message: "Incident not found" });
+
+  const userId = req.user.id;
+  const index = incident.helpfulUpvotes.indexOf(userId);
+
+  if (index > -1) {
+    // Already upvoted, so remove it (toggle)
+    incident.helpfulUpvotes.splice(index, 1);
+  } else {
+    // Add upvote
+    incident.helpfulUpvotes.push(userId);
+  }
+
+  await incident.save();
+  res.json({ 
+    message: index > -1 ? "Upvote removed" : "Upvote added", 
+    upvotes: incident.helpfulUpvotes.length 
+  });
+}));
+
+/* ---------------- VOTE ON RESOLUTION ---------------- */
+router.patch("/:id/resolution-vote", authMiddleware, catchAsync(async (req, res) => {
+  const { vote } = req.body; // 'yes' or 'no'
+  if (!['yes', 'no'].includes(vote)) {
+    return res.status(400).json({ message: "Invalid vote. Use 'yes' or 'no'." });
+  }
+
+  const incident = await Incident.findById(req.params.id);
+  if (!incident) return res.status(404).json({ message: "Incident not found" });
+
+  const userId = req.user.id;
+
+  // Remove from both to allow changing vote
+  incident.resolutionVotes.yes = incident.resolutionVotes.yes.filter(id => id.toString() !== userId.toString());
+  incident.resolutionVotes.no = incident.resolutionVotes.no.filter(id => id.toString() !== userId.toString());
+
+  // Add new vote
+  incident.resolutionVotes[vote].push(userId);
+
+  await incident.save();
+
+  res.json({ 
+    message: "Resolution vote cast", 
+    resolutionVotes: {
+      yes: incident.resolutionVotes.yes.length,
+      no: incident.resolutionVotes.no.length
+    }
+  });
+}));
+
 export default router;
