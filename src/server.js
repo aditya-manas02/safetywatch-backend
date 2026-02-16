@@ -23,6 +23,7 @@ import aiChatRoutes from "./routes/aiChatRoutes.js";
 import newsRoutes from "./routes/news.js";
 import areaCodeRoutes from "./routes/areaCodeRoutes.js";
 import pollRoutes from "./routes/pollRoutes.js";
+import challengeRoutes from "./routes/challengeRoutes.js";
 
 dotenv.config();
 console.log("[STARTUP] Environment variables loaded.");
@@ -245,6 +246,7 @@ app.use("/api/chat", aiChatRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/area-codes", areaCodeRoutes);
 app.use("/api/polls", pollRoutes);
+app.use("/api/challenges", challengeRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ 

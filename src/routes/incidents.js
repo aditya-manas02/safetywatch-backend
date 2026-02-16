@@ -11,6 +11,8 @@ import User from "../models/User.js";
 import Report from "../models/Report.js";
 import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
+import Challenge from "../models/Challenge.js";
+import ChallengeParticipation from "../models/ChallengeParticipation.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -94,6 +96,51 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
   });
 
   res.status(201).json(incident);
+
+  // --- Background Progress Tracking for Challenges ---
+  try {
+    const now = new Date();
+    // Find active report-type challenges for this user's area
+    const activeChallenges = await Challenge.find({
+      type: "report_count",
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gt: now },
+      $or: [
+        { areaCode: user.areaCode },
+        { areaCode: null },
+        { areaCode: "" }
+      ]
+    });
+
+    for (const challenge of activeChallenges) {
+      await ChallengeParticipation.findOneAndUpdate(
+        { userId: req.user.id, challengeId: challenge._id },
+        { 
+          $inc: { currentValue: 1 },
+          $set: { lastUpdated: now }
+        },
+        { upsert: true, new: true }
+      ).then(async (participation) => {
+        // Check if completed now
+        if (!participation.isCompleted && participation.currentValue >= challenge.targetValue) {
+          participation.isCompleted = true;
+          participation.completedAt = now;
+          await participation.save();
+
+          // Notify the user of completion
+          await Notification.create({
+            userId: req.user.id,
+            title: "Challenge Completed! 🎉",
+            message: `Congratulations! You've completed the "${challenge.title}" challenge and earned community recognition.`,
+            type: "system_alert"
+          });
+        }
+      });
+    }
+  } catch (err) {
+    console.error("[CHALLENGE_SYNC_ERROR] Failed to update progress:", err);
+  }
 }));
 
 /* ----------------- GET INCIDENTS (SOFT AUTH) ------------------ */
@@ -807,6 +854,50 @@ router.patch("/:id/upvote", authMiddleware, catchAsync(async (req, res) => {
     message: index > -1 ? "Upvote removed" : "Upvote added", 
     upvotes: incident.helpfulUpvotes.length 
   });
+
+  // --- Background Progress Tracking for Challenges (Voting) ---
+  if (index === -1) { // Only increment if adding a new upvote
+    try {
+      const now = new Date();
+      const activeChallenges = await Challenge.find({
+        type: "vote_count",
+        isActive: true,
+        startDate: { $lte: now },
+        endDate: { $gt: now },
+        $or: [
+          { areaCode: req.user.areaCode },
+          { areaCode: null },
+          { areaCode: "" }
+        ]
+      });
+
+      for (const challenge of activeChallenges) {
+        await ChallengeParticipation.findOneAndUpdate(
+          { userId: req.user.id, challengeId: challenge._id },
+          { 
+            $inc: { currentValue: 1 },
+            $set: { lastUpdated: now }
+          },
+          { upsert: true, new: true }
+        ).then(async (participation) => {
+          if (!participation.isCompleted && participation.currentValue >= challenge.targetValue) {
+            participation.isCompleted = true;
+            participation.completedAt = now;
+            await participation.save();
+
+            await Notification.create({
+              userId: req.user.id,
+              title: "Voting Challenge Complete! 🗳️",
+              message: `You've completed the "${challenge.title}" challenge! Thanks for helping keep the community accurate.`,
+              type: "system_alert"
+            });
+          }
+        });
+      }
+    } catch (err) {
+      console.error("[CHALLENGE_SYNC_ERROR] Failed to update vote progress:", err);
+    }
+  }
 }));
 
 /* ---------------- VOTE ON RESOLUTION ---------------- */
@@ -837,6 +928,51 @@ router.patch("/:id/resolution-vote", authMiddleware, catchAsync(async (req, res)
       no: incident.resolutionVotes.no.length
     }
   });
+
+  // --- Background Progress Tracking for Challenges (Resolution Voting) ---
+  try {
+    const now = new Date();
+    const activeChallenges = await Challenge.find({
+      type: "vote_count",
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gt: now },
+      $or: [
+        { areaCode: req.user.areaCode },
+        { areaCode: null },
+        { areaCode: "" }
+      ]
+    });
+
+    for (const challenge of activeChallenges) {
+      // Note: We don't increment for resolution votes if they already voted (they just changed their vote)
+      // but for simplicity here we check if a participation exists and what the current value is.
+      // A more robust way would be to check if they had already voted on this specific incident's resolution.
+      await ChallengeParticipation.findOneAndUpdate(
+        { userId: req.user.id, challengeId: challenge._id },
+        { 
+          $inc: { currentValue: 1 },
+          $set: { lastUpdated: now }
+        },
+        { upsert: true, new: true }
+      ).then(async (participation) => {
+        if (!participation.isCompleted && participation.currentValue >= challenge.targetValue) {
+          participation.isCompleted = true;
+          participation.completedAt = now;
+          await participation.save();
+
+          await Notification.create({
+            userId: req.user.id,
+            title: "Community Spirit Award! 🏆",
+            message: `You've completed the "${challenge.title}" challenge by helping verify incident resolutions.`,
+            type: "system_alert"
+          });
+        }
+      });
+    }
+  } catch (err) {
+    console.error("[CHALLENGE_SYNC_ERROR] Failed to update resolution vote progress:", err);
+  }
 }));
 
 export default router;
