@@ -177,4 +177,53 @@ router.patch("/:id/unsuspend", authMiddleware, requireAdminOnly, catchAsync(asyn
   res.json({ message: "Suspension lifted successfully" });
 }));
 
+/* ADMIN: SUSPEND USER (ADMIN ONLY) */
+router.patch("/:id/suspend", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
+  const { isSuspended, reason, suspensionDays } = req.body;
+  const user = await User.findById(req.params.id);
+  
+  if (!user) return res.status(404).json({ message: "User not found" });
+  if (user.roles.includes("superadmin")) {
+    return res.status(403).json({ message: "SuperAdmins cannot be suspended" });
+  }
+
+  user.isSuspended = isSuspended;
+  
+  if (isSuspended) {
+    if (suspensionDays) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + parseInt(suspensionDays));
+      user.suspensionExpiresAt = expiresAt;
+    } else {
+      user.suspensionExpiresAt = null; // Indefinite
+    }
+    
+    if (reason) {
+      user.warnings.push({
+        reason,
+        adminId: req.user.id
+      });
+    }
+
+    await logAudit(req, `Admin suspended user ${user.email}. Reason: ${reason || 'Not specified'}`, "admin_action", user._id);
+  } else {
+    user.suspensionExpiresAt = undefined;
+    await logAudit(req, `Admin lifted suspension for user ${user.email}`, "admin_action", user._id);
+  }
+
+  await user.save();
+
+  // Send notification
+  await (await import("../models/Notification.js")).default.create({
+    userId: user._id,
+    title: isSuspended ? "Account Suspended" : "Suspension Lifted",
+    message: isSuspended 
+      ? `Your account has been suspended${suspensionDays ? ` for ${suspensionDays} days` : ' indefinitely'}.${reason ? ` Reason: ${reason}` : ''}`
+      : "Your account suspension has been lifted. You can now access all features.",
+    type: "system_alert"
+  });
+
+  res.json({ message: isSuspended ? "User suspended successfully" : "Suspension lifted successfully" });
+}));
+
 export default router;
