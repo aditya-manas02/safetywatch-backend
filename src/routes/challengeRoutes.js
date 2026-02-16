@@ -47,12 +47,20 @@ router.post("/", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
     const { title, description, type, targetValue, areaCode, endDate, icon, points } = req.body;
     
+    // Permission Enforcement:
+    // 1. Normal Admins can ONLY create challenges for their own area.
+    // 2. Super Admins can create global (null areaCode) or area-specific challenges.
+    let finalAreaCode = areaCode;
+    if (!req.user.isSuperAdmin) {
+      finalAreaCode = req.user.areaCode;
+    }
+
     const challenge = new Challenge({
       title,
       description,
       type,
       targetValue,
-      areaCode: areaCode || req.user.areaCode,
+      areaCode: finalAreaCode,
       endDate,
       icon,
       points
