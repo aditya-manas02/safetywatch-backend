@@ -31,7 +31,13 @@ const userSchema = new mongoose.Schema({
   otpCount: { type: Number, default: 0 },
   otpWindowStart: { type: Date, default: Date.now },
   passwordResetCount: { type: Number, default: 0 },
-  passwordResetWindowStart: { type: Date, default: Date.now }
+  passwordResetWindowStart: { type: Date, default: Date.now },
+  // Reward system fields
+  rewardPoints: { type: Number, default: 0 },
+  badges: [{
+    name: { type: String, required: true },
+    purchasedAt: { type: Date, default: Date.now }
+  }]
 }, { timestamps: true });
 
 export default mongoose.model("User", userSchema);
