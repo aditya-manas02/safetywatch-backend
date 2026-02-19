@@ -248,7 +248,7 @@ router.post("/badges/purchase", authMiddleware, catchAsync(async (req, res) => {
   const user = await User.findById(req.user.id);
   if (!user) return res.status(404).json({ message: "User not found" });
 
-  const isSuperAdmin = user.roles.includes("super_admin");
+  const isSuperAdmin = user.roles.includes("superadmin");
 
   // Check if user already has the badge
   if (user.badges.some(b => b.name === badgeName)) {
