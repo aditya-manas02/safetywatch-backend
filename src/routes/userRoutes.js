@@ -61,6 +61,8 @@ router.patch("/profile", authMiddleware, catchAsync(async (req, res) => {
       roles: user.roles,
       createdAt: user.createdAt,
       isVerified: user.isVerified,
+      rewardPoints: user.rewardPoints,
+      badges: user.badges
     },
   });
 }));
@@ -224,6 +226,50 @@ router.patch("/:id/suspend", authMiddleware, requireAdminOnly, catchAsync(async 
   });
 
   res.json({ message: isSuspended ? "User suspended successfully" : "Suspension lifted successfully" });
+}));
+
+const BADGE_COSTS = {
+  "Community Vigilante": 100,
+  "Safety Guardian": 500,
+  "Area Sentinel": 1500,
+  "Elite Protector": 5000,
+  "Safety Legend": 15000
+};
+
+/* PURCHASE BADGE */
+router.post("/badges/purchase", authMiddleware, catchAsync(async (req, res) => {
+  const { badgeName } = req.body;
+  const cost = BADGE_COSTS[badgeName];
+
+  if (!cost) {
+    return res.status(400).json({ message: "Invalid badge name" });
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  // Check if user already has the badge
+  if (user.badges.some(b => b.name === badgeName)) {
+    return res.status(400).json({ message: "You already own this badge" });
+  }
+
+  // Check if user has enough points
+  if (user.rewardPoints < cost) {
+    return res.status(400).json({ message: `Insufficient points. You need ${cost} points.` });
+  }
+
+  // Deduct points and add badge
+  user.rewardPoints -= cost;
+  user.badges.push({ name: badgeName });
+
+  await user.save();
+  await logAudit(req, `Purchased badge: ${badgeName}`, "user_reward", user._id, `Cost: ${cost}`);
+
+  res.json({
+    message: `Successfully purchased ${badgeName}!`,
+    rewardPoints: user.rewardPoints,
+    badges: user.badges
+  });
 }));
 
 export default router;

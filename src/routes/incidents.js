@@ -128,11 +128,18 @@ router.post("/", authMiddleware, catchAsync(async (req, res) => {
           participation.completedAt = now;
           await participation.save();
 
+          // Award reward points to the user
+          if (challenge.points > 0) {
+            await User.findByIdAndUpdate(req.user.id, {
+              $inc: { rewardPoints: challenge.points }
+            });
+          }
+
           // Notify the user of completion
           await Notification.create({
             userId: req.user.id,
             title: "Challenge Completed! 🎉",
-            message: `Congratulations! You've completed the "${challenge.title}" challenge and earned community recognition.`,
+            message: `Congratulations! You've completed the "${challenge.title}" challenge and earned ${challenge.points || 0} reward points.`,
             type: "system_alert"
           });
         }
