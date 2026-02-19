@@ -276,4 +276,31 @@ router.post("/badges/purchase", authMiddleware, catchAsync(async (req, res) => {
   });
 }));
 
+
+// Update active badge selection
+router.patch("/active-badge", authMiddleware, catchAsync(async (req, res) => {
+  const { badgeName } = req.body;
+  
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  // If badgeName is null/empty, clear selection
+  if (!badgeName) {
+    user.activeBadge = null;
+    await user.save();
+    return res.json({ message: "Active badge cleared", activeBadge: null });
+  }
+
+  // Check if user owns the badge
+  const ownsBadge = user.badges.some(b => b.name === badgeName);
+  if (!ownsBadge) {
+    return res.status(400).json({ message: "You don't own this badge" });
+  }
+
+  user.activeBadge = badgeName;
+  await user.save();
+
+  res.json({ message: "Active badge updated", activeBadge: badgeName });
+}));
+
 export default router;

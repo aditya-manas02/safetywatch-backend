@@ -37,7 +37,8 @@ const userSchema = new mongoose.Schema({
   badges: [{
     name: { type: String, required: true },
     purchasedAt: { type: Date, default: Date.now }
-  }]
+  }],
+  activeBadge: { type: String, default: null }
 }, { timestamps: true });
 
 export default mongoose.model("User", userSchema);
