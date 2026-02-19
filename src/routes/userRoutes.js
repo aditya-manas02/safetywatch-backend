@@ -248,18 +248,22 @@ router.post("/badges/purchase", authMiddleware, catchAsync(async (req, res) => {
   const user = await User.findById(req.user.id);
   if (!user) return res.status(404).json({ message: "User not found" });
 
+  const isSuperAdmin = user.roles.includes("super_admin");
+
   // Check if user already has the badge
   if (user.badges.some(b => b.name === badgeName)) {
     return res.status(400).json({ message: "You already own this badge" });
   }
 
-  // Check if user has enough points
-  if (user.rewardPoints < cost) {
+  // Check if user has enough points (bypass for super_admin)
+  if (!isSuperAdmin && user.rewardPoints < cost) {
     return res.status(400).json({ message: `Insufficient points. You need ${cost} points.` });
   }
 
-  // Deduct points and add badge
-  user.rewardPoints -= cost;
+  // Deduct points (bypass for super_admin) and add badge
+  if (!isSuperAdmin) {
+    user.rewardPoints -= cost;
+  }
   user.badges.push({ name: badgeName });
 
   await user.save();
