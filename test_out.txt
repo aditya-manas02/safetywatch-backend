@@ -1,0 +1,17 @@
+Testing backend translate endpoint: https://safetywatch-backend.onrender.com/api/translate/ping?t=1771659906103
+Status: 500
+Data: {
+  "status": "error",
+  "reason": "Direct ping failed",
+  "error": "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",
+  "triedModels": [
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash-8b",
+    "gemini-2.0-flash-exp",
+    "models/gemini-2.0-flash",
+    "models/gemini-1.5-flash",
+    "models/gemini-pro"
+  ]
+}

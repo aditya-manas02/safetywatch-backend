@@ -1,0 +1,5 @@
+Testing AI Chat endpoint: https://safetywatch-backend.onrender.com/api/chat
+Status: 200
+Data: {
+  "reply": "Affirmative. Nexus AI Core is fully operational. All sub-systems are performing within optimal parameters, and the SafetyWatch security grid is currently synchronized.\n\nMy diagnostic protocols confirm that I am ready to assist with neighborhood safety assessments, the processing of incident reports, and the delivery of sophisticated security analytics. Data integrity is maintained, and I am prepared to provide expert guidance to ensure the continued security of your environment.\n\nHow shall we proceed with your security briefing or inquiry?"
+}
