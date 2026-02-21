@@ -96,7 +96,7 @@ app.use((req, res, next) => {
 
   if (isPublicRoute) return next();
 
-  const MIN_VERSION = '1.4.6';
+  const MIN_VERSION = '1.4.7';
   const appVersion = req.headers['x-app-version'];
   const userAgent = (req.headers['user-agent'] || '').toLowerCase();
   const xRequestedWith = (req.headers['x-requested-with'] || '').toLowerCase();
@@ -266,12 +266,12 @@ app.get("/api/health", (req, res) => {
     status: "ok", 
     message: "Server is healthy",
     uptime: process.uptime(),
-    minVersion: '1.4.6'
+    minVersion: '1.4.7'
   });
 });
 
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.4.6-LIVE)", timestamp: new Date().toISOString() });
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.4.7-LIVE)", timestamp: new Date().toISOString() });
 });
 
 /* ----------------------- ERROR HANDLING ------------------- */
@@ -328,7 +328,7 @@ mongoose.connection.on("error", (err) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`[STARTUP] SafetyWatch Server v1.4.6 is now ONLINE on port ${PORT}`);
+  console.log(`[STARTUP] SafetyWatch Server v1.4.7 is now ONLINE on port ${PORT}`);
   console.log(`[STARTUP] Binding: 0.0.0.0:${PORT}`);
 });
 

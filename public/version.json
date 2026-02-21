@@ -1,6 +1,6 @@
 {
-    "version": "1.4.6",
-    "minVersion": "1.4.6",
+    "version": "1.4.7",
+    "minVersion": "1.4.7",
     "url": "https://safetywatch-backend.onrender.com/SafetyWatch.apk",
-    "notes": "v1.4.6: Synchronized Security Release. Enforced versioning consistency and mandatory stability updates."
+    "notes": "v1.4.7: Community Circles & Integrated Security Protocols. Enhanced stability and synchronized release."
 }

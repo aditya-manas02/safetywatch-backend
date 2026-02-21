@@ -34,11 +34,11 @@ router.get("/ping", async (req, res) => {
   try {
      const model = genAI.getGenerativeModel({ model: "models/gemini-2.0-flash-lite" });
      const result = await model.generateContent("ping");
-     return res.json({ status: "ok", v: "1.4.6-AI-Fix-v2", model: "gemini-2.0-flash-lite", result: result.response.text() });
+     return res.json({ status: "ok", v: "1.4.7", model: "models/gemini-2.0-flash-lite", result: result.response.text() });
   } catch (err) {
     return res.status(500).json({ 
         status: "error", 
-        v: "1.4.6-AI-Fix-v2",
+        v: "1.4.7",
         reason: "Direct ping failed", 
         error: err.message,
         triedModels: MODELS_TO_TRY
