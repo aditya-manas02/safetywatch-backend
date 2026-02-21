@@ -122,20 +122,16 @@ router.get("/public", async (req, res) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(today.getDate() - 7);
 
-    // 1. Incidents Today
-    const incidentsToday = await Incident.countDocuments({
-      createdAt: { $gte: today }
-    });
+    // 1. Total Reports (All time)
+    const totalReports = await Incident.countDocuments();
 
-    // 2. Active Alerts (Pending/Urgent)
+    // 2. Active Alerts (Approved/Important)
     const activeAlerts = await Incident.countDocuments({
-      status: "pending"
+      $or: [{ status: "approved" }, { isImportant: true }]
     });
 
-    // 3. Active Users (Last 7 days)
-    const activeUsers = await User.countDocuments({
-       updatedAt: { $gte: oneWeekAgo }
-    });
+    // 3. Total Members (All time)
+    const totalMembers = await User.countDocuments();
 
     // 4. Most Common Type (All Time - for context)
     const mostCommonAgg = await Incident.aggregate([
@@ -146,9 +142,9 @@ router.get("/public", async (req, res) => {
     const mostCommonType = mostCommonAgg[0]?.["_id"] || "General";
 
     res.json({
-      incidentsToday,
+      incidentsToday: totalReports, // keep key same for frontend compatibility
       activeAlerts,
-      activeUsers,
+      activeUsers: totalMembers, // keep key same for frontend compatibility
       mostCommonType
     });
 
