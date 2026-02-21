@@ -234,6 +234,7 @@ app.get("/api/debug-ping", (req, res) => {
       NODE_ENV: process.env.NODE_ENV,
       JWT_SET: !!process.env.JWT_SECRET,
       MONGO_SET: !!process.env.MONGO_URI,
+      GEMINI_KEY_SET: !!process.env.GEMINI_API_KEY,
     },
     timestamp: new Date().toISOString()
   });
