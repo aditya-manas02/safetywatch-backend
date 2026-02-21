@@ -9,8 +9,32 @@ const router = express.Router();
 
 const translateLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 500, // Increased for dashboard traffic
+  max: 500,
   message: { message: "Too many translation requests. Please wait a moment." },
+});
+
+// Diagnostic endpoint - check if Gemini API key is loaded and working
+router.get("/ping", async (req, res) => {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    return res.status(500).json({ 
+      status: "error", 
+      reason: "GEMINI_API_KEY is not set in environment variables" 
+    });
+  }
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent("Say hello in one word.");
+    const text = result.response.text().trim();
+    return res.json({ status: "ok", keyPresent: true, geminiResponse: text });
+  } catch (error) {
+    return res.status(500).json({ 
+      status: "error", 
+      keyPresent: true, 
+      reason: error.message 
+    });
+  }
 });
 
 router.post("/", translateLimiter, async (req, res) => {
