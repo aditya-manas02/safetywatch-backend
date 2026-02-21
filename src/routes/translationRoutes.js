@@ -9,7 +9,7 @@ const router = express.Router();
 
 const translateLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 30,
+  max: 500, // Increased for dashboard traffic
   message: { message: "Too many translation requests. Please wait a moment." },
 });
 
@@ -42,6 +42,50 @@ router.post("/", translateLimiter, async (req, res) => {
   } catch (error) {
     console.error("Translation error:", error);
     res.status(500).json({ message: "Translation failed: " + error.message });
+  }
+});
+
+router.post("/batch", translateLimiter, async (req, res) => {
+  const { texts, targetLanguage } = req.body;
+
+  if (!Array.isArray(texts) || !targetLanguage) {
+    return res.status(400).json({ message: "Texts array and targetLanguage are required" });
+  }
+
+  if (targetLanguage === "en") {
+    return res.json({ translatedTexts: texts });
+  }
+
+  try {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      return res.status(500).json({ message: "Translation disabled: API Key missing." });
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // Using JSON format for reliable batch extraction
+    const prompt = `Translate this JSON array of strings into ${targetLanguage}. 
+    Maintain the EXACT same array order and structure. 
+    Respect local Indian context. 
+    Return ONLY the translated JSON array.
+    
+    Strings: ${JSON.stringify(texts)}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let text = response.text().trim();
+    
+    // Clean up markdown block if present
+    if (text.startsWith("```json")) text = text.replace(/```json|```/g, "").trim();
+    if (text.startsWith("```")) text = text.replace(/```/g, "").trim();
+
+    const translatedTexts = JSON.parse(text);
+    return res.json({ translatedTexts });
+  } catch (error) {
+    console.error("Batch translation error:", error);
+    res.status(500).json({ message: "Batch translation failed: " + error.message });
   }
 });
 
