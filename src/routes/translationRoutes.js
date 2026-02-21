@@ -90,6 +90,10 @@ Text: "${text}"`;
     } catch (err) {
       console.warn(`[TRANSLATE] ${modelName} failed:`, err.message);
       lastError = err;
+      if (err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("quota") || err?.message?.includes("exhausted")) {
+        console.error("Breaking model loop due to API quota exhaustion.");
+        break;
+      }
     }
   }
 
@@ -148,6 +152,10 @@ Strings: ${JSON.stringify(texts)}`;
     } catch (err) {
       console.warn(`[TRANSLATE/batch] ${modelName} failed:`, err.message);
       lastError = err;
+      if (err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("quota") || err?.message?.includes("exhausted")) {
+        console.error("Breaking model loop due to API quota exhaustion.");
+        break;
+      }
     }
   }
 
