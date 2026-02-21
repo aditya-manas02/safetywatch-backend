@@ -15,13 +15,12 @@ const translateLimiter = rateLimit({
 
 // Shared model list — gemini-2.5-flash confirmed available via /api/chat/debug
 const MODELS_TO_TRY = [
-  "models/gemini-2.5-flash",
-  "models/gemini-2.0-flash",
-  "models/gemini-flash-latest",
-  "models/gemini-1.5-flash",
-  "gemini-2.5-flash",
   "gemini-2.0-flash",
   "gemini-1.5-flash",
+  "gemini-pro",
+  "models/gemini-2.0-flash",
+  "models/gemini-1.5-flash",
+  "models/gemini-pro",
 ];
 
 // Diagnostic endpoint — checks if key is present and a model works
