@@ -15,10 +15,11 @@ const translateLimiter = rateLimit({
 
 // Shared model list — gemini-2.5-flash confirmed available via /api/chat/debug
 const MODELS_TO_TRY = [
+  "models/gemini-2.0-flash-lite",
   "models/gemini-2.0-flash",
-  "models/gemini-1.5-flash",
-  "models/gemini-1.5-flash-8b",
-  "models/gemini-pro"
+  "models/gemini-flash-latest",
+  "models/gemini-2.5-flash",
+  "models/gemini-pro-latest"
 ];
 
 // Diagnostic endpoint — checks if key is present and a model works
@@ -31,14 +32,13 @@ router.get("/ping", async (req, res) => {
   
   let availableModels = [];
   try {
-     // Note: listModels might not be available on the main genAI object easily or might require different auth
-     // but let's try at least to get a confirmed hit on one known model first
-     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+     const model = genAI.getGenerativeModel({ model: "models/gemini-2.0-flash-lite" });
      const result = await model.generateContent("ping");
-     return res.json({ status: "ok", v: "1.4.6-AI-Fix", model: "gemini-1.5-flash", result: result.response.text() });
+     return res.json({ status: "ok", v: "1.4.6-AI-Fix-v2", model: "gemini-2.0-flash-lite", result: result.response.text() });
   } catch (err) {
     return res.status(500).json({ 
         status: "error", 
+        v: "1.4.6-AI-Fix-v2",
         reason: "Direct ping failed", 
         error: err.message,
         triedModels: MODELS_TO_TRY
