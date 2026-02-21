@@ -32,19 +32,22 @@ router.get("/ping", async (req, res) => {
     return res.status(500).json({ status: "error", reason: "GEMINI_API_KEY is not set" });
   }
   const genAI = new GoogleGenerativeAI(apiKey);
-  const allErrors = [];
-  for (const modelName of MODELS_TO_TRY) {
-    try {
-      const model = genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent("Say hello in one word.");
-      const text = result.response.text().trim();
-      return res.json({ status: "ok", model: modelName, keyPresent: true, geminiResponse: text });
-    } catch (err) {
-      allErrors.push({ model: modelName, error: err.message || JSON.stringify(err) });
-      continue;
-    }
+  
+  let availableModels = [];
+  try {
+     // Note: listModels might not be available on the main genAI object easily or might require different auth
+     // but let's try at least to get a confirmed hit on one known model first
+     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+     const result = await model.generateContent("ping");
+     return res.json({ status: "ok", model: "gemini-1.5-flash", result: result.response.text() });
+  } catch (err) {
+    return res.status(500).json({ 
+        status: "error", 
+        reason: "Direct ping failed", 
+        error: err.message,
+        triedModels: MODELS_TO_TRY
+    });
   }
-  return res.status(500).json({ status: "error", keyPresent: true, reason: "No working model found", allErrors });
 });
 
 // Single translation
