@@ -88,7 +88,8 @@ app.use((req, res, next) => {
     path.startsWith('/api/health') || 
     path === '/SafetyWatch.apk' ||
     path.startsWith('/SafetyWatch-v') ||
-    path.includes('/version.json');
+    path.includes('/version.json') ||
+    path.startsWith('/api/translate');
 
   if (isPublicRoute) return next();
 
