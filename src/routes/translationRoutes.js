@@ -35,7 +35,7 @@ router.get("/ping", async (req, res) => {
      // but let's try at least to get a confirmed hit on one known model first
      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
      const result = await model.generateContent("ping");
-     return res.json({ status: "ok", model: "gemini-1.5-flash", result: result.response.text() });
+     return res.json({ status: "ok", v: "1.4.6-AI-Fix", model: "gemini-1.5-flash", result: result.response.text() });
   } catch (err) {
     return res.status(500).json({ 
         status: "error", 
