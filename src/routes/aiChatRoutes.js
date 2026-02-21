@@ -33,10 +33,11 @@ router.post("/", chatLimiter, async (req, res) => {
     let model;
     // CONFIRMED MODELS from user diagnostics: gemini-2.5-flash, gemini-2.0-flash, gemini-flash-latest
     const modelsToTry = [
+        "models/gemini-2.0-flash-lite",
         "models/gemini-2.0-flash",
-        "models/gemini-1.5-flash",
-        "models/gemini-1.5-flash-8b",
-        "models/gemini-pro"
+        "models/gemini-flash-latest",
+        "models/gemini-2.5-flash",
+        "models/gemini-pro-latest"
     ];
     let lastError = null;
 
@@ -73,7 +74,7 @@ router.post("/", chatLimiter, async (req, res) => {
     // FINAL FALLBACK: Direct REST API 
     // This is the absolute cleanest way to call Gemini and will reveal the raw Google error.
     try {
-        const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
         const restResponse = await fetch(restUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
