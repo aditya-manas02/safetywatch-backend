@@ -31,6 +31,7 @@ router.get("/ping", async (req, res) => {
     return res.status(500).json({ status: "error", reason: "GEMINI_API_KEY is not set" });
   }
   const genAI = new GoogleGenerativeAI(apiKey);
+  let latestError = "No attempts made";
   for (const modelName of MODELS_TO_TRY) {
     try {
       const model = genAI.getGenerativeModel({ model: modelName });
@@ -38,10 +39,11 @@ router.get("/ping", async (req, res) => {
       const text = result.response.text().trim();
       return res.json({ status: "ok", model: modelName, keyPresent: true, geminiResponse: text });
     } catch (err) {
+      latestError = err.message || JSON.stringify(err);
       continue;
     }
   }
-  return res.status(500).json({ status: "error", keyPresent: true, reason: "No working model found" });
+  return res.status(500).json({ status: "error", keyPresent: true, reason: "No working model found", lastError: latestError });
 });
 
 // Single translation
