@@ -13,6 +13,11 @@ const translateLimiter = rateLimit({
   message: { message: "Too many translation requests. Please wait a moment." },
 });
 
+const LANGUAGE_MAP = {
+  "hi": "Hindi (हिन्दी)",
+  "mr": "Marathi (मराठी)"
+};
+
 // Shared model list — gemini-2.5-flash confirmed available via /api/chat/debug
 const MODELS_TO_TRY = [
   "models/gemini-2.0-flash-lite",
@@ -62,10 +67,18 @@ router.post("/", translateLimiter, async (req, res) => {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const prompt = `Translate the following text into ${targetLanguage}. 
-  Provide only the translated text, maintain the original tone, and ensure local context (Indian region) is respected if applicable.
+  const langName = LANGUAGE_MAP[targetLanguage] || targetLanguage;
   
-  Text: "${text}"`;
+  const prompt = `You are a professional translator specialized in the Indian region. 
+Translate the following text accurately into ${langName}. 
+
+Requirements:
+1. Maintain the original tone and intent.
+2. Use natural, conversational language commonly spoken in India (avoid overly formal words).
+3. Ensure Indian regional context is respected.
+4. Return ONLY the translated text.
+  
+Text: "${text}"`;
 
   let lastError = null;
   for (const modelName of MODELS_TO_TRY) {
@@ -101,12 +114,17 @@ router.post("/batch", translateLimiter, async (req, res) => {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const prompt = `Translate this JSON array of strings into ${targetLanguage}. 
-  Maintain the EXACT same array order and structure. 
-  Respect local Indian context. 
-  Return ONLY the translated JSON array, with no extra text or markdown.
+  const langName = LANGUAGE_MAP[targetLanguage] || targetLanguage;
   
-  Strings: ${JSON.stringify(texts)}`;
+  const prompt = `You are a professional translator specialized in the Indian region. 
+Translate the following JSON array of strings into ${langName}.
+
+Requirements:
+1. Maintain the EXACT same array order and structure.
+2. Use natural, conversational language common in India.
+3. Return ONLY the translated JSON array as a raw string (no markdown blocks).
+  
+Strings: ${JSON.stringify(texts)}`;
 
   let lastError = null;
   for (const modelName of MODELS_TO_TRY) {
