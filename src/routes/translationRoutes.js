@@ -113,9 +113,15 @@ router.post("/batch", translateLimiter, async (req, res) => {
       const result = await model.generateContent(prompt);
       let text = result.response.text().trim();
 
-      // Clean up markdown block if present
-      if (text.startsWith("```json")) text = text.replace(/```json|```/g, "").trim();
-      if (text.startsWith("```")) text = text.replace(/```/g, "").trim();
+      // Clean up markdown block and extract just the JSON array
+      const firstBracket = text.indexOf('[');
+      const lastBracket = text.lastIndexOf(']');
+      
+      if (firstBracket !== -1 && lastBracket !== -1 && lastBracket >= firstBracket) {
+        text = text.substring(firstBracket, lastBracket + 1);
+      } else {
+        throw new Error("No JSON array returned by model for batch translation");
+      }
 
       const translatedTexts = JSON.parse(text);
       return res.json({ translatedTexts });
