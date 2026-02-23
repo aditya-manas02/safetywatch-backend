@@ -26,7 +26,6 @@ import pollRoutes from "./routes/pollRoutes.js";
 import challengeRoutes from "./routes/challengeRoutes.js";
 import adRoutes from "./routes/adRoutes.js";
 import circleRoutes from "./routes/circleRoutes.js";
-import translationRoutes from "./routes/translationRoutes.js";
 import contentRoutes from "./routes/contentRoutes.js";
 
 dotenv.config();
@@ -89,7 +88,6 @@ app.use((req, res, next) => {
     path === '/SafetyWatch.apk' ||
     path.startsWith('/SafetyWatch-v') ||
     path.includes('/version.json') ||
-    path.startsWith('/api/translate') ||
     path.startsWith('/api/stats/public') ||
     path.startsWith('/api/incidents/latest') ||
     path.startsWith('/api/incidents/near-me');
@@ -258,7 +256,6 @@ app.use("/api/polls", pollRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/ads", adRoutes);
 app.use("/api/circles", circleRoutes);
-app.use("/api/translate", translationRoutes);
 app.use("/api/safety-content", contentRoutes);
 
 app.get("/api/health", (req, res) => {
