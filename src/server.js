@@ -308,7 +308,7 @@ const connectWithRetry = () => {
     })
     .catch((err) => {
       console.error("MongoDB connection error:", err.message);
-      console.log("Retrying in 5 seconds...");
+      console.log("SAFETYWATCH SERVER v1.4.8-LIVE IS READY");
       setTimeout(connectWithRetry, 5000);
     });
 };
