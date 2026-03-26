@@ -1,6 +1,7 @@
 import express from "express";
 import { authMiddleware } from "../middleware/auth.js";
 import Circle from "../models/Circle.js";
+import CircleMessage from "../models/CircleMessage.js";
 import CircleSafetyStatus from "../models/CircleSafetyStatus.js";
 import Incident from "../models/Incident.js";
 import Notification from "../models/Notification.js";
@@ -195,6 +196,15 @@ router.post("/:id/share-incident", authMiddleware, catchAsync(async (req, res) =
     });
   }
 
+  // Also post to circle chat
+  await CircleMessage.create({
+    circle: circle._id,
+    sender: req.user.id,
+    content: `shared an incident: ${incident.title}`,
+    messageType: "alert",
+    metadata: { incidentId: incident._id }
+  });
+
   res.json({ message: "Incident shared successfully" });
 }));
 
@@ -219,6 +229,47 @@ router.post("/:id/leave", authMiddleware, catchAsync(async (req, res) => {
   }
 
   res.json({ message: "Successfully left the circle" });
+}));
+
+/* ----------------- GET CIRCLE MESSAGES ------------------ */
+router.get("/:id/messages", authMiddleware, catchAsync(async (req, res) => {
+  const circle = await Circle.findById(req.params.id);
+  if (!circle) return res.status(404).json({ message: "Circle not found" });
+
+  const isMember = circle.members.some(m => m.user.toString() === req.user.id.toString());
+  if (!isMember) return res.status(403).json({ message: "Not a member" });
+
+  const messages = await CircleMessage.find({ circle: req.params.id })
+    .populate("sender", "name profilePicture")
+    .sort({ createdAt: -1 })
+    .limit(50); // Fetch last 50 messages
+
+  res.json(messages.reverse()); // Reverse to get chronological order
+}));
+
+/* ----------------- SEND CIRCLE MESSAGE ------------------ */
+router.post("/:id/messages", authMiddleware, catchAsync(async (req, res) => {
+  const { content, messageType = "text", attachments = [] } = req.body;
+
+  if (!content) return res.status(400).json({ message: "Content is required" });
+
+  const circle = await Circle.findById(req.params.id);
+  if (!circle) return res.status(404).json({ message: "Circle not found" });
+
+  const isMember = circle.members.some(m => m.user.toString() === req.user.id.toString());
+  if (!isMember) return res.status(403).json({ message: "Not a member" });
+
+  const message = await CircleMessage.create({
+    circle: req.params.id,
+    sender: req.user.id,
+    content,
+    messageType,
+    attachments
+  });
+
+  const populatedMessage = await CircleMessage.findById(message._id).populate("sender", "name profilePicture");
+
+  res.status(201).json(populatedMessage);
 }));
 
 export default router;
