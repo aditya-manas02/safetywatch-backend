@@ -19,6 +19,22 @@ const systemConfigSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  preAlertActive: {
+    type: Boolean,
+    default: false
+  },
+  preAlertMessage: {
+    type: String,
+    default: "Scheduled maintenance will occur soon."
+  },
+  preAlertStartTime: {
+    type: Date,
+    default: null
+  },
+  preAlertEndTime: {
+    type: Date,
+    default: null
+  },
   lastUpdatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"
