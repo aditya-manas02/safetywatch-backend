@@ -20,7 +20,8 @@ const auditLogSchema = new mongoose.Schema({
   details: String,
   timestamp: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    expires: '30d' // Automatically delete records older than 1 month
   }
 }, { timestamps: true });
 
