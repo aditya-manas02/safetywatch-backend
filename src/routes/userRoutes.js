@@ -277,6 +277,23 @@ router.post("/badges/purchase", authMiddleware, catchAsync(async (req, res) => {
 }));
 
 
+/* REGISTER FCM TOKEN for Push Notifications */
+router.post("/fcm-token", authMiddleware, catchAsync(async (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ message: "FCM token is required" });
+
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  if (!user.fcmTokens) user.fcmTokens = [];
+  if (!user.fcmTokens.includes(token)) {
+    user.fcmTokens.push(token);
+    await user.save();
+  }
+
+  res.json({ message: "Push notification token registered successfully" });
+}));
+
 // Update active badge selection
 router.patch("/active-badge", authMiddleware, catchAsync(async (req, res) => {
   const { badgeName } = req.body;

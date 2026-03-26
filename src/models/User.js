@@ -12,13 +12,14 @@ const userSchema = new mongoose.Schema({
   otpExpiresAt: { type: Date },
   passwordResetOtp: { type: String },
   passwordResetOtpExpiresAt: { type: Date },
-  roles: { 
-    type: [String], 
-    enum: ["user", "admin", "superadmin"], 
-    default: ["user"] 
+  roles: {
+    type: [String],
+    enum: ["user", "admin", "superadmin"],
+    default: ["user"]
   },
   isSuspended: { type: Boolean, default: false },
-  suspensionExpiresAt: { type: Date },
+  suspensionExpiresAt: { type: Date, default: null },
+  fcmTokens: { type: [String], default: [] }, // Store Firebase Cloud Messaging device tokens
   warnings: [{
     reason: { type: String, required: true },
     date: { type: Date, default: Date.now },
