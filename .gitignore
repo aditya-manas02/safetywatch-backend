@@ -8,3 +8,11 @@ yarn-error.log*
 dist/
 build/
 uploads/
+*.txt
+*.json.key
+firebase-service-account.json
+google-services.json
+.DS_Store
+.vscode/
+.idea/
+node_modules/
