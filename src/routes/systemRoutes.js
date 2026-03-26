@@ -15,7 +15,11 @@ router.get("/config", catchAsync(async (req, res) => {
   res.json({
     isMaintenanceMode: config.isMaintenanceMode,
     maintenanceMessage: config.maintenanceMessage,
-    maintenanceExpectedBackAt: config.maintenanceExpectedBackAt
+    maintenanceExpectedBackAt: config.maintenanceExpectedBackAt,
+    preAlertActive: config.preAlertActive,
+    preAlertMessage: config.preAlertMessage,
+    preAlertStartTime: config.preAlertStartTime,
+    preAlertEndTime: config.preAlertEndTime
   });
 }));
 
@@ -24,13 +28,26 @@ router.get("/config", catchAsync(async (req, res) => {
  * Super Admin: Toggle maintenance mode and set expected back time
  */
 router.patch("/maintenance", authMiddleware, requireSuperAdmin, catchAsync(async (req, res) => {
-  const { isMaintenanceMode, maintenanceMessage, maintenanceExpectedBackAt } = req.body;
+  const { 
+    isMaintenanceMode, 
+    maintenanceMessage, 
+    maintenanceExpectedBackAt,
+    preAlertActive,
+    preAlertMessage,
+    preAlertStartTime,
+    preAlertEndTime
+  } = req.body;
   
   const config = await SystemConfig.getOrCreateConfig();
   
   if (typeof isMaintenanceMode === 'boolean') config.isMaintenanceMode = isMaintenanceMode;
   if (maintenanceMessage) config.maintenanceMessage = maintenanceMessage;
   if (maintenanceExpectedBackAt !== undefined) config.maintenanceExpectedBackAt = maintenanceExpectedBackAt;
+  
+  if (typeof preAlertActive === 'boolean') config.preAlertActive = preAlertActive;
+  if (preAlertMessage) config.preAlertMessage = preAlertMessage;
+  if (preAlertStartTime !== undefined) config.preAlertStartTime = preAlertStartTime;
+  if (preAlertEndTime !== undefined) config.preAlertEndTime = preAlertEndTime;
   
   config.lastUpdatedBy = req.user.id;
   await config.save();
