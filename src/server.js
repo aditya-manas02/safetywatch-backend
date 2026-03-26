@@ -27,6 +27,8 @@ import challengeRoutes from "./routes/challengeRoutes.js";
 import adRoutes from "./routes/adRoutes.js";
 import circleRoutes from "./routes/circleRoutes.js";
 import contentRoutes from "./routes/contentRoutes.js";
+import systemRoutes from "./routes/systemRoutes.js";
+import SystemConfig from "./models/SystemConfig.js";
 
 dotenv.config();
 console.log("[STARTUP] Environment variables loaded.");
@@ -242,7 +244,56 @@ app.get("/api/debug-ping", (req, res) => {
   });
 });
 
+/* ----------------------- MAINTENANCE MODE ----------------------- */
+app.use(async (req, res, next) => {
+  const path = req.path;
+  
+  // Public routes that MUST work during maintenance
+  const isPublicRoute = 
+    req.method === 'OPTIONS' ||
+    path === '/ping' || 
+    path === '/' || 
+    path.startsWith('/api/health') || 
+    path === '/api/system/config' ||
+    path.startsWith('/api/auth') || // Allow login so admins can get in
+    path === '/SafetyWatch.apk';
+
+  if (isPublicRoute) return next();
+
+  try {
+    const config = await SystemConfig.getOrCreateConfig();
+    if (config.isMaintenanceMode) {
+      // Check if user is Super Admin
+      const token = req.headers.authorization?.split(" ")[1];
+      if (token) {
+        try {
+          const jwt = (await import("jsonwebtoken")).default;
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          const User = (await import("./models/User.js")).default;
+          const user = await User.findById(decoded.id);
+          if (user && user.roles.includes("superadmin")) {
+            return next(); // Super Admins bypass maintenance
+          }
+        } catch (e) {
+          // Token invalid, treat as regular user
+        }
+      }
+
+      return res.status(503).json({
+        maintenance: true,
+        message: config.maintenanceMessage,
+        expectedBackAt: config.maintenanceExpectedBackAt
+      });
+    }
+  } catch (err) {
+    console.error("[MAINTENANCE_CHECK_ERROR]", err);
+  }
+
+  next();
+});
+
 app.use("/api/auth", authRoutes);
+app.use("/api/system", systemRoutes);
 app.use("/api/incidents", incidentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/stats", statsRoutes);
