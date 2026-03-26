@@ -92,6 +92,7 @@ app.use((req, res, next) => {
     path.includes('/version.json') ||
     path.startsWith('/api/stats/public') ||
     path.startsWith('/api/incidents/latest') ||
+    path.startsWith('/api/system/config') ||
     path.startsWith('/api/incidents/near-me');
 
   if (isPublicRoute) return next();
@@ -254,7 +255,7 @@ app.use(async (req, res, next) => {
     path === '/ping' || 
     path === '/' || 
     path.startsWith('/api/health') || 
-    path === '/api/system/config' ||
+    path.startsWith('/api/system/config') ||
     path.startsWith('/api/auth') || // Allow login so admins can get in
     path === '/SafetyWatch.apk';
 
