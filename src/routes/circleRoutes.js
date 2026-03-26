@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import { authMiddleware } from "../middleware/auth.js";
 import Circle from "../models/Circle.js";
 import CircleMessage from "../models/CircleMessage.js";
@@ -229,6 +230,76 @@ router.post("/:id/leave", authMiddleware, catchAsync(async (req, res) => {
   }
 
   res.json({ message: "Successfully left the circle" });
+}));
+
+/* ----------------- KICK MEMBER ------------------ */
+router.post("/:id/kick/:userId", authMiddleware, catchAsync(async (req, res) => {
+  const circle = await Circle.findById(req.params.id);
+  if (!circle) return res.status(404).json({ message: "Circle not found" });
+
+  // Only admin can kick
+  const isAdmin = circle.members.find(m => m.user.toString() === req.user.id.toString())?.role === "admin";
+  if (!isAdmin) return res.status(403).json({ message: "Only administrators can kick members" });
+
+  if (req.params.userId === req.user.id) {
+    return res.status(400).json({ message: "You cannot kick yourself. Please use the Leave Circle option." });
+  }
+
+  circle.members = circle.members.filter(m => m.user.toString() !== req.params.userId);
+  await circle.save();
+
+  // Clear safety status
+  await CircleSafetyStatus.deleteOne({ user: req.params.userId, circle: circle._id });
+
+  // Post system message
+  const kickedUser = await mongoose.model("User").findById(req.params.userId).select("name");
+  await CircleMessage.create({
+    circle: circle._id,
+    sender: req.user.id,
+    content: `removed ${kickedUser?.name || "a member"} from the circle`,
+    messageType: "system"
+  });
+
+  res.json({ message: "Member kicked successfully" });
+}));
+
+/* ----------------- TRANSFER LEADERSHIP ------------------ */
+router.post("/:id/transfer-leadership", authMiddleware, catchAsync(async (req, res) => {
+  const { newLeaderId } = req.body;
+  if (!newLeaderId) return res.status(400).json({ message: "New leader ID is required" });
+
+  const circle = await Circle.findById(req.params.id);
+  if (!circle) return res.status(404).json({ message: "Circle not found" });
+
+  // Only current admin can transfer
+  const currentAdmin = circle.members.find(m => m.user.toString() === req.user.id.toString());
+  if (!currentAdmin || currentAdmin.role !== "admin") {
+    return res.status(403).json({ message: "Only the current leader can transfer leadership" });
+  }
+
+  // Check if new leader is a member
+  const newLeaderMember = circle.members.find(m => m.user.toString() === newLeaderId);
+  if (!newLeaderMember) {
+    return res.status(400).json({ message: "New leader must be an existing member of the circle" });
+  }
+
+  // Swap roles
+  currentAdmin.role = "member";
+  newLeaderMember.role = "admin";
+  circle.creator = newLeaderId; // Update creator as the new "Owner"
+  
+  await circle.save();
+
+  // Post system message
+  const newLeader = await mongoose.model("User").findById(newLeaderId).select("name");
+  await CircleMessage.create({
+    circle: circle._id,
+    sender: req.user.id,
+    content: `transferred leadership to ${newLeader?.name || "a member"}`,
+    messageType: "system"
+  });
+
+  res.json({ message: "Leadership transferred successfully" });
 }));
 
 /* ----------------- GET CIRCLE MESSAGES ------------------ */
