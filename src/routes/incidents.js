@@ -202,6 +202,7 @@ router.get("/", catchAsync(async (req, res) => {
   const incidents = await Incident.find({
     $and: [
       { areaCode: user.areaCode }, // Same area code
+      { type: { $ne: "sos" } },    // Exclude SOS from public feed
       {
         $or: [
           { status: { $in: ["approved", "problem solved"] } }, 
@@ -241,6 +242,7 @@ router.get("/popular", async (req, res) => {
   try {
     const popular = await Incident.find({ 
       isImportant: true, 
+      type: { $ne: "sos" }, // SOS should never be "popular"
       status: { $in: ["approved", "problem solved"] } 
     }).sort({ createdAt: -1 }).limit(10);
     res.json(popular);
@@ -268,6 +270,7 @@ router.get("/near-me", async (req, res) => {
 
     const nearby = await Incident.find({
       status: { $in: ["approved", "problem solved"] },
+      type: { $ne: "sos" }, // Exclude SOS from public nearby map
       latitude: { $gte: parseFloat(lat) - latDelta, $lte: parseFloat(lat) + latDelta },
       longitude: { $gte: parseFloat(lng) - lngDelta, $lte: parseFloat(lng) + lngDelta }
     }).sort({ createdAt: -1 }).limit(15);
@@ -282,7 +285,10 @@ router.get("/near-me", async (req, res) => {
 
 /* ---------------- PUBLIC INCIDENTS ---------------- */
 router.get("/public", catchAsync(async (req, res) => {
-  const list = await Incident.find({ status: "approved" }).sort({
+  const list = await Incident.find({ 
+    status: "approved",
+    type: { $ne: "sos" } 
+  }).sort({
     createdAt: -1,
   });
   res.json(list);
@@ -291,7 +297,10 @@ router.get("/public", catchAsync(async (req, res) => {
 /* --------- HOMEPAGE LATEST INCIDENTS ----------- */
 router.get("/latest", async (req, res) => {
   try {
-    const items = await Incident.find({ status: "approved" })
+    const items = await Incident.find({ 
+      status: "approved",
+      type: { $ne: "sos" } 
+    })
       .sort({ createdAt: -1 })
       .limit(3);
 
@@ -306,7 +315,10 @@ router.get("/latest", async (req, res) => {
 router.get("/coords/all", async (req, res) => {
   try {
     const coords = await Incident.find(
-      { status: "approved" },
+      { 
+        status: "approved",
+        type: { $ne: "sos" } 
+      },
       { latitude: 1, longitude: 1, _id: 0 }
     );
 
@@ -1005,8 +1017,8 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
     location: "Current GPS Location",
     latitude: parseFloat(latitude),
     longitude: parseFloat(longitude),
-    status: "approved", // SOS is pre-approved for immediate visibility
-    isImportant: true,
+    status: "pending", // SOS is pending by default to hide from public feed
+    isImportant: false, // Don't mark as priority automatically without permission
     areaCode: areaCode || user.areaCode || "DEFAULT",
     locationPoint
   });
