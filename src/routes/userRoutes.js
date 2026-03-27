@@ -294,6 +294,35 @@ router.post("/fcm-token", authMiddleware, catchAsync(async (req, res) => {
   res.json({ message: "Push notification token registered successfully" });
 }));
 
+/* TEST PUSH NOTIFICATION — sends a test FCM push to the requesting user's own device */
+router.post("/test-push", authMiddleware, catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  const tokens = user.fcmTokens || [];
+
+  if (tokens.length === 0) {
+    return res.status(400).json({ 
+      message: "No FCM tokens registered for this user. Please reload the app first.",
+      tokenCount: 0
+    });
+  }
+
+  const { sendPushNotification } = await import("../services/pushNotificationService.js");
+
+  const result = await sendPushNotification(tokens, {
+    title: "🔔 Test Notification from SafetyWatch",
+    body: "If you see this as a SYSTEM notification, push is working!",
+    data: { type: "test", link: "/" }
+  });
+
+  res.json({ 
+    message: "Test push sent", 
+    tokenCount: tokens.length,
+    result 
+  });
+}));
+
 // Update active badge selection
 router.patch("/active-badge", authMiddleware, catchAsync(async (req, res) => {
   const { badgeName } = req.body;
