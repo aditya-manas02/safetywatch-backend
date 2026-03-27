@@ -268,7 +268,7 @@ router.post("/signup", catchAsync(async (req, res) => {
 
   if (user) {
     // Check OTP rate limit for existing unverified user
-    const rateLimit = await checkRateLimit(user, 'otp', 10, 1);
+    const rateLimit = await checkRateLimit(user, 'otp', 5, 24);
     if (rateLimit.limited) {
       return res.status(429).json({ message: rateLimit.message, rateLimit: rateLimit.rateLimit });
     }
@@ -460,7 +460,7 @@ router.post("/resend-otp", catchAsync(async (req, res) => {
   }
 
   // Check OTP rate limit
-  const rateLimitInfo = await checkRateLimit(user, 'otp', 10, 1);
+  const rateLimitInfo = await checkRateLimit(user, 'otp', 5, 24);
   if (rateLimitInfo.limited) {
     return res.status(429).json({ message: rateLimitInfo.message, rateLimit: rateLimitInfo.rateLimit });
   }
@@ -505,7 +505,7 @@ router.post("/forgot-password", catchAsync(async (req, res) => {
   }
 
   // Check Password Reset rate limit
-  const rateLimitInfo = await checkRateLimit(user, 'passwordReset', 10, 24);
+  const rateLimitInfo = await checkRateLimit(user, 'passwordReset', 5, 24);
   if (rateLimitInfo.limited) {
     return res.status(429).json({ message: rateLimitInfo.message, rateLimit: rateLimitInfo.rateLimit });
   }
@@ -605,7 +605,7 @@ router.post("/request-password-otp", async (req, res) => {
     }
 
     // Check OTP rate limit
-    const rateLimitInfo = await checkRateLimit(user, 'otp', 5, 1);
+    const rateLimitInfo = await checkRateLimit(user, 'otp', 5, 24);
     if (rateLimitInfo.limited) {
       return res.status(429).json({ message: rateLimitInfo.message, rateLimit: rateLimitInfo.rateLimit });
     }
