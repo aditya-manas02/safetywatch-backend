@@ -1022,21 +1022,30 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
     }
   });
 
-  // 3. Find all police in the same area code (or nearby)
-  const policeUsers = await User.find({
+  // 3. Find all police in the same area code OR nearby (cannot use $near inside $or — MongoDB limitation)
+  const policeByArea = await User.find({
     roles: "police",
-    $or: [
-      { areaCode: sosIncident.areaCode },
-      {
-        lastLocation: {
-          $near: {
-            $geometry: locationPoint,
-            $maxDistance: 10000 // 10km for police
-          }
+    areaCode: sosIncident.areaCode
+  });
+
+  let policeByLocation = [];
+  try {
+    policeByLocation = await User.find({
+      roles: "police",
+      "lastLocation.coordinates.0": { $ne: 0 }, // skip users with default [0,0] location
+      lastLocation: {
+        $near: {
+          $geometry: locationPoint,
+          $maxDistance: 10000 // 10km for police
         }
       }
-    ]
-  });
+    });
+  } catch (geoErr) {
+    console.warn("[SOS] Geo-query for police failed, falling back to area-only:", geoErr.message);
+  }
+
+  // Merge unique police users
+  const policeUsers = [...new Map([...policeByArea, ...policeByLocation].map(u => [u.id, u])).values()];
 
   // Combine unique users to notify
   const usersToNotify = [...new Map([...nearbyUsers, ...policeUsers].map(u => [u.id, u])).values()];
