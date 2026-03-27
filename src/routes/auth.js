@@ -346,24 +346,46 @@ router.post("/login", catchAsync(async (req, res) => {
   const normalizedEmail = email.toLowerCase();
   const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
-    return res.status(400).json({
-      message: "Invalid credentials",
-    });
+    console.warn(`[AUTH_LOGIN] Failed attempt for user: ${normalizedEmail} - User not found`);
+    return res.status(401).json({ message: "Invalid email or password" });
+  }
+
+  // Check suspension
+  if (user.isSuspended) {
+    if (user.suspensionExpiresAt && new Date() < user.suspensionExpiresAt) {
+      console.warn(`[AUTH_LOGIN] Blocked suspended user: ${normalizedEmail}`);
+      return res.status(403).json({
+        message: "Your account is temporarily suspended.",
+        suspended: true,
+        expiresAt: user.suspensionExpiresAt,
+      });
+    } else if (user.suspensionExpiresAt) {
+      user.isSuspended = false;
+      user.suspensionExpiresAt = null;
+      await user.save();
+    } else {
+      console.warn(`[AUTH_LOGIN] Blocked indefinitely suspended user: ${normalizedEmail}`);
+      return res.status(403).json({
+        message: "Your account is indefinitely suspended.",
+        suspended: true,
+      });
+    }
+  }
+
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  if (!isMatch) {
+    console.warn(`[AUTH_LOGIN] Failed attempt for user: ${normalizedEmail} - Invalid password`);
+    return res.status(401).json({ message: "Invalid email or password" });
   }
 
   if (!user.isVerified) {
+    console.warn(`[AUTH_LOGIN] Unverified attempt for user: ${normalizedEmail}`);
     return res.status(403).json({
       message: "Please verify your email address before logging in.",
       needsVerification: true,
     });
   }
 
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) {
-    return res.status(400).json({
-      message: "Invalid credentials",
-    });
-  }
 
   const token = signToken(user);
 
