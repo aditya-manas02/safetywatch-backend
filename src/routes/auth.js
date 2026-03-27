@@ -605,7 +605,7 @@ router.post("/request-password-otp", async (req, res) => {
     }
 
     // Check OTP rate limit
-    const rateLimitInfo = await checkRateLimit(user, 'otp', 50, 1);
+    const rateLimitInfo = await checkRateLimit(user, 'otp', 5, 1);
     if (rateLimitInfo.limited) {
       return res.status(429).json({ message: rateLimitInfo.message, rateLimit: rateLimitInfo.rateLimit });
     }
