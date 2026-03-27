@@ -26,7 +26,15 @@ try {
  * @param {object} payload - Notification payload { title, body, data }
  */
 export const sendPushNotification = async (tokens, payload) => {
-  if (!isFirebaseInitialized || !tokens || tokens.length === 0) {
+  console.log(`[PUSH] Attempting to send to ${tokens?.length || 0} tokens. Payload title: "${payload.title}"`);
+  
+  if (!isFirebaseInitialized) {
+    console.warn('[PUSH] Firebase not initialized. Skipping broadcast.');
+    return false;
+  }
+  
+  if (!tokens || tokens.length === 0) {
+    console.warn('[PUSH] No tokens provided. Skipping broadcast.');
     return false;
   }
 
@@ -43,13 +51,17 @@ export const sendPushNotification = async (tokens, payload) => {
     const response = await admin.messaging().sendEachForMulticast(message);
     console.log(`[PUSH] Successfully sent ${response.successCount} messages; ${response.failureCount} failed.`);
     
-    // Optional: Identify invalid tokens and remove them from the database
-    // This requires cross-referencing response.responses with tokens array
-    // We can just return the raw response for the caller to handle if needed
+    if (response.failureCount > 0) {
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          console.error(`[PUSH] Token at index ${idx} failed:`, resp.error.message);
+        }
+      });
+    }
     
     return { success: true, response };
   } catch (error) {
-    console.error('[PUSH] Error sending push notification:', error);
+    console.error('[PUSH] General error sending push notification:', error);
     return { success: false, error };
   }
 };
