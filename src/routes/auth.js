@@ -248,7 +248,8 @@ router.post("/signup", catchAsync(async (req, res) => {
     return res.status(400).json({ message: emailVal.message });
   }
 
-  let user = await User.findOne({ email });
+  const normalizedEmail = email.toLowerCase();
+  let user = await User.findOne({ email: normalizedEmail });
   
   if (user && user.isVerified) {
     return res.status(400).json({
@@ -342,7 +343,8 @@ router.post("/signup", catchAsync(async (req, res) => {
 router.post("/login", catchAsync(async (req, res) => {
   const { email, password } = loginSchema.parse(req.body);
 
-  const user = await User.findOne({ email });
+  const normalizedEmail = email.toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     return res.status(400).json({
       message: "Invalid credentials",
@@ -391,7 +393,8 @@ router.post("/login", catchAsync(async (req, res) => {
 router.post("/verify-otp", catchAsync(async (req, res) => {
   const { email, otp } = verifyOtpSchema.parse(req.body);
 
-  const user = await User.findOne({ email });
+  const normalizedEmail = email.toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
@@ -446,7 +449,8 @@ router.post("/resend-otp", catchAsync(async (req, res) => {
     return res.status(400).json({ message: emailVal.message });
   }
 
-  const user = await User.findOne({ email });
+  const normalizedEmail = email.toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
@@ -494,7 +498,8 @@ router.post("/forgot-password", catchAsync(async (req, res) => {
     return res.status(400).json({ message: emailVal.message });
   }
 
-  const user = await User.findOne({ email });
+  const normalizedEmail = email.toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     return res.json({ message: "If an account exists, a reset email has been sent." });
   }
@@ -508,11 +513,9 @@ router.post("/forgot-password", catchAsync(async (req, res) => {
   const tempPassword = generateTempPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-  await User.updateOne({ _id: user._id }, { 
-    passwordHash,
-    passwordResetCount: user.passwordResetCount, // Already incremented in checkRateLimit
-    passwordResetWindowStart: user.passwordResetWindowStart
-  });
+  // Update user with new password hash
+  user.passwordHash = passwordHash;
+  await user.save();
 
   console.log("------------------------------------------");
   console.log(`PASSWORD RESET REQUEST for: ${email}`);
@@ -554,7 +557,8 @@ router.post("/change-password", async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email });
+    const normalizedEmail = (email || '').toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -593,7 +597,8 @@ router.post("/request-password-otp", async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       // Don't reveal if user exists for security
       return res.json({ message: "If an account exists, an OTP has been sent to your email" });
@@ -655,7 +660,8 @@ router.post("/reset-password-otp", async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email });
+    const normalizedEmail = (email || '').toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -718,7 +724,8 @@ router.post("/assign-area-code", authMiddleware, async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email });
+    const normalizedEmail = (email || '').toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -834,7 +841,8 @@ router.post("/leave-area-code", authMiddleware, catchAsync(async (req, res) => {
     return res.status(400).json({ message: "Email is required" });
   }
 
-  const user = await User.findOne({ email });
+  const normalizedEmail = email.toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
