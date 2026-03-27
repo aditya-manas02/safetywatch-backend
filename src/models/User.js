@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema({
   passwordResetOtpExpiresAt: { type: Date },
   roles: {
     type: [String],
-    enum: ["user", "admin", "superadmin"],
+    enum: ["user", "admin", "superadmin", "police"],
     default: ["user"]
   },
   isSuspended: { type: Boolean, default: false },
@@ -39,7 +39,20 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     purchasedAt: { type: Date, default: Date.now }
   }],
-  activeBadge: { type: String, default: null }
+  activeBadge: { type: String, default: null },
+  lastLocation: {
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point"
+    },
+    coordinates: {
+      type: [Number],
+      default: [0, 0] // [longitude, latitude]
+    }
+  }
 }, { timestamps: true });
+
+userSchema.index({ lastLocation: "2dsphere" });
 
 export default mongoose.model("User", userSchema);
