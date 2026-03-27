@@ -97,7 +97,7 @@ app.use((req, res, next) => {
 
   if (isPublicRoute) return next();
 
-  const MIN_VERSION = '1.4.7';
+  const MIN_VERSION = '1.5.0';
   const appVersion = req.headers['x-app-version'];
   const userAgent = (req.headers['user-agent'] || '').toLowerCase();
   const xRequestedWith = (req.headers['x-requested-with'] || '').toLowerCase();
@@ -315,7 +315,7 @@ app.get("/api/health", (req, res) => {
     status: "ok", 
     message: "Server is healthy",
     uptime: process.uptime(),
-    minVersion: '1.4.7'
+    minVersion: '1.5.0'
   });
 });
 

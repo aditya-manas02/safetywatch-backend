@@ -1,6 +1,6 @@
 async function testVersionBlocking() {
     const baseUrl = 'https://safetywatch-backend.onrender.com/api';
-    const CURRENT_V = "1.4.7";
+    const CURRENT_V = "1.5.0";
     const versions = ['1.4.6', CURRENT_V];
 
     for (const v of versions) {
@@ -21,8 +21,8 @@ async function testVersionBlocking() {
 
             if (v === '1.4.6' && resp.status === 426) {
                 console.log('✅ SUCCESS: Version 1.4.6 was correctly blocked.');
-            } else if (v === '1.4.7' && resp.status !== 426) {
-                console.log('✅ SUCCESS: Version 1.4.7 bypasses the version check.');
+            } else if (v === '1.5.0' && resp.status !== 426) {
+                console.log('✅ SUCCESS: Version 1.5.0 bypasses the version check.');
             }
         } catch (err) {
             console.error('Error:', err.message);
