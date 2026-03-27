@@ -1075,4 +1075,43 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
   });
 }));
 
+// GET /sos/active - Find active SOS incidents within 4km of user (last 15 mins)
+router.get("/sos/active", authMiddleware, catchAsync(async (req, res) => {
+  const { lat, lng } = req.query;
+  if (!lat || !lng) {
+    return res.status(400).json({ message: "Latitude and longitude are required" });
+  }
+
+  const locationPoint = {
+    type: "Point",
+    coordinates: [parseFloat(lng), parseFloat(lat)]
+  };
+
+  const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+  const activeSOS = await Incident.findOne({
+    type: "sos",
+    createdAt: { $gte: fifteenMinsAgo },
+    locationPoint: {
+      $near: {
+        $geometry: locationPoint,
+        $maxDistance: 4000 // 4km
+      }
+    }
+  }).populate('userId', 'name phone');
+
+  if (!activeSOS) return res.status(200).json(null);
+
+  res.status(200).json({
+    id: activeSOS._id,
+    title: activeSOS.title,
+    description: activeSOS.description,
+    latitude: activeSOS.latitude,
+    longitude: activeSOS.longitude,
+    user: activeSOS.userId?.name || "Anonymous",
+    phone: activeSOS.userId?.phone || "N/A",
+    createdAt: activeSOS.createdAt
+  });
+}));
+
 export default router;
