@@ -13,6 +13,7 @@ import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
 import Challenge from "../models/Challenge.js";
 import ChallengeParticipation from "../models/ChallengeParticipation.js";
+import { sendPushNotification } from "../services/pushNotificationService.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -980,6 +981,98 @@ router.patch("/:id/resolution-vote", authMiddleware, catchAsync(async (req, res)
   } catch (err) {
     console.error("[CHALLENGE_SYNC_ERROR] Failed to update resolution vote progress:", err);
   }
+}));
+
+/* ----------------- SOS EMERGENCY ------------------ */
+router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
+  const { latitude, longitude, areaCode } = req.body;
+  if (latitude === undefined || longitude === undefined) {
+    return res.status(400).json({ message: "Latitude and longitude are required for SOS" });
+  }
+
+  const user = await User.findById(req.user.id);
+  const locationPoint = {
+    type: "Point",
+    coordinates: [parseFloat(longitude), parseFloat(latitude)]
+  };
+
+  // 1. Create SOS Incident
+  const sosIncident = await Incident.create({
+    userId: req.user.id,
+    title: "EMERGENCY: SOS ALERT",
+    description: `User ${user.name} has triggered an SOS alert. Emergency assistance may be required immediately.`,
+    type: "sos",
+    location: "Current GPS Location",
+    latitude: parseFloat(latitude),
+    longitude: parseFloat(longitude),
+    status: "approved", // SOS is pre-approved for immediate visibility
+    isImportant: true,
+    areaCode: areaCode || user.areaCode || "DEFAULT",
+    locationPoint
+  });
+
+  // 2. Find nearby users (within 4km)
+  const nearbyUsers = await User.find({
+    _id: { $ne: req.user.id }, // Don't notify the sender
+    lastLocation: {
+      $near: {
+        $geometry: locationPoint,
+        $maxDistance: 4000 // 4km in meters
+      }
+    }
+  });
+
+  // 3. Find all police in the same area code (or nearby)
+  const policeUsers = await User.find({
+    roles: "police",
+    $or: [
+      { areaCode: sosIncident.areaCode },
+      {
+        lastLocation: {
+          $near: {
+            $geometry: locationPoint,
+            $maxDistance: 10000 // 10km for police
+          }
+        }
+      }
+    ]
+  });
+
+  // Combine unique users to notify
+  const usersToNotify = [...new Map([...nearbyUsers, ...policeUsers].map(u => [u.id, u])).values()];
+  const tokens = usersToNotify.flatMap(u => u.fcmTokens || []);
+
+  if (tokens.length > 0) {
+    await sendPushNotification(tokens, {
+      title: "🚨 EMERGENCY SOS NEAR YOU",
+      body: `${user.name} is in danger near your location. TAP TO HELP!`,
+      data: {
+        type: "sos_alert",
+        incidentId: sosIncident._id.toString(),
+        latitude: latitude.toString(),
+        longitude: longitude.toString()
+      }
+    });
+  }
+
+  // Also create in-app notifications
+  for (const u of usersToNotify) {
+    await Notification.create({
+      userId: u._id,
+      title: "🚨 EMERGENCY SOS",
+      message: `${user.name} is in danger near you. Please check the map immediately.`,
+      type: "system_alert",
+      link: `/incidents/${sosIncident._id}`
+    });
+  }
+
+  await logAudit(req, `Triggered SOS alert ${sosIncident._id}`, "emergency", sosIncident._id);
+
+  res.status(201).json({
+    message: "SOS alert sent successfully. Nearby users and police have been notified.",
+    incident: sosIncident,
+    notifiedCount: usersToNotify.length
+  });
 }));
 
 export default router;

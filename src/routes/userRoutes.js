@@ -320,4 +320,23 @@ router.patch("/active-badge", authMiddleware, catchAsync(async (req, res) => {
   res.json({ message: "Active badge updated", activeBadge: badgeName });
 }));
 
+/* UPDATE USER LOCATION */
+router.patch("/location", authMiddleware, catchAsync(async (req, res) => {
+  const { latitude, longitude } = req.body;
+  if (latitude === undefined || longitude === undefined) {
+    return res.status(400).json({ message: "Latitude and longitude are required" });
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  user.lastLocation = {
+    type: "Point",
+    coordinates: [parseFloat(longitude), parseFloat(latitude)]
+  };
+
+  await user.save();
+  res.json({ message: "Location updated successfully" });
+}));
+
 export default router;
