@@ -1071,7 +1071,7 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
       title: "🚨 EMERGENCY SOS",
       message: `${user.name} is in danger near you. Please check the map immediately.`,
       type: "system_alert",
-      link: `/incidents/${sosIncident._id}`
+      link: `/?sos=true&lat=${latitude}&lng=${longitude}&incidentId=${sosIncident._id}`
     });
   }
 
