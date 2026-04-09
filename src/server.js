@@ -233,7 +233,7 @@ app.get("/SafetyWatch.apk", (req, res) => {
 app.get("/api/debug-ping", (req, res) => {
   res.json({
     status: "alive",
-    version: "1.0.8",
+    version: "1.5.0",
     node: process.version,
     env: {
       NODE_ENV: process.env.NODE_ENV,
