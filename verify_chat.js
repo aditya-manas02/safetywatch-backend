@@ -11,7 +11,7 @@ async function testChat() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-app-version': '1.4.6'
+                'x-app-version': '1.5.0'
             },
             body: JSON.stringify(body)
         });
