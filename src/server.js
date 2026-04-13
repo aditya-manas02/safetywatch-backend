@@ -320,7 +320,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.5.0-LIVE)", timestamp: new Date().toISOString() });
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.5.0-FINAL)", timestamp: new Date().toISOString() });
 });
 
 /* ----------------------- ERROR HANDLING ------------------- */
@@ -357,10 +357,10 @@ const connectWithRetry = () => {
     })
     .then(() => {
       console.log("MongoDB connected successfully");
+      console.log("SAFETYWATCH SERVER v1.5.0-LIVE IS READY");
     })
     .catch((err) => {
       console.error("MongoDB connection error:", err.message);
-      console.log("SAFETYWATCH SERVER v1.5.0-LIVE IS READY");
       setTimeout(connectWithRetry, 5000);
     });
 };
@@ -377,7 +377,9 @@ mongoose.connection.on("error", (err) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
+  const mode = process.env.NODE_ENV || "development";
   console.log(`[STARTUP] SafetyWatch Server v1.5.0 is now ONLINE on port ${PORT}`);
+  console.log(`[STARTUP] Mode: ${mode.toUpperCase()}`);
   console.log(`[STARTUP] Binding: 0.0.0.0:${PORT}`);
 });
 
