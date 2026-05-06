@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "676449036770",
+    "project_id": "safetywatch-94b0a",
+    "storage_bucket": "safetywatch-94b0a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:676449036770:android:2d81bb8acf88d32a4d31bb",
+        "android_client_info": {
+          "package_name": "com.safetywatch.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQJJCVuz-DQJNAlqyzgBZAHBxzl7wSc1I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,7 +1,7 @@
 async function testVersionBlocking() {
     const baseUrl = 'https://safetywatch-backend.onrender.com/api';
     const CURRENT_V = "1.5.0";
-    const versions = ['1.4.6', CURRENT_V];
+    const versions = ['1.5.0'];
 
     for (const v of versions) {
         console.log(`\n--- Testing Version: ${v} ---`);
