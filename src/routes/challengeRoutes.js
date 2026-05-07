@@ -1,4 +1,4 @@
-// Community Challenges API - v1.5.0-DEPLOY-FIX
+// Community Challenges API - v1.4.7-DEPLOY-FIX
 import express from "express";
 import Challenge from "../models/Challenge.js";
 import ChallengeParticipation from "../models/ChallengeParticipation.js";

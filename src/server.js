@@ -97,7 +97,7 @@ app.use((req, res, next) => {
 
   if (isPublicRoute) return next();
 
-  const MIN_VERSION = '1.5.0';
+  const MIN_VERSION = '1.4.7';
   const appVersion = req.headers['x-app-version'];
   const userAgent = (req.headers['user-agent'] || '').toLowerCase();
   const xRequestedWith = (req.headers['x-requested-with'] || '').toLowerCase();
@@ -233,7 +233,7 @@ app.get("/SafetyWatch.apk", (req, res) => {
 app.get("/api/debug-ping", (req, res) => {
   res.json({
     status: "alive",
-    version: "1.5.0",
+    version: "1.4.7",
     node: process.version,
     env: {
       NODE_ENV: process.env.NODE_ENV,
@@ -315,12 +315,12 @@ app.get("/api/health", (req, res) => {
     status: "ok", 
     message: "Server is healthy",
     uptime: process.uptime(),
-    minVersion: '1.5.0'
+    minVersion: '1.4.7'
   });
 });
 
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.5.0-FINAL)", timestamp: new Date().toISOString() });
+  res.status(200).json({ status: "ok", message: "SafetyWatch API running (v1.4.7-FINAL)", timestamp: new Date().toISOString() });
 });
 
 /* ----------------------- ERROR HANDLING ------------------- */
@@ -357,7 +357,7 @@ const connectWithRetry = () => {
     })
     .then(() => {
       console.log("MongoDB connected successfully");
-      console.log("SAFETYWATCH SERVER v1.5.0-LIVE IS READY");
+      console.log("SAFETYWATCH SERVER v1.4.7-LIVE IS READY");
     })
     .catch((err) => {
       console.error("MongoDB connection error:", err.message);
@@ -378,7 +378,7 @@ mongoose.connection.on("error", (err) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   const mode = process.env.NODE_ENV || "development";
-  console.log(`[STARTUP] SafetyWatch Server v1.5.0 is now ONLINE on port ${PORT}`);
+  console.log(`[STARTUP] SafetyWatch Server v1.4.7 is now ONLINE on port ${PORT}`);
   console.log(`[STARTUP] Mode: ${mode.toUpperCase()}`);
   console.log(`[STARTUP] Binding: 0.0.0.0:${PORT}`);
 });
