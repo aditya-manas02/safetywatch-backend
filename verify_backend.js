@@ -12,7 +12,7 @@ async function testBackend() {
         const resp = await fetch(url, {
             method: 'GET',
             headers: {
-                'x-app-version': '1.5.0'
+                'x-app-version': '1.4.7'
             }
         });
 

@@ -1,6 +1,6 @@
 {
-    "version": "1.5.0",
-    "minVersion": "1.5.0",
+    "version": "1.4.7",
+    "minVersion": "1.4.7",
     "url": "https://safetywatch-backend.onrender.com/SafetyWatch.apk",
-    "notes": "v1.5.0: Native SOS Overhaul. Integrated high-priority system notification channels and Capacitor-native permission handling."
+    "notes": "v1.4.7: Stable Release. Finalized SOS emergency protocols and enhanced notification reliability."
 }
