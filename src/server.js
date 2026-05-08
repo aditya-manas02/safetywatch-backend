@@ -108,6 +108,12 @@ app.use((req, res, next) => {
                    origin.startsWith('capacitor://') ||
                    userAgent.includes('capacitor');
 
+  const MIN_VERSION = '1.4.7';
+  const MIN_BUILD_ID = '2026050801'; // Track builds within same version
+  
+  const appVersion = req.headers['x-app-version'];
+  const appBuildId = req.headers['x-app-build-id'];
+
   const isOutdated = (current, min) => {
     if (!current) return true; 
     const currClean = current.replace(/^v/, '').split('-')[0];
@@ -125,14 +131,20 @@ app.use((req, res, next) => {
     return false;
   };
 
-  // If it's native and outdated, BLOCK. 
-  // We no longer exempt vercel.app referers for native shells.
-  if (isNative && isOutdated(appVersion, MIN_VERSION)) {
-    console.warn(`[VERSION_BLOCK] Native User blocked: ${appVersion || 'none'} | Path: ${path}`);
+  const isBuildOutdated = (current, min) => {
+    if (!current || !min) return false;
+    return parseInt(current) < parseInt(min);
+  };
+
+  // If it's native and (outdated version OR outdated build), BLOCK. 
+  if (isNative && (isOutdated(appVersion, MIN_VERSION) || isBuildOutdated(appBuildId, MIN_BUILD_ID))) {
+    console.warn(`[VERSION_BLOCK] Native User blocked: ${appVersion || 'none'} (${appBuildId || 'no-build'}) | Path: ${path}`);
     return res.status(426).json({
-      message: `SafetyWatch Update Required: Your version (${appVersion || 'legacy'}) is discontinued.`,
+      message: `SafetyWatch Update Required: A new build is available.`,
       currentVersion: appVersion,
+      currentBuild: appBuildId,
       requiredVersion: MIN_VERSION,
+      requiredBuild: MIN_BUILD_ID,
       downloadUrl: "https://safetywatch-backend.onrender.com/SafetyWatch.apk"
     });
   }

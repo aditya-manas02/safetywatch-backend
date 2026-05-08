@@ -1042,6 +1042,7 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
 
   // 3. Find all police in the same area code OR nearby (cannot use $near inside $or — MongoDB limitation)
   const policeByArea = await User.find({
+    _id: { $ne: req.user.id }, // Don't notify the sender even if they are police
     roles: "police",
     areaCode: sosIncident.areaCode
   });
@@ -1049,6 +1050,7 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
   let policeByLocation = [];
   try {
     policeByLocation = await User.find({
+      _id: { $ne: req.user.id }, // Don't notify the sender even if they are police
       roles: "police",
       "lastLocation.coordinates.0": { $ne: 0 }, // skip users with default [0,0] location
       lastLocation: {
@@ -1137,6 +1139,7 @@ router.get("/sos/active", authMiddleware, catchAsync(async (req, res) => {
 
   // We return even "problem solved" SOS for a short time so the "Safe" message can be seen
   const activeSOS = await Incident.findOne({
+    userId: { $ne: req.user.id }, // Exclude sender's own SOS from being detected as "nearby" to avoid self-alerts
     type: "sos",
     createdAt: { $gte: fifteenMinsAgo },
     locationPoint: {
