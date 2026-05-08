@@ -708,10 +708,16 @@ router.post("/:id/report", authMiddleware, upload.single("screenshot"), catchAsy
   const messages = await IncidentMessage.find({
     incidentId,
     $or: [
-      { senderId: req.user.id, receiverId: reportedUserId },
-      { senderId: reportedUserId, receiverId: req.user.id }
+      { senderId: req.user.id, receiverId: reportedUserId === "system" ? "system" : reportedUserId },
+      { senderId: reportedUserId === "system" ? "system" : reportedUserId, receiverId: req.user.id }
     ]
   }).sort({ createdAt: 1 });
+
+  let targetUserId = reportedUserId;
+  if (targetUserId === "system") {
+    const incident = await Incident.findById(incidentId);
+    if (incident) targetUserId = incident.userId;
+  }
 
   const chatSnapshot = messages.map(m => ({
     senderId: m.senderId,
@@ -750,7 +756,7 @@ router.post("/:id/report", authMiddleware, upload.single("screenshot"), catchAsy
 
   const report = await Report.create({
     reporterId: req.user.id,
-    reportedUserId,
+    reportedUserId: targetUserId,
     incidentId,
     messageId,
     reason,
@@ -758,7 +764,7 @@ router.post("/:id/report", authMiddleware, upload.single("screenshot"), catchAsy
     screenshot: screenshotUrl
   });
 
-  await logAudit(req, `Created report against user ${reportedUserId} for incident ${incidentId}`, "user_report", reportedUserId);
+  await logAudit(req, `Created report against user ${targetUserId} for incident ${incidentId}`, "user_report", targetUserId);
 
   res.status(201).json({ message: "Report submitted successfully", report });
 }));
@@ -1096,6 +1102,25 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
   });
 }));
 
+// POST /sos/safe - Mark an SOS as resolved/safe
+router.post("/sos/safe", authMiddleware, catchAsync(async (req, res) => {
+  const { incidentId } = req.body;
+  if (!incidentId) return res.status(400).json({ message: "Incident ID is required" });
+
+  const incident = await Incident.findOneAndUpdate(
+    { _id: incidentId, userId: req.user.id, type: "sos" },
+    { status: "problem solved" },
+    { new: true }
+  );
+
+  if (!incident) {
+    return res.status(404).json({ message: "SOS incident not found or you are not the owner" });
+  }
+
+  await logAudit(req, `Marked SOS ${incidentId} as safe`, "emergency", incidentId);
+  res.json({ message: "You have been marked as safe. Neighbors notified.", incident });
+}));
+
 // GET /sos/active - Find active SOS incidents within 4km of user (last 15 mins)
 router.get("/sos/active", authMiddleware, catchAsync(async (req, res) => {
   const { lat, lng } = req.query;
@@ -1110,6 +1135,7 @@ router.get("/sos/active", authMiddleware, catchAsync(async (req, res) => {
 
   const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
 
+  // We return even "problem solved" SOS for a short time so the "Safe" message can be seen
   const activeSOS = await Incident.findOne({
     type: "sos",
     createdAt: { $gte: fifteenMinsAgo },
@@ -1119,7 +1145,7 @@ router.get("/sos/active", authMiddleware, catchAsync(async (req, res) => {
         $maxDistance: 4000 // 4km
       }
     }
-  }).populate('userId', 'name phone');
+  }).populate('userId', 'name phone').sort({ createdAt: -1 });
 
   if (!activeSOS) return res.status(200).json(null);
 
@@ -1131,6 +1157,7 @@ router.get("/sos/active", authMiddleware, catchAsync(async (req, res) => {
     longitude: activeSOS.longitude,
     user: activeSOS.userId?.name || "Anonymous",
     phone: activeSOS.userId?.phone || "N/A",
+    status: activeSOS.status,
     createdAt: activeSOS.createdAt
   });
 }));
