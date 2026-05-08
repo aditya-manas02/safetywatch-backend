@@ -704,14 +704,17 @@ router.post("/:id/report", authMiddleware, upload.single("screenshot"), catchAsy
     return res.status(400).json({ message: "Reported user ID and reason are required" });
   }
 
-  // Fetch chat history between reporter and reported user for this incident
-  const messages = await IncidentMessage.find({
-    incidentId,
-    $or: [
-      { senderId: req.user.id, receiverId: reportedUserId === "system" ? "system" : reportedUserId },
-      { senderId: reportedUserId === "system" ? "system" : reportedUserId, receiverId: req.user.id }
-    ]
-  }).sort({ createdAt: 1 });
+  // Fetch chat history (skip if it's a system/SOS report as there's no chat)
+  let messages = [];
+  if (reportedUserId !== "system") {
+    messages = await IncidentMessage.find({
+      incidentId,
+      $or: [
+        { senderId: req.user.id, receiverId: reportedUserId },
+        { senderId: reportedUserId, receiverId: req.user.id }
+      ]
+    }).sort({ createdAt: 1 });
+  }
 
   let targetUserId = reportedUserId;
   if (targetUserId === "system") {
