@@ -1126,6 +1126,33 @@ router.post("/sos/safe", authMiddleware, catchAsync(async (req, res) => {
   res.json({ message: "You have been marked as safe. Neighbors notified.", incident });
 }));
 
+// PATCH /sos/:id/location - Update live location of an active SOS
+router.patch("/sos/:id/location", authMiddleware, catchAsync(async (req, res) => {
+  const { latitude, longitude } = req.body;
+  if (!latitude || !longitude) return res.status(400).json({ message: "Coordinates required" });
+
+  const locationPoint = {
+    type: "Point",
+    coordinates: [parseFloat(longitude), parseFloat(latitude)]
+  };
+
+  const incident = await Incident.findOneAndUpdate(
+    { _id: req.params.id, userId: req.user.id, type: "sos", status: "pending" },
+    { 
+      latitude: parseFloat(latitude), 
+      longitude: parseFloat(longitude),
+      locationPoint 
+    },
+    { new: true }
+  );
+
+  if (!incident) {
+    return res.status(404).json({ message: "SOS incident not found or not active" });
+  }
+
+  res.json({ message: "Live location updated", location: { latitude, longitude } });
+}));
+
 // GET /sos/active - Find active SOS incidents within 4km of user (last 15 mins)
 router.get("/sos/active", authMiddleware, catchAsync(async (req, res) => {
   const { lat, lng } = req.query;
