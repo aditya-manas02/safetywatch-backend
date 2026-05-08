@@ -97,8 +97,6 @@ app.use((req, res, next) => {
 
   if (isPublicRoute) return next();
 
-  const MIN_VERSION = '1.4.7';
-  const appVersion = req.headers['x-app-version'];
   const userAgent = (req.headers['user-agent'] || '').toLowerCase();
   const xRequestedWith = (req.headers['x-requested-with'] || '').toLowerCase();
   const origin = (req.headers['origin'] || '').toLowerCase();
