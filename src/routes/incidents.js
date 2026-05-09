@@ -1094,7 +1094,8 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
       title: "🚨 EMERGENCY SOS",
       message: `${user.name} is in danger near you. Please check the map immediately.`,
       type: "system_alert",
-      link: `/?sos=true&lat=${latitude}&lng=${longitude}&incidentId=${sosIncident._id}`
+      link: `/?sos=true&lat=${latitude}&lng=${longitude}&incidentId=${sosIncident._id}`,
+      _skipPush: true
     });
   }
 
@@ -1157,7 +1158,8 @@ router.post("/sos/safe", authMiddleware, catchAsync(async (req, res) => {
       title: "✅ Neighbor is Safe",
       message: `${req.user.name} is now safe. The emergency has been resolved.`,
       type: "system_alert",
-      link: "/"
+      link: "/",
+      _skipPush: true
     });
   }
 

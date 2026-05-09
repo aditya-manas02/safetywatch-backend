@@ -17,6 +17,7 @@ const notificationSchema = new mongoose.Schema({
   isRead: { type: Boolean, default: false },
   link: { type: String, default: null },
   targetAreaCodes: [{ type: String, uppercase: true }], // If empty, it's global (or strictly for global if userId is null)
+  _skipPush: { type: Boolean, default: false, select: false } // Internal flag to skip push trigger
 }, { timestamps: true });
 
 // Automatically delete notifications after 48 hours (172800 seconds)
@@ -24,6 +25,9 @@ notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 172800 });
 
 // Trigger Push Notification automatically upon creation
 notificationSchema.post("save", async function (doc) {
+  // Allow skipping push (e.g. if already sent manually or not needed)
+  if (doc._skipPush) return;
+
   try {
     const User = mongoose.model("User");
     let tokens = [];
