@@ -93,6 +93,7 @@ router.post("/", chatLimiter, async (req, res) => {
             console.error("[AI] REST API FAILED:", restData);
             throw new Error(restData.error?.message || "REST API returned empty response");
         }
+    } catch (restErr) {
         // Log the full technical error to server console ONLY
         console.error("STABLE API ERROR (REST FALLBACK ALSO FAILED):", {
             message: restErr.message,
@@ -103,6 +104,7 @@ router.post("/", chatLimiter, async (req, res) => {
         res.status(500).json({ 
             message: "AI Maintenance: The Nexus AI core is temporarily offline for security updates. Please try again later." 
         });
+    }
   } catch (error) {
     console.error("General AI Route Error:", error);
     res.status(500).json({ 
