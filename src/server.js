@@ -341,13 +341,22 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, _next) => {
-  console.error(`[ERROR] ${req.method} ${req.url}:`, err.message);
-  if (process.env.NODE_ENV === "development") {
-    console.error(err.stack);
+  const status = err.status || 500;
+  
+  // ALWAYS log the full error to your private server console
+  console.error(`[ERROR] ${req.method} ${req.url}:`, err);
+  
+  // Decide what to tell the user
+  let message = err.message || "Internal Server Error";
+  
+  // SECURITY: If it's a 500 error in production, hide the technical details
+  if (status === 500 && process.env.NODE_ENV === "production") {
+    message = "A system error occurred. Our engineers have been notified.";
   }
   
-  res.status(err.status || 500).json({
-    message: err.message || "Internal Server Error",
+  res.status(status).json({
+    message: message,
+    // NEVER send the stack trace in production
     error: process.env.NODE_ENV === "development" ? err.stack : undefined,
   });
 });
@@ -370,7 +379,8 @@ const connectWithRetry = () => {
       console.log("SAFETYWATCH SERVER v1.4.7-LIVE IS READY");
     })
     .catch((err) => {
-      console.error("MongoDB connection error:", err.message);
+      // Log technically, but retry quietly
+      console.error("MongoDB connection error (Retrying in 5s)...");
       setTimeout(connectWithRetry, 5000);
     });
 };

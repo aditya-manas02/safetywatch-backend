@@ -93,22 +93,21 @@ router.post("/", chatLimiter, async (req, res) => {
             console.error("[AI] REST API FAILED:", restData);
             throw new Error(restData.error?.message || "REST API returned empty response");
         }
-    } catch (restErr) {
+        // Log the full technical error to server console ONLY
         console.error("STABLE API ERROR (REST FALLBACK ALSO FAILED):", {
             message: restErr.message,
             apiKeySuffix: apiKey.slice(-4)
         });
 
-        let msg = restErr.message || "Unknown error";
-        if (msg.includes("404") || msg.includes("not found")) {
-            msg = "Models not accessible. This is usually caused by the 'Generative Language API' not being enabled in the Google Cloud Project. Please use AI Studio to generate a key: https://aistudio.google.com/app/apikey";
-        }
-
-        res.status(500).json({ message: "AI Maintenance: " + msg });
-    }
+        // Send a generic, professional message to the user
+        res.status(500).json({ 
+            message: "AI Maintenance: The Nexus AI core is temporarily offline for security updates. Please try again later." 
+        });
   } catch (error) {
     console.error("General AI Route Error:", error);
-    res.status(500).json({ message: "An unexpected error occurred: " + error.message });
+    res.status(500).json({ 
+        message: "Nexus AI Core Exception: A system error occurred. Our engineers have been notified." 
+    });
   }
 });
 

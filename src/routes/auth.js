@@ -98,10 +98,10 @@ router.get("/test-smtp", async (req, res) => {
           });
         }
       } catch (err) {
+        console.error("[AUTH] Brevo diagnostic error:", err);
         return res.status(500).json({ 
           status: "error", 
-          message: "Could not connect to Brevo API",
-          error: err.message,
+          message: "Internal server error while connecting to email service.",
           config: configCheck
         });
       }
@@ -145,11 +145,10 @@ router.get("/test-smtp", async (req, res) => {
     });
   } catch (error) {
     clearTimeout(timeoutId);
+    console.error("[AUTH] SMTP verification error:", error);
     res.status(500).json({ 
       status: "error", 
-      message: "SMTP connection failed", 
-      error: error.message,
-      code: error.code,
+      message: "Email service connection failed. Check server logs.", 
       config: configCheck
     });
   }
@@ -661,9 +660,7 @@ router.post("/request-password-otp", async (req, res) => {
   } catch (err) {
     console.error("Request Password OTP Error:", err);
     res.status(500).json({ 
-      message: "Internal Server Error during OTP request", 
-      details: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      message: "Internal Server Error during OTP request. Our technical team has been alerted."
     });
   }
 });
