@@ -1,6 +1,7 @@
 import express from "express";
 import Incident from "../models/Incident.js";
 import User from "../models/User.js";
+import Notification from "../models/Notification.js";
 import { authMiddleware, requireAdminOnly } from "../middleware/auth.js";
 import { catchAsync } from "../utils/catchAsync.js";
 
@@ -207,19 +208,16 @@ router.get("/bundle", async (req, res) => {
       Incident.countDocuments({
         createdAt: { $gte: today },
         status: "approved"
-      })
+      }),
       // 5. Public Announcements
-      (async () => {
-        const Notification = (await import("../models/Notification.js")).default;
-        return Notification.find({ 
-          userId: null,
-          $or: [
-            { targetAreaCodes: { $exists: false } }, 
-            { targetAreaCodes: { $size: 0 } }
-          ],
-          createdAt: { $gte: filterWindow }
-        }).sort({ createdAt: -1 }).limit(20).lean();
-      })()
+      Notification.find({ 
+        userId: null,
+        $or: [
+          { targetAreaCodes: { $exists: false } }, 
+          { targetAreaCodes: { $size: 0 } }
+        ],
+        createdAt: { $gte: filterWindow }
+      }).sort({ createdAt: -1 }).limit(20).lean()
     ]);
 
     const safetyScore = Math.max(60, 100 - (incidentsTodayCount * 2));
