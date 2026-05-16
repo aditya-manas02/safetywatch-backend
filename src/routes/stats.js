@@ -155,6 +155,93 @@ router.get("/public", async (req, res) => {
 });
 
 /* ============================================================
+   📦 DASHBOARD BUNDLE (Performance Optimization)
+   GET /api/stats/bundle
+   Aggregates popular, latest, public stats and pulse in 1 request
+   ============================================================ */
+router.get("/bundle", async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const filterWindow = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
+    // Parallelize all queries for maximum speed
+    const [
+      stats,
+      latest,
+      popular,
+      incidentsTodayCount,
+      announcements
+    ] = await Promise.all([
+      // 1. Stats
+      (async () => {
+        const [total, active, members, common] = await Promise.all([
+          Incident.countDocuments().lean(),
+          Incident.countDocuments({ $or: [{ status: "approved" }, { isImportant: true }] }).lean(),
+          User.countDocuments().lean(),
+          Incident.aggregate([
+            { $group: { _id: "$type", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 1 }
+          ])
+        ]);
+        return {
+          incidentsToday: total,
+          activeAlerts: active,
+          activeUsers: members,
+          mostCommonType: common[0]?._id || "General"
+        };
+      })(),
+      // 2. Latest (limit 3)
+      Incident.find({ status: "approved", type: { $ne: "sos" } })
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .lean(),
+      // 3. Popular (limit 10)
+      Incident.find({ 
+        isImportant: true, 
+        type: { $ne: "sos" },
+        status: { $in: ["approved", "problem solved"] } 
+      }).sort({ createdAt: -1 }).limit(10).lean(),
+      // 4. Pulse Count
+      Incident.countDocuments({
+        createdAt: { $gte: today },
+        status: "approved"
+      }).lean(),
+      // 5. Public Announcements
+      (async () => {
+        const Notification = (await import("../models/Notification.js")).default;
+        return Notification.find({ 
+          userId: null,
+          $or: [
+            { targetAreaCodes: { $exists: false } }, 
+            { targetAreaCodes: { $size: 0 } }
+          ],
+          createdAt: { $gte: filterWindow }
+        }).sort({ createdAt: -1 }).limit(20).lean();
+      })()
+    ]);
+
+    const safetyScore = Math.max(60, 100 - (incidentsTodayCount * 2));
+
+    res.json({
+      stats,
+      latest,
+      popular,
+      announcements,
+      pulse: {
+        safetyScore,
+        incidentsToday: incidentsTodayCount
+      }
+    });
+
+  } catch (err) {
+    console.error("Dashboard bundle error:", err);
+    res.status(500).json({ message: "Error loading dashboard data" });
+  }
+});
+
+/* ============================================================
    💓 PULSE STATS (Live Ticker)
    GET /api/stats/pulse
    ============================================================ */

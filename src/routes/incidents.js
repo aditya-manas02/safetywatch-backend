@@ -263,17 +263,19 @@ router.get("/near-me", async (req, res) => {
       return res.json([]);
     }
 
-    // Simplified "near me" using a square bounding box instead of exact circle for performance
-    // 1 degree ~ 111km
-    const latDelta = radius / 111;
-    const lngDelta = radius / (111 * Math.cos(lat * Math.PI / 180));
-
     const nearby = await Incident.find({
       status: { $in: ["approved", "problem solved"] },
-      type: { $ne: "sos" }, // Exclude SOS from public nearby map
-      latitude: { $gte: parseFloat(lat) - latDelta, $lte: parseFloat(lat) + latDelta },
-      longitude: { $gte: parseFloat(lng) - lngDelta, $lte: parseFloat(lng) + lngDelta }
-    }).sort({ createdAt: -1 }).limit(15);
+      type: { $ne: "sos" },
+      locationPoint: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [parseFloat(lng), parseFloat(lat)]
+          },
+          $maxDistance: radius * 1000
+        }
+      }
+    }).limit(15).lean();
 
     res.json(nearby);
   } catch (err) {
@@ -320,7 +322,7 @@ router.get("/coords/all", async (req, res) => {
         type: { $ne: "sos" } 
       },
       { latitude: 1, longitude: 1, _id: 0 }
-    );
+    ).lean();
 
     res.json(coords);
   } catch (err) {

@@ -33,6 +33,10 @@ const incidentSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 incidentSchema.index({ locationPoint: "2dsphere" });
+incidentSchema.index({ status: 1, createdAt: -1 });
+incidentSchema.index({ areaCode: 1, status: 1 });
+incidentSchema.index({ isImportant: 1, status: 1 });
+incidentSchema.index({ userId: 1, createdAt: -1 });
 
 
 
