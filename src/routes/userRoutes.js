@@ -285,13 +285,27 @@ router.post("/fcm-token", authMiddleware, catchAsync(async (req, res) => {
   const user = await User.findById(req.user.id);
   if (!user) return res.status(404).json({ message: "User not found" });
 
-  if (!user.fcmTokens) user.fcmTokens = [];
-  if (!user.fcmTokens.includes(token)) {
-    user.fcmTokens.push(token);
-    await user.save();
-  }
+  try {
+    // Ensure fcmTokens is an array
+    if (!user.fcmTokens || !Array.isArray(user.fcmTokens)) {
+      user.fcmTokens = [];
+    }
+    
+    // Only add if not already present
+    if (!user.fcmTokens.includes(token)) {
+      user.fcmTokens.push(token);
+      await user.save();
+      console.log(`[FCM] Registered new token for user: ${user.email}`);
+    }
 
-  res.json({ message: "Push notification token registered successfully" });
+    res.json({ message: "Push notification token registered successfully" });
+  } catch (err) {
+    console.error("[FCM_ERROR] Failed to register token:", err);
+    res.status(500).json({ 
+      message: "Internal server error during token registration",
+      error: err.message
+    });
+  }
 }));
 
 /* TEST PUSH NOTIFICATION — sends a test FCM push to the requesting user's own device */
