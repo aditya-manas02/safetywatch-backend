@@ -294,13 +294,22 @@ router.post("/fcm-token", authMiddleware, catchAsync(async (req, res) => {
     // Only add if not already present
     if (!user.fcmTokens.includes(token)) {
       user.fcmTokens.push(token);
+      // Limit to 5 tokens per user to prevent document bloat
+      if (user.fcmTokens.length > 5) {
+        user.fcmTokens.shift();
+      }
       await user.save();
-      console.log(`[FCM] Registered new token for user: ${user.email}`);
+      console.log(`[FCM] Registered new token for user: ${user.email} (Total: ${user.fcmTokens.length})`);
+    } else {
+      console.log(`[FCM] Token already registered for user: ${user.email}`);
     }
 
-    res.json({ message: "Push notification token registered successfully" });
+    res.json({ 
+      message: "Push notification token registered successfully",
+      tokenCount: user.fcmTokens.length
+    });
   } catch (err) {
-    console.error("[FCM_ERROR] Failed to register token:", err);
+    console.error("[FCM_ERROR] Failed to register token for user:", req.user.id, err);
     res.status(500).json({ 
       message: "Internal server error during token registration",
       error: err.message

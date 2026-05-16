@@ -92,7 +92,7 @@ router.get("/", authMiddleware, requireAdminOnly, catchAsync(async (req, res) =>
   const typeDistribution = await Incident.aggregate([
       { $match: baseQuery },
       { $group: { _id: "$type", value: { $sum: 1 } } }
-  ]).then(res => res.map(r => ({ name: r._id, value: r.value })));
+  ]).then(res => res.map(r => ({ name: r._id || "General", value: r.value || 0 })));
 
   res.json({
     totalIncidents,
