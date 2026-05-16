@@ -176,9 +176,9 @@ router.get("/bundle", async (req, res) => {
       // 1. Stats
       (async () => {
         const [total, active, members, common] = await Promise.all([
-          Incident.countDocuments().lean(),
-          Incident.countDocuments({ $or: [{ status: "approved" }, { isImportant: true }] }).lean(),
-          User.countDocuments().lean(),
+          Incident.countDocuments(),
+          Incident.countDocuments({ $or: [{ status: "approved" }, { isImportant: true }] }),
+          User.countDocuments(),
           Incident.aggregate([
             { $group: { _id: "$type", count: { $sum: 1 } } },
             { $sort: { count: -1 } },
@@ -207,7 +207,7 @@ router.get("/bundle", async (req, res) => {
       Incident.countDocuments({
         createdAt: { $gte: today },
         status: "approved"
-      }).lean(),
+      })
       // 5. Public Announcements
       (async () => {
         const Notification = (await import("../models/Notification.js")).default;
