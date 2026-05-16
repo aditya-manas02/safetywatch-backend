@@ -74,6 +74,21 @@ router.post("/", authMiddleware, requireAdminOnly, async (req, res) => {
   }
 });
 
+// Admin: Get all challenges (for management)
+router.get("/", authMiddleware, requireAdminOnly, async (req, res) => {
+  try {
+    const query = {};
+    if (!req.user.isSuperAdmin) {
+      query.areaCode = req.user.areaCode;
+    }
+
+    const challenges = await Challenge.find(query).sort({ createdAt: -1 });
+    res.json(challenges);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Admin: Toggle challenge status
 router.patch("/:id/toggle", authMiddleware, requireAdminOnly, async (req, res) => {
   try {
@@ -85,6 +100,21 @@ router.patch("/:id/toggle", authMiddleware, requireAdminOnly, async (req, res) =
     res.json(challenge);
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+});
+
+// Admin: Delete a challenge
+router.delete("/:id", authMiddleware, requireAdminOnly, async (req, res) => {
+  try {
+    const challenge = await Challenge.findByIdAndDelete(req.params.id);
+    if (!challenge) return res.status(404).json({ message: "Challenge not found" });
+    
+    // Also cleanup participations
+    await ChallengeParticipation.deleteMany({ challengeId: req.params.id });
+
+    res.json({ message: "Challenge deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
