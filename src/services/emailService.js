@@ -349,3 +349,78 @@ This is an automated message, please do not reply.
   // Send with both plain text and HTML
   return await deliverEmail(email, subject, html, text);
 };
+
+/**
+ * Send a secure OTP email for SuperAdmin login authorization
+ */
+export const sendSuperAdminOTPEmail = async (email, otp) => {
+  const subject = "SafetyWatch SuperAdmin - Secure Access OTP";
+  
+  const text = `
+Hello SuperAdmin,
+
+A login attempt was detected for your SafetyWatch SuperAdmin account.
+
+To authorize this session, please use the following Secure Access OTP: ${otp}
+
+This code will expire in 10 minutes.
+
+If you did not initiate this login, please change your credentials immediately and contact support.
+
+Best regards,
+SafetyWatch Security
+  `;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #0f172a;">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 40px auto; background-color: #1e293b; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 1px solid #334155;">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); padding: 35px 20px; text-align: center; border-bottom: 1px solid #475569;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;">SafetyWatch Secure Access</h1>
+          <p style="color: #fecaca; margin: 8px 0 0 0; font-size: 14px; font-weight: 600; letter-spacing: 1px;">SUPERADMIN PORTAL VERIFICATION</p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px 30px; color: #e2e8f0;">
+          <p style="font-size: 16px; margin: 0 0 20px 0; line-height: 1.6; font-weight: 600;">Hello SuperAdmin,</p>
+          <p style="font-size: 15px; margin: 0 0 30px 0; line-height: 1.6; color: #94a3b8;">A login attempt was detected for your SafetyWatch SuperAdmin account. To complete the authorization, enter the secure access code below:</p>
+          
+          <!-- OTP Box -->
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 30px; border-radius: 12px; text-align: center; margin: 30px 0; border: 2px solid #ef4444;">
+            <div style="font-size: 12px; color: #f87171; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700;">Secure Access Code</div>
+            <div style="font-size: 44px; font-weight: 800; color: #ffffff; letter-spacing: 10px; font-family: 'Courier New', monospace; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);">
+              ${otp}
+            </div>
+          </div>
+          
+          <div style="background-color: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 15px; border-radius: 4px; margin: 30px 0;">
+            <p style="font-size: 13px; color: #f87171; margin: 0; line-height: 1.5; font-weight: 600;">
+              <strong>Security Warning:</strong> This OTP is valid for 10 minutes. If you did not initiate this login attempt, please secure your account immediately by changing your password.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #0f172a; padding: 25px 30px; border-top: 1px solid #334155; text-align: center;">
+          <p style="font-size: 11px; color: #64748b; margin: 0 0 8px 0;">
+            This is an automated security transmission. Replies to this address are not monitored.
+          </p>
+          <p style="font-size: 11px; color: #64748b; margin: 0;">
+            © ${new Date().getFullYear()} SafetyWatch Platform. Protected by Advanced End-to-End Cryptography.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Send with both plain text and HTML
+  return await deliverEmail(email, subject, html, text);
+};

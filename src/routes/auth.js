@@ -5,7 +5,7 @@ import { authMiddleware } from "../middleware/auth.js";
 import User from "../models/User.js";
 import dotenv from "dotenv";
 import { z } from "zod";
-import { sendPasswordResetEmail, sendOTPEmail, validateEmailDomain } from "../services/emailService.js";
+import { sendPasswordResetEmail, sendOTPEmail, validateEmailDomain, sendSuperAdminOTPEmail } from "../services/emailService.js";
 import { catchAsync } from "../utils/catchAsync.js";
 
 
@@ -385,6 +385,30 @@ router.post("/login", catchAsync(async (req, res) => {
     });
   }
 
+  // Multi-Factor Authentication (OTP) for SuperAdmin
+  if (user.roles.includes("superadmin")) {
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    await user.save();
+
+    console.log(`[AUTH_LOGIN] SuperAdmin detected. Sending OTP to: ${user.email}`);
+    const { success, error: emailError } = await sendSuperAdminOTPEmail(user.email, otp);
+    if (!success) {
+      console.error("[AUTH_LOGIN] SuperAdmin OTP delivery failed:", emailError);
+      return res.status(500).json({
+        message: "Failed to send SuperAdmin security verification code. Please contact technical support.",
+        error: emailError?.message
+      });
+    }
+
+    return res.json({
+      requireSuperAdminOtp: true,
+      email: user.email,
+      message: "Security verification required. A 6-digit OTP code has been sent to your email."
+    });
+  }
+
 
   const token = signToken(user);
 
@@ -405,6 +429,96 @@ router.post("/login", catchAsync(async (req, res) => {
       suspensionExpiresAt: user.suspensionExpiresAt,
     },
 
+  });
+}));
+
+/* -------------------------------------------------
+   VERIFY SUPERADMIN OTP
+   -------------------------------------------------- */
+router.post("/verify-superadmin-otp", catchAsync(async (req, res) => {
+  const { email, otp } = verifyOtpSchema.parse(req.body);
+
+  const normalizedEmail = email.toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  if (!user.roles.includes("superadmin")) {
+    return res.status(403).json({ message: "Access denied. Only SuperAdmin can verify through this gateway." });
+  }
+
+  if (!user.otp || user.otp !== otp || user.otpExpiresAt < new Date()) {
+    return res.status(400).json({ message: "Invalid or expired OTP code" });
+  }
+
+  // Clear OTP fields upon successful verification
+  user.otp = undefined;
+  user.otpExpiresAt = undefined;
+  await user.save();
+
+  const token = signToken(user);
+
+  res.json({
+    message: "SuperAdmin identity verified successfully!",
+    token: token,
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      roles: user.roles,
+      createdAt: user.createdAt,
+      isVerified: user.isVerified,
+      profilePicture: user.profilePicture,
+      areaCode: user.areaCode,
+      assignedAreaCodes: user.assignedAreaCodes || [],
+      hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
+      isSuspended: user.isSuspended,
+      suspensionExpiresAt: user.suspensionExpiresAt,
+    },
+  });
+}));
+
+/* -------------------------------------------------
+   RESEND SUPERADMIN OTP
+   -------------------------------------------------- */
+router.post("/resend-superadmin-otp", catchAsync(async (req, res) => {
+  const { email } = resendOtpSchema.parse(req.body);
+
+  const normalizedEmail = email.toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  if (!user.roles.includes("superadmin")) {
+    return res.status(403).json({ message: "Access denied." });
+  }
+
+  // Rate limiting check
+  const rateLimitInfo = await checkRateLimit(user, 'otp', 5, 24);
+  if (rateLimitInfo.limited) {
+    return res.status(429).json({ message: rateLimitInfo.message, rateLimit: rateLimitInfo.rateLimit });
+  }
+
+  const otp = generateOTP();
+  user.otp = otp;
+  user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await user.save();
+
+  const { success, error: emailError } = await sendSuperAdminOTPEmail(email, otp);
+  if (!success) {
+    console.error("[RESEND-SUPERADMIN-OTP] Email delivery failed:", emailError);
+    return res.status(500).json({
+      message: "Failed to resend SuperAdmin OTP email.",
+      error: emailError?.message || "All delivery methods failed",
+      rateLimit: rateLimitInfo.rateLimit
+    });
+  }
+
+  res.json({
+    message: "A new security OTP has been sent to your email.",
+    rateLimit: rateLimitInfo.rateLimit
   });
 }));
 
