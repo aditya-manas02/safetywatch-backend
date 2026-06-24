@@ -7,11 +7,11 @@ import dotenv from "dotenv";
 import { z } from "zod";
 import { sendPasswordResetEmail, sendOTPEmail, validateEmailDomain, sendSuperAdminOTPEmail } from "../services/emailService.js";
 import { catchAsync } from "../utils/catchAsync.js";
-
-
+import { OAuth2Client } from "google-auth-library";
 
 dotenv.config();
 const router = express.Router();
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 /* -------------------------------------------------
    VALIDATION SCHEMAS
@@ -236,6 +236,128 @@ async function checkRateLimit(user, type, limit, windowHours) {
 }
 
 /* -------------------------------------------------
+   GOOGLE LOGIN / REGISTER
+-------------------------------------------------- */
+router.post("/google", catchAsync(async (req, res) => {
+  const { idToken } = req.body;
+  if (!idToken) {
+    return res.status(400).json({ message: "Google ID Token is required" });
+  }
+
+  let email, name, picture, googleId, email_verified;
+
+  // Developer mock mode validation (non-production and mock prefix token)
+  if (process.env.NODE_ENV !== "production" && idToken.startsWith("mock-google-token-")) {
+    const parts = idToken.split("-");
+    email = parts[3];
+    name = parts[4] || "Mock User";
+    picture = "https://lh3.googleusercontent.com/a/default-user=s96-c";
+    googleId = "mock-google-id-" + email;
+    email_verified = true;
+  } else {
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(500).json({ message: "Google Client ID is not configured on the server." });
+    }
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload) {
+        return res.status(400).json({ message: "Invalid Google ID Token" });
+      }
+      email = payload.email;
+      name = payload.name;
+      picture = payload.picture;
+      googleId = payload.sub;
+      email_verified = payload.email_verified;
+    } catch (err) {
+      console.error("[GOOGLE AUTH] Token verification failed:", err);
+      return res.status(400).json({ message: "Google Authentication failed: " + err.message });
+    }
+  }
+
+  if (!email_verified) {
+    return res.status(400).json({ message: "Google email is not verified" });
+  }
+
+  const normalizedEmail = email.toLowerCase();
+  let user = await User.findOne({ email: normalizedEmail });
+
+  if (user) {
+    // If user exists, link Google ID and update picture if not set
+    if (!user.googleId) {
+      user.googleId = googleId;
+    }
+    if (picture && !user.profilePicture) {
+      user.profilePicture = picture;
+    }
+    if (!user.isVerified) {
+      user.isVerified = true;
+    }
+    await user.save();
+  } else {
+    // Create new user (automatically verified)
+    const roles = ["user"];
+    if (process.env.SUPERADMIN_EMAIL && normalizedEmail === process.env.SUPERADMIN_EMAIL.toLowerCase()) {
+      roles.push("admin", "superadmin");
+    }
+
+    user = await User.create({
+      email: normalizedEmail,
+      name,
+      googleId,
+      profilePicture: picture || undefined,
+      isVerified: true,
+      roles,
+      otpCount: 0,
+      otpWindowStart: new Date()
+    });
+  }
+
+  // Check suspension
+  if (user.isSuspended) {
+    if (user.suspensionExpiresAt && new Date() < user.suspensionExpiresAt) {
+      return res.status(403).json({
+        message: "Your account is temporarily suspended.",
+        suspended: true,
+        expiresAt: user.suspensionExpiresAt,
+      });
+    } else if (user.suspensionExpiresAt) {
+      user.isSuspended = false;
+      user.suspensionExpiresAt = null;
+      await user.save();
+    } else {
+      return res.status(403).json({
+        message: "Your account is indefinitely suspended.",
+        suspended: true,
+      });
+    }
+  }
+
+  const token = signToken(user);
+
+  res.json({
+    token,
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      roles: user.roles,
+      createdAt: user.createdAt,
+      isVerified: user.isVerified,
+      profilePicture: user.profilePicture,
+      areaCode: user.areaCode,
+      assignedAreaCodes: user.assignedAreaCodes || [],
+      hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
+      isSuspended: user.isSuspended,
+      suspensionExpiresAt: user.suspensionExpiresAt,
+    },
+  });
+}));
+
+/* -------------------------------------------------
    SIGNUP
 -------------------------------------------------- */
 router.post("/signup", catchAsync(async (req, res) => {
@@ -347,6 +469,12 @@ router.post("/login", catchAsync(async (req, res) => {
   if (!user) {
     console.warn(`[AUTH_LOGIN] Failed attempt for user: ${normalizedEmail} - User not found`);
     return res.status(401).json({ message: "Invalid email or password" });
+  }
+
+  // Prevent Google login users from using standard password login
+  if (!user.passwordHash) {
+    console.warn(`[AUTH_LOGIN] Blocked password login attempt for Google-only user: ${normalizedEmail}`);
+    return res.status(400).json({ message: "This email is linked with Google Sign-In. Please use the Google Login button." });
   }
 
   // Check suspension
@@ -696,6 +824,11 @@ router.post("/change-password", async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    // Google users have no password to change
+    if (!user.passwordHash) {
+      return res.status(400).json({ message: "Google accounts do not use passwords. Password changes are disabled." });
     }
 
     // Verify current password
