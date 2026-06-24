@@ -1,8 +1,8 @@
 {
-    "version": "1.4.7",
-    "minVersion": "1.4.7",
-    "buildId": "2026050801",
-    "minBuildId": "2026050801",
+    "version": "1.4.8",
+    "minVersion": "1.4.8",
+    "buildId": "2026062401",
+    "minBuildId": "2026062401",
     "url": "https://safetywatch-backend.onrender.com/SafetyWatch.apk",
-    "notes": "v1.4.7: Build 2026050801. Fixed SOS self-alerting and enhanced build-level version tracking."
+    "notes": "v1.4.8: Added Native Google Sign-In, disabled zoom for native app feel, and improved authentication flow."
 }
