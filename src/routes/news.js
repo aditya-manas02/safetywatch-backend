@@ -14,7 +14,7 @@ const NEWS_API_KEY = process.env.NEWS_API_KEY || "";
    TTL: 15 minutes — avoids hammering NewsAPI free tier (100 req/day).
    ============================================================ */
 const newsCache = new Map();
-const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const CACHE_TTL_MS = 60 * 60 * 1000; // 60 minutes
 
 function getCached(key) {
   const entry = newsCache.get(key);
@@ -89,12 +89,12 @@ router.get("/", catchAsync(async (req, res) => {
       // Location-aware query with safety keywords
       query = `${city} AND ${SAFETY_KEYWORDS}`;
     } else {
-      // Fallback: generic global safety news
-      query = "world safety OR global security";
+      // Fallback: highly curated global safety and disaster news
+      query = '("public safety" OR crime OR disaster OR emergency OR security OR police OR earthquake OR flood OR wildfire OR terrorism)';
     }
 
     const response = await fetch(
-      `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=12&language=en&apiKey=${NEWS_API_KEY}`
+      `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=15&language=en&apiKey=${NEWS_API_KEY}`
     );
 
     if (!response.ok) {
@@ -104,7 +104,7 @@ router.get("/", catchAsync(async (req, res) => {
     }
 
     const data = await response.json();
-    const articles = formatArticles(data.articles).slice(0, 8);
+    const articles = formatArticles(data.articles).slice(0, 15);
 
     // Cache the result
     setCache(cacheKey, articles);
