@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafetyWatch - Stunning Logo Iterations</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020617;
+            --card-bg: rgba(15, 23, 42, 0.4);
+            --primary: #3b82f6;
+            --accent: #06b6d4;
+            --text: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Ambient glows */
+        .orb-1 {
+            position: fixed;
+            top: -200px;
+            left: -200px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+            z-index: -1;
+            filter: blur(80px);
+        }
+
+        .orb-2 {
+            position: fixed;
+            bottom: -200px;
+            right: -200px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%);
+            z-index: -1;
+            filter: blur(80px);
+        }
+
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(59, 130, 246, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(59, 130, 246, 0.015) 1px, transparent 1px);
+        }
+
+        header {
+            text-align: center;
+            margin: 80px 0 50px 0;
+            max-width: 800px;
+            padding: 0 20px;
+        }
+
+        .badge {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(6, 182, 212, 0.15));
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            padding: 8px 18px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #60a5fa;
+            display: inline-block;
+            margin-bottom: 24px;
+            backdrop-filter: blur(5px);
+        }
+
+        h1 {
+            font-size: 52px;
+            font-weight: 900;
+            margin: 0 0 18px 0;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, #ffffff 40%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.lead {
+            font-size: 19px;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        .showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 35px;
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 40px 80px 40px;
+            box-sizing: border-box;
+        }
+
+        .logo-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            padding: 45px 35px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: radial-gradient(circle at top, rgba(6, 182, 212, 0.15) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 1;
+        }
+
+        .logo-card:hover {
+            transform: translateY(-12px);
+            border-color: rgba(6, 182, 212, 0.3);
+            background: rgba(15, 23, 42, 0.6);
+            box-shadow: 0 40px 80px rgba(6, 182, 212, 0.15), 0 0 0 1px rgba(6, 182, 212, 0.2);
+        }
+
+        .logo-card:hover::before {
+            opacity: 1;
+        }
+
+        .logo-container {
+            width: 160px;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.05));
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 44px;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 2;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .logo-card:hover .logo-container {
+            transform: scale(1.06);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.07));
+            border-color: rgba(6, 182, 212, 0.25);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo-card svg {
+            width: 100px;
+            height: 100px;
+        }
+
+        .logo-title {
+            font-size: 23px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            letter-spacing: -0.5px;
+            z-index: 2;
+        }
+
+        .logo-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 32px;
+            z-index: 2;
+            height: 66px;
+            font-weight: 300;
+        }
+
+        .btn-copy {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text);
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 2;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-copy:hover {
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            border-color: transparent;
+            color: #ffffff;
+            box-shadow: 0 10px 25px rgba(6, 182, 212, 0.35);
+        }
+
+        /* Smooth CSS animations */
+        @keyframes subtle-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.4; filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.4)); }
+            50% { opacity: 1; filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.8)); }
+        }
+
+        @keyframes sweep-radar {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes wave-ripple {
+            0% { opacity: 0.2; transform: scale(0.9); }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.2; transform: scale(1.1); }
+        }
+
+        .anim-float {
+            animation: subtle-float 6s infinite ease-in-out;
+            transform-origin: center;
+        }
+
+        .anim-glow {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+
+        .anim-sweep {
+            animation: sweep-radar 12s infinite linear;
+            transform-origin: center;
+        }
+
+        .anim-ripple {
+            animation: wave-ripple 3s infinite ease-in-out;
+            transform-origin: center;
+        }
+
+        /* Copy Toast */
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-weight: 600;
+            box-shadow: 0 15px 35px rgba(6, 182, 212, 0.3);
+            transform: translateY(120px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div class="orb-1"></div>
+    <div class="orb-2"></div>
+    
+    <header>
+        <div class="badge">Aesthetic Refinement</div>
+        <h1>Make It Stunning</h1>
+        <p class="lead">We've taken the "Connected Neighborhood + Geotag Pin + Radar" concept you liked and iterated it into 4 absolutely spectacular, high-end variations.</p>
+    </header>
+
+    <div class="showcase">
+        <!-- ITERATION 1: CYBER GLOW -->
+        <div class="logo-card">
+            <div class="logo-container">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="cyber-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00f2fe" />
+                            <stop offset="100%" stop-color="#4facfe" />
+                        </linearGradient>
+                        <linearGradient id="cyber-grad-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#4facfe" />
+                            <stop offset="100%" stop-color="#0000ff" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Concentric Radar Waves -->
+                    <path d="M35 32 C40 25, 60 25, 65 32" stroke="url(#cyber-grad-1)" stroke-width="2.5" stroke-linecap="round" opacity="0.4" />
+                    <path d="M28 24 C40 12, 60 12, 72 24" stroke="url(#cyber-grad-1)" stroke-width="3" stroke-linecap="round" class="anim-ripple" />
+                    <path d="M20 16 C38 0, 62 0, 80 16" stroke="url(#cyber-grad-1)" stroke-width="1.5" stroke-linecap="round" opacity="0.3" />
+
+                    <!-- Two overlapping houses with soft gradients -->
+                    <g class="anim-float">
+                        <!-- Background House -->
+                        <path d="M50 44 L68 32 L88 46 V72 H52 Z" stroke="url(#cyber-grad-1)" stroke-width="2.5" stroke-linejoin="round" opacity="0.4" />
+                        <!-- Foreground House -->
+                        <path d="M12 46 L32 30 L52 44 L52 72 H12 Z" stroke="url(#cyber-grad-1)" stroke-width="3.5" stroke-linejoin="round" />
+                        
+                        <!-- Floating Glassmorphic Location Pin -->
+                        <g filter="drop-shadow(0 8px 16px rgba(0,242,254,0.3))">
+                            <path d="M50 36 C57 36, 63 42, 63 50 C63 62, 50 74, 50 74 C50 74, 37 62, 37 50 C37 42, 43 36, 50 36 Z" 
+                                  fill="url(#cyber-grad-1)" stroke="#020617" stroke-width="2" />
+                            <circle cx="50" cy="48" r="3.5" fill="#ffffff" class="anim-glow" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <div class="logo-title">1. Cyber Glow</div>
+            <div class="logo-desc">Uses high-contrast neon cyan gradients with a floating location pin casting a soft cyber shadow. Modern, vibrant, and futuristic.</div>
+            <button class="btn-copy" onclick="copySVG(1, this)">
+                <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy SVG Code
+            </button>
+        </div>
+
+        <!-- ITERATION 2: GLASSMORPHIC 3D -->
+        <div class="logo-card">
+            <div class="logo-container" style="background: rgba(15, 23, 42, 0.75);">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="glass-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.15" />
+                            <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02" />
+                        </linearGradient>
+                        <linearGradient id="blue-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00c6ff" />
+                            <stop offset="100%" stop-color="#0072ff" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Ripple radar lines -->
+                    <circle cx="50" cy="50" r="44" stroke="url(#blue-grad)" stroke-width="1.5" stroke-dasharray="10 10" opacity="0.3" class="anim-ripple" />
+                    <path d="M30 26 C40 18, 60 18, 70 26" stroke="url(#blue-grad)" stroke-width="3" stroke-linecap="round" />
+
+                    <!-- Two Frosted glassmorphic houses -->
+                    <g class="anim-float">
+                        <!-- Left house (frosted glass fill) -->
+                        <path d="M16 46 L34 32 L52 46 L52 70 H16 Z" fill="url(#glass-grad)" stroke="rgba(255,255,255,0.2)" stroke-width="2.5" stroke-linejoin="round" />
+                        <!-- Right house (frosted glass fill) -->
+                        <path d="M48 46 L66 32 L84 46 L84 70 H48 Z" fill="url(#glass-grad)" stroke="rgba(255,255,255,0.2)" stroke-width="2.5" stroke-linejoin="round" opacity="0.7" />
+
+                        <!-- Center glowing Location Crest -->
+                        <g filter="drop-shadow(0 10px 20px rgba(0,198,255,0.45))">
+                            <path d="M50 34 C58 34, 65 40, 65 49 C65 62, 50 76, 50 76 C50 76, 35 62, 35 49 C35 40, 42 34, 50 34 Z" 
+                                  fill="url(#blue-grad)" />
+                            <!-- Protected family icon inside pin -->
+                            <path d="M46 54 C46 54, 50 50, 54 54" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+                            <circle cx="50" cy="46" r="3" fill="#ffffff" class="anim-glow" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <div class="logo-title">2. Glassmorphic 3D</div>
+            <div class="logo-desc">Applies elegant "frosted glass" transparent fills to the houses, letting the neon-blue location pin float in front with rich 3D layers.</div>
+            <button class="btn-copy" onclick="copySVG(2, this)">
+                <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy SVG Code
+            </button>
+        </div>
+
+        <!-- ITERATION 3: CONTINUOUS RIBBON -->
+        <div class="logo-card">
+            <div class="logo-container">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="ribbon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00f2fe" />
+                            <stop offset="50%" stop-color="#3b82f6" />
+                            <stop offset="100%" stop-color="#8b5cf6" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Sleek modern concentric radar arcs -->
+                    <path d="M32 26 C42 18, 58 18, 68 26" stroke="url(#ribbon-grad)" stroke-width="4.5" stroke-linecap="round" />
+                    <path d="M22 18 C38 2, 62 2, 78 18" stroke="url(#ribbon-grad)" stroke-width="2" stroke-linecap="round" opacity="0.4" />
+
+                    <!-- Beautiful continuous single path looping into houses and pin -->
+                    <g class="anim-float">
+                        <!-- Intertwined ribbon line-art house silhouettes -->
+                        <path d="M12 50 L32 34 L52 50 L72 34 L92 50 V68 H12 Z" stroke="url(#ribbon-grad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+                        
+                        <!-- Floating Location Pin with double rings -->
+                        <g filter="drop-shadow(0 6px 12px rgba(59,130,246,0.4))">
+                            <path d="M50 38 C56 38, 61 43, 61 50 C61 60, 50 70, 50 70 C50 70, 39 60, 39 50 C39 43, 44 38, 50 38 Z" 
+                                  fill="#020617" stroke="url(#ribbon-grad)" stroke-width="4" />
+                            <circle cx="50" cy="50" r="3" fill="url(#ribbon-grad)" class="anim-glow" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <div class="logo-title">3. Infinite Ribbon</div>
+            <div class="logo-desc">Integrates houses and radar into a continuous, beautifully thick single-line ribbon using an electric cyan-to-violet gradient. Extremely modern.</div>
+            <button class="btn-copy" onclick="copySVG(3, this)">
+                <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy SVG Code
+            </button>
+        </div>
+
+        <!-- ITERATION 4: COGNITIVE SENTINEL -->
+        <div class="logo-card">
+            <div class="logo-container">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="sentinel-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00f2fe" />
+                            <stop offset="50%" stop-color="#3b82f6" />
+                            <stop offset="100%" stop-color="#06b6d4" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Outer circular detailed tech border -->
+                    <circle cx="50" cy="50" r="44" stroke="rgba(255,255,255,0.06)" stroke-width="1.5" />
+                    <!-- Detailed Radar sweep line -->
+                    <line x1="50" y1="50" x2="81" y2="19" stroke="url(#sentinel-grad)" stroke-width="1.5" class="anim-sweep" opacity="0.6" />
+                    
+                    <!-- Nested Homes & location pin -->
+                    <g class="anim-float">
+                        <!-- Concentric safety radar waves -->
+                        <path d="M35 30 C40 24, 60 24, 65 30" stroke="url(#sentinel-grad)" stroke-width="2" stroke-linecap="round" />
+                        <!-- Minimal houses silhouettes -->
+                        <path d="M18 50 L32 38 L46 50 V66 H18 Z" stroke="url(#sentinel-grad)" stroke-width="2.5" stroke-linejoin="round" opacity="0.5" />
+                        <path d="M54 50 L68 38 L82 50 V66 H54 Z" stroke="url(#sentinel-grad)" stroke-width="2.5" stroke-linejoin="round" opacity="0.5" />
+
+                        <!-- Elevated Geotag shield pin -->
+                        <g filter="drop-shadow(0 10px 20px rgba(0,242,254,0.4))">
+                            <path d="M50 36 C57 36, 63 42, 63 50 C63 62, 50 74, 50 74 C50 74, 37 62, 37 50 C37 42, 43 36, 50 36 Z" 
+                                  fill="url(#sentinel-grad)" />
+                            <!-- Modern inner concentric dots -->
+                            <circle cx="50" cy="49" r="6" stroke="#ffffff" stroke-width="1.5" opacity="0.5" />
+                            <circle cx="50" cy="49" r="2.5" fill="#ffffff" class="anim-glow" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <div class="logo-title">4. Tactical Sentinel</div>
+            <div class="logo-desc">Adds detailed circular framing, coordinate-level outlines, and a scanning radar sweep line. Perfect for a premium safety dashboard app.</div>
+            <button class="btn-copy" onclick="copySVG(4, this)">
+                <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy SVG Code
+            </button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">SVG Code copied to clipboard!</div>
+
+    <script>
+        const svgs = {
+            1: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cyber-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="100%" stop-color="#4facfe" />
+    </linearGradient>
+  </defs>
+  <path d="M35 32 C40 25, 60 25, 65 32" stroke="url(#cyber-grad-1)" stroke-width="2.5" stroke-linecap="round" opacity="0.4" />
+  <path d="M28 24 C40 12, 60 12, 72 24" stroke="url(#cyber-grad-1)" stroke-width="3" stroke-linecap="round" />
+  <path d="M20 16 C38 0, 62 0, 80 16" stroke="url(#cyber-grad-1)" stroke-width="1.5" stroke-linecap="round" opacity="0.3" />
+  <path d="M50 44 L68 32 L88 46 V72 H52 Z" stroke="url(#cyber-grad-1)" stroke-width="2.5" stroke-linejoin="round" opacity="0.4" />
+  <path d="M12 46 L32 30 L52 44 L52 72 H12 Z" stroke="url(#cyber-grad-1)" stroke-width="3.5" stroke-linejoin="round" />
+  <path d="M50 36 C57 36, 63 42, 63 50 C63 62, 50 74, 50 74 C50 74, 37 62, 37 50 C37 42, 43 36, 50 36 Z" fill="url(#cyber-grad-1)" stroke="#020617" stroke-width="2" />
+  <circle cx="50" cy="48" r="3.5" fill="#ffffff" />
+</svg>`,
+            2: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="glass-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02" />
+    </linearGradient>
+    <linearGradient id="blue-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00c6ff" />
+      <stop offset="100%" stop-color="#0072ff" />
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="44" stroke="url(#blue-grad)" stroke-width="1.5" stroke-dasharray="10 10" opacity="0.3" />
+  <path d="M30 26 C40 18, 60 18, 70 26" stroke="url(#blue-grad)" stroke-width="3" stroke-linecap="round" />
+  <path d="M16 46 L34 32 L52 46 L52 70 H16 Z" fill="url(#glass-grad)" stroke="rgba(255,255,255,0.2)" stroke-width="2.5" stroke-linejoin="round" />
+  <path d="M48 46 L66 32 L84 46 L84 70 H48 Z" fill="url(#glass-grad)" stroke="rgba(255,255,255,0.2)" stroke-width="2.5" stroke-linejoin="round" opacity="0.7" />
+  <path d="M50 34 C58 34, 65 40, 65 49 C65 62, 50 76, 50 76 C50 76, 35 62, 35 49 C35 40, 42 34, 50 34 Z" fill="url(#blue-grad)" />
+  <path d="M46 54 C46 54, 50 50, 54 54" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+  <circle cx="50" cy="46" r="3" fill="#ffffff" />
+</svg>`,
+            3: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ribbon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+  </defs>
+  <path d="M32 26 C42 18, 58 18, 68 26" stroke="url(#ribbon-grad)" stroke-width="4.5" stroke-linecap="round" />
+  <path d="M22 18 C38 2, 62 2, 78 18" stroke="url(#ribbon-grad)" stroke-width="2" stroke-linecap="round" opacity="0.4" />
+  <path d="M12 50 L32 34 L52 50 L72 34 L92 50 V68 H12 Z" stroke="url(#ribbon-grad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M50 38 C56 38, 61 43, 61 50 C61 60, 50 70, 50 70 C50 70, 39 60, 39 50 C39 43, 44 38, 50 38 Z" fill="#020617" stroke="url(#ribbon-grad)" stroke-width="4" />
+  <circle cx="50" cy="50" r="3" fill="url(#ribbon-grad)" />
+</svg>`,
+            4: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sentinel-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="44" stroke="rgba(255,255,255,0.06)" stroke-width="1.5" />
+  <line x1="50" y1="50" x2="81" y2="19" stroke="url(#sentinel-grad)" stroke-width="1.5" opacity="0.6" />
+  <path d="M35 30 C40 24, 60 24, 65 30" stroke="url(#sentinel-grad)" stroke-width="2" stroke-linecap="round" />
+  <path d="M18 50 L32 38 L46 50 V66 H18 Z" stroke="url(#sentinel-grad)" stroke-width="2.5" stroke-linejoin="round" opacity="0.5" />
+  <path d="M54 50 L68 38 L82 50 V66 H54 Z" stroke="url(#sentinel-grad)" stroke-width="2.5" stroke-linejoin="round" opacity="0.5" />
+  <path d="M50 36 C57 36, 63 42, 63 50 C63 62, 50 74, 50 74 C50 74, 37 62, 37 50 C37 42, 43 36, 50 36 Z" fill="url(#sentinel-grad)" />
+  <circle cx="50" cy="49" r="6" stroke="#ffffff" stroke-width="1.5" opacity="0.5" />
+  <circle cx="50" cy="49" r="2.5" fill="#ffffff" />
+</svg>`
+        };
+
+        function copySVG(num, btn) {
+            const tempInput = document.createElement("textarea");
+            tempInput.value = svgs[num];
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+
+            const toast = document.getElementById("toast");
+            toast.innerText = `Concept ${num} SVG code copied to clipboard!`;
+            toast.classList.add("show");
+            
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"></path></svg> Copied!`;
+            btn.style.backgroundColor = '#06b6d4';
+            btn.style.borderColor = 'transparent';
+
+            setTimeout(() => {
+                toast.classList.remove("show");
+                btn.innerHTML = originalText;
+                btn.style.backgroundColor = '';
+                btn.style.borderColor = '';
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
