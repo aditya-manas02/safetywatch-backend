@@ -107,7 +107,7 @@ app.use((req, res, next) => {
                    userAgent.includes('capacitor');
 
   const MIN_VERSION = '1.4.8';
-  const MIN_BUILD_ID = '2026062401'; // Track builds within same version
+  const MIN_BUILD_ID = '2026070601'; // Track builds within same version
   
   const appVersion = req.headers['x-app-version'];
   const appBuildId = req.headers['x-app-build-id'];
