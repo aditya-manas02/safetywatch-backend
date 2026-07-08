@@ -1,8 +1,8 @@
 {
     "version": "1.4.8",
     "minVersion": "1.4.8",
-    "buildId": "2026062401",
-    "minBuildId": "2026062401",
+    "buildId": "2026070601",
+    "minBuildId": "2026070601",
     "url": "https://safetywatch-backend.onrender.com/SafetyWatch.apk",
-    "notes": "v1.4.8: Added Native Google Sign-In, disabled zoom for native app feel, and improved authentication flow."
+    "notes": "v1.4.8: New branding with updated logo, SafetyWatch Buddy AI, enhanced mobile experience."
 }
