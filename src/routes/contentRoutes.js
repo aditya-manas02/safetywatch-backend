@@ -14,23 +14,9 @@ router.get("/", catchAsync(async (req, res) => {
   res.json({ content });
 }));
 
-// POST new safety content (Admin only in real world, but keeping simple for now)
-router.post("/", catchAsync(async (req, res) => {
-  const { title, body, category, author, icon } = req.body;
-  const newContent = new Content({ title, body, category, author, icon });
-  await newContent.save();
-  res.status(201).json(newContent);
-}));
-
-// DELETE content
-router.delete("/:id", catchAsync(async (req, res) => {
-  await Content.findByIdAndDelete(req.params.id);
-  res.json({ message: "Content deleted successfully" });
-}));
-
-// POST auto-generate safety content idea
+// POST auto-generate safety content idea (MUST be before POST / to avoid route conflict)
 router.post("/generate", catchAsync(async (req, res) => {
-  const { category } = req.body; // e.g. "Tip", "Guide", "Announcement"
+  const { category } = req.body;
 
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
@@ -66,7 +52,6 @@ DO NOT use markdown formatting outside of the JSON block. Return ONLY a valid JS
           try {
              parsed = JSON.parse(text);
           } catch(e) {
-             // Fallback regex if it wrapped in markdown despite mimeType
              const match = text.match(/```json\n([\s\S]*?)\n```/);
              if (match) parsed = JSON.parse(match[1]);
              else throw new Error("Could not parse JSON");
@@ -84,4 +69,19 @@ DO NOT use markdown formatting outside of the JSON block. Return ONLY a valid JS
   throw new Error("Failed to generate AI content: " + lastError?.message);
 }));
 
+// POST new safety content
+router.post("/", catchAsync(async (req, res) => {
+  const { title, body, category, author, icon } = req.body;
+  const newContent = new Content({ title, body, category, author, icon });
+  await newContent.save();
+  res.status(201).json(newContent);
+}));
+
+// DELETE content
+router.delete("/:id", catchAsync(async (req, res) => {
+  await Content.findByIdAndDelete(req.params.id);
+  res.json({ message: "Content deleted successfully" });
+}));
+
 export default router;
+
