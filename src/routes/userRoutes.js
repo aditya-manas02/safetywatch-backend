@@ -149,8 +149,20 @@ router.patch("/:id/area-code", authMiddleware, requireSuperAdmin, async (req, re
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    const oldAreaCode = user.areaCode || "DEFAULT";
     user.areaCode = areaCode.toUpperCase();
     await user.save();
+    
+    // Notify the user about the area code change
+    if (oldAreaCode !== user.areaCode) {
+      const Notification = (await import("../models/Notification.js")).default;
+      await Notification.create({
+        userId: user._id,
+        title: "Area Code Updated",
+        message: `Your area code has been changed from ${oldAreaCode} to ${user.areaCode} by an administrator.`,
+        type: "system_alert"
+      });
+    }
     
     await logAudit(req, `Changed user area code to ${user.areaCode}`, "user", req.params.id, user.email);
     res.json({ message: "Area code updated", areaCode: user.areaCode });
