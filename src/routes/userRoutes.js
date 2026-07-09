@@ -128,6 +128,35 @@ router.patch("/:id/demote", authMiddleware, requireSuperAdmin, async (req, res) 
     await logAudit(req, "Demoted admin to user", "user", req.params.id, user.email);
     res.json({ message: "Demoted", roles: user.roles });
   } catch {
+  } catch {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/* UPDATE USER AREA CODE (SUPERADMIN ONLY) */
+router.patch("/:id/area-code", authMiddleware, requireSuperAdmin, async (req, res) => {
+  try {
+    const { areaCode } = req.body;
+    if (!areaCode) return res.status(400).json({ message: "Area code is required" });
+
+    const AreaCode = (await import("../models/AreaCode.js")).default;
+    const validAreaCode = await AreaCode.findOne({ code: areaCode.toUpperCase() });
+    
+    // We allow setting areaCode to a valid area code OR to "DEFAULT"
+    if (!validAreaCode && areaCode.toUpperCase() !== "DEFAULT") {
+      return res.status(400).json({ message: "Invalid area code" });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.areaCode = areaCode.toUpperCase();
+    await user.save();
+    
+    await logAudit(req, `Changed user area code to ${user.areaCode}`, "user", req.params.id, user.email);
+    res.json({ message: "Area code updated", areaCode: user.areaCode });
+  } catch (error) {
+    console.error("Error updating area code:", error);
     res.status(500).json({ error: "Server error" });
   }
 });

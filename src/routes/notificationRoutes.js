@@ -147,6 +147,35 @@ router.post("/announcement", authMiddleware, requireAdminOnly, catchAsync(async 
   res.status(201).json(announcement);
 }));
 
+/* ----------------- SEND DIRECT MESSAGE (ADMIN) ------------------ */
+router.post("/direct", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
+  const { userId, title, message, link } = req.body;
+  if (!userId || !title || !message) {
+    return res.status(400).json({ message: "User ID, title, and message are required" });
+  }
+
+  const User = (await import("../models/User.js")).default;
+  const targetUser = await User.findById(userId);
+  if (!targetUser) return res.status(404).json({ message: "User not found" });
+
+  if (!req.user.roles.includes("superadmin")) {
+    if (targetUser.areaCode !== req.user.areaCode) {
+      return res.status(403).json({ message: "You can only message users in your assigned area." });
+    }
+  }
+
+  const notification = await Notification.create({
+    userId: targetUser._id,
+    title,
+    message,
+    type: "system_alert",
+    link
+  });
+
+  res.status(201).json(notification);
+}));
+
+
 /* ----------------- DELETE NOTIFICATION (ADMIN) ------------------ */
 router.delete("/:id", authMiddleware, requireAdminOnly, catchAsync(async (req, res) => {
   const notification = await Notification.findByIdAndDelete(req.params.id);
