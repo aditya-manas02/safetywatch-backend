@@ -65,7 +65,7 @@ app.use((req, res, next) => {
   }
   
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-app-version, x-app-build-id");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-app-version, x-app-build-id, x-platform");
   res.setHeader("Access-Control-Allow-Credentials", "true");
 
   // Handle Preflight
