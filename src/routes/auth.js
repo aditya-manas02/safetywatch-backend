@@ -179,6 +179,14 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+async function updateAppVersion(req, user) {
+  const appVersion = req.headers["x-app-version"];
+  if (appVersion && user.appVersion !== appVersion) {
+    user.appVersion = appVersion;
+    await user.save();
+  }
+}
+
 /**
  * Rate limiting helper
  * @param {Object} user User model instance
@@ -336,6 +344,8 @@ router.post("/google", catchAsync(async (req, res) => {
     }
   }
 
+  await updateAppVersion(req, user);
+
   const token = signToken(user);
 
   res.json({
@@ -353,6 +363,7 @@ router.post("/google", catchAsync(async (req, res) => {
       hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
       isSuspended: user.isSuspended,
       suspensionExpiresAt: user.suspensionExpiresAt,
+      appVersion: user.appVersion,
     },
   });
 }));
@@ -538,6 +549,8 @@ router.post("/login", catchAsync(async (req, res) => {
   }
 
 
+  await updateAppVersion(req, user);
+
   const token = signToken(user);
 
   res.json({
@@ -555,6 +568,7 @@ router.post("/login", catchAsync(async (req, res) => {
       hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
       isSuspended: user.isSuspended,
       suspensionExpiresAt: user.suspensionExpiresAt,
+      appVersion: user.appVersion,
     },
 
   });
@@ -585,6 +599,8 @@ router.post("/verify-superadmin-otp", catchAsync(async (req, res) => {
   user.otpExpiresAt = undefined;
   await user.save();
 
+  await updateAppVersion(req, user);
+
   const token = signToken(user);
 
   res.json({
@@ -603,6 +619,7 @@ router.post("/verify-superadmin-otp", catchAsync(async (req, res) => {
       hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
       isSuspended: user.isSuspended,
       suspensionExpiresAt: user.suspensionExpiresAt,
+      appVersion: user.appVersion,
     },
   });
 }));
@@ -675,6 +692,8 @@ router.post("/verify-otp", catchAsync(async (req, res) => {
   user.otpExpiresAt = undefined;
   await user.save();
 
+  await updateAppVersion(req, user);
+
   const token = signToken(user);
 
   res.json({
@@ -693,6 +712,7 @@ router.post("/verify-otp", catchAsync(async (req, res) => {
       hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
       isSuspended: user.isSuspended,
       suspensionExpiresAt: user.suspensionExpiresAt,
+      appVersion: user.appVersion,
     },
 
   });

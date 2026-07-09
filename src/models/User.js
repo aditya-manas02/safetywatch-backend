@@ -41,6 +41,7 @@ const userSchema = new mongoose.Schema({
     purchasedAt: { type: Date, default: Date.now }
   }],
   activeBadge: { type: String, default: null },
+  appVersion: { type: String, default: "Unknown" },
   lastLocation: {
     type: {
       type: String,
