@@ -41,6 +41,8 @@ const userSchema = new mongoose.Schema({
     purchasedAt: { type: Date, default: Date.now }
   }],
   activeBadge: { type: String, default: null },
+  lastLoginAt: { type: Date },
+  lastLoginPlatform: { type: String, enum: ["App", "Browser"], default: "Browser" },
   appVersion: { type: String, default: "Unknown" },
   lastLocation: {
     type: {

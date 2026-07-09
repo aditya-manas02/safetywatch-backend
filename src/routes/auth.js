@@ -179,12 +179,18 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-async function updateAppVersion(req, user) {
+async function updateSessionInfo(req, user) {
+  // Update app version
   const appVersion = req.headers["x-app-version"];
   if (appVersion && user.appVersion !== appVersion) {
     user.appVersion = appVersion;
-    await user.save();
   }
+  // Update last login timestamp
+  user.lastLoginAt = new Date();
+  // Update platform info (App vs Browser)
+  const platform = req.headers["x-platform"] || "Browser";
+  user.lastLoginPlatform = platform;
+  await user.save();
 }
 
 /**
@@ -344,7 +350,7 @@ router.post("/google", catchAsync(async (req, res) => {
     }
   }
 
-  await updateAppVersion(req, user);
+  await updateSessionInfo(req, user);
 
   const token = signToken(user);
 
@@ -363,6 +369,8 @@ router.post("/google", catchAsync(async (req, res) => {
       hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
       isSuspended: user.isSuspended,
       suspensionExpiresAt: user.suspensionExpiresAt,
+      lastLoginAt: user.lastLoginAt,
+      lastLoginPlatform: user.lastLoginPlatform,
       appVersion: user.appVersion,
     },
   });
@@ -549,7 +557,7 @@ router.post("/login", catchAsync(async (req, res) => {
   }
 
 
-  await updateAppVersion(req, user);
+  await updateSessionInfo(req, user);
 
   const token = signToken(user);
 
@@ -568,6 +576,8 @@ router.post("/login", catchAsync(async (req, res) => {
       hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
       isSuspended: user.isSuspended,
       suspensionExpiresAt: user.suspensionExpiresAt,
+      lastLoginAt: user.lastLoginAt,
+      lastLoginPlatform: user.lastLoginPlatform,
       appVersion: user.appVersion,
     },
 
@@ -599,7 +609,7 @@ router.post("/verify-superadmin-otp", catchAsync(async (req, res) => {
   user.otpExpiresAt = undefined;
   await user.save();
 
-  await updateAppVersion(req, user);
+  await updateSessionInfo(req, user);
 
   const token = signToken(user);
 
@@ -619,6 +629,8 @@ router.post("/verify-superadmin-otp", catchAsync(async (req, res) => {
       hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
       isSuspended: user.isSuspended,
       suspensionExpiresAt: user.suspensionExpiresAt,
+      lastLoginAt: user.lastLoginAt,
+      lastLoginPlatform: user.lastLoginPlatform,
       appVersion: user.appVersion,
     },
   });
@@ -692,7 +704,7 @@ router.post("/verify-otp", catchAsync(async (req, res) => {
   user.otpExpiresAt = undefined;
   await user.save();
 
-  await updateAppVersion(req, user);
+  await updateSessionInfo(req, user);
 
   const token = signToken(user);
 
@@ -712,6 +724,8 @@ router.post("/verify-otp", catchAsync(async (req, res) => {
       hasAreaCode: !!user.areaCode && user.areaCode !== "DEFAULT",
       isSuspended: user.isSuspended,
       suspensionExpiresAt: user.suspensionExpiresAt,
+      lastLoginAt: user.lastLoginAt,
+      lastLoginPlatform: user.lastLoginPlatform,
       appVersion: user.appVersion,
     },
 
