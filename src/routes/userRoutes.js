@@ -128,7 +128,6 @@ router.patch("/:id/demote", authMiddleware, requireSuperAdmin, async (req, res) 
     await logAudit(req, "Demoted admin to user", "user", req.params.id, user.email);
     res.json({ message: "Demoted", roles: user.roles });
   } catch {
-  } catch {
     res.status(500).json({ error: "Server error" });
   }
 });
