@@ -1195,6 +1195,85 @@ router.patch("/sos/:id/location", authMiddleware, catchAsync(async (req, res) =>
   res.json({ message: "Live location updated", location: { latitude, longitude } });
 }));
 
+// POST /sos/:id/message - Send an update message during an active SOS
+router.post("/sos/:id/message", authMiddleware, catchAsync(async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ message: "Message is required" });
+
+  const incident = await Incident.findOne({ _id: req.params.id, userId: req.user.id, type: "sos", status: "pending" });
+  if (!incident) {
+    return res.status(404).json({ message: "Active SOS incident not found" });
+  }
+
+  // Find nearby users (within 4km)
+  const nearbyUsers = await User.find({
+    _id: { $ne: req.user.id },
+    lastLocation: {
+      $near: {
+        $geometry: incident.locationPoint,
+        $maxDistance: 4000
+      }
+    }
+  });
+
+  // Find all police in the same area code OR nearby
+  const policeByArea = await User.find({
+    _id: { $ne: req.user.id },
+    roles: "police",
+    areaCode: incident.areaCode
+  });
+
+  let policeByLocation = [];
+  try {
+    policeByLocation = await User.find({
+      _id: { $ne: req.user.id },
+      roles: "police",
+      "lastLocation.coordinates.0": { $ne: 0 },
+      lastLocation: {
+        $near: {
+          $geometry: incident.locationPoint,
+          $maxDistance: 10000
+        }
+      }
+    });
+  } catch (geoErr) {
+    console.warn("[SOS] Geo-query for police failed, falling back to area-only:", geoErr.message);
+  }
+
+  // Merge unique police users
+  const policeUsers = [...new Map([...policeByArea, ...policeByLocation].map(u => [u.id, u])).values()];
+
+  // Combine unique users to notify
+  const usersToNotify = [...new Map([...nearbyUsers, ...policeUsers].map(u => [u.id, u])).values()];
+  const tokens = usersToNotify.flatMap(u => u.fcmTokens || []);
+
+  if (tokens.length > 0) {
+    await sendPushNotification(tokens, {
+      title: "💬 SOS UPDATE",
+      body: `${req.user.name} sent an update: "${message}"`,
+      data: {
+        type: "sos_message",
+        incidentId: incident._id.toString(),
+        message: message
+      }
+    });
+  }
+
+  // Also create in-app notifications
+  for (const u of usersToNotify) {
+    await Notification.create({
+      userId: u._id,
+      title: "💬 SOS Update",
+      message: `${req.user.name}: ${message}`,
+      type: "system_alert",
+      link: `/?sos=true&lat=${incident.latitude}&lng=${incident.longitude}&incidentId=${incident._id}`,
+      _skipPush: true
+    });
+  }
+
+  res.json({ message: "SOS update message broadcasted successfully" });
+}));
+
 // GET /sos/active - Find active SOS incidents within 4km of user (last 15 mins)
 router.get("/sos/active", authMiddleware, catchAsync(async (req, res) => {
   const { lat, lng } = req.query;
