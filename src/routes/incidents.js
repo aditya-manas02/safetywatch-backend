@@ -380,6 +380,29 @@ router.patch("/bulk-status", authMiddleware, requireAdminOnly, async (req, res) 
     res.status(500).json({ message: "Error in bulk update" });
   }
 });
+
+/* --------- BULK DELETE (ADMIN ONLY) ---------- */
+router.post("/bulk-delete", authMiddleware, requireAdminOnly, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "Invalid request data: ids array required" });
+    }
+
+    const deletedItems = await Incident.find({ _id: { $in: ids } });
+    
+    await Incident.deleteMany({ _id: { $in: ids } });
+    await IncidentMessage.deleteMany({ incidentId: { $in: ids } });
+
+    await logAudit(req, `Bulk deleted ${deletedItems.length} incidents`, "system", null, ids.join(", "));
+
+    res.json({ message: `Bulk deleted ${deletedItems.length} incidents` });
+  } catch (err) {
+    console.error("Bulk delete error:", err);
+    res.status(500).json({ message: "Error in bulk delete" });
+  }
+});
+
 /* --------- UPDATE STATUS (ADMIN OR REPORTER) ---------- */
 router.patch("/:id/status", authMiddleware, async (req, res) => {
   try {
