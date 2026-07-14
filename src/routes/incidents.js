@@ -1113,59 +1113,64 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
 // POST /sos/safe - Mark an SOS as resolved/safe
 router.post("/sos/safe", authMiddleware, catchAsync(async (req, res) => {
   const { incidentId } = req.body;
-  if (!incidentId) return res.status(400).json({ message: "Incident ID is required" });
 
-  const incident = await Incident.findOneAndUpdate(
-    { _id: incidentId, userId: req.user.id, type: "sos" },
-    { status: "problem solved" },
-    { new: true }
-  );
+  let query = { userId: req.user.id, type: "sos", status: "pending" };
+  if (incidentId) {
+    query._id = incidentId;
+  }
 
-  if (!incident) {
+  const incidentsToResolve = await Incident.find(query);
+
+  if (incidentsToResolve.length === 0) {
     return res.status(404).json({ message: "SOS incident not found or you are not the owner" });
   }
 
-  await logAudit(req, `Marked SOS ${incidentId} as safe`, "emergency", incidentId);
+  for (const incident of incidentsToResolve) {
+    incident.status = "problem solved";
+    await incident.save();
 
-  // Notify neighbors that the user is safe
-  const nearbyUsers = await User.find({
-    _id: { $ne: req.user.id },
-    lastLocation: {
-      $near: {
-        $geometry: incident.locationPoint,
-        $maxDistance: 4000
+    await logAudit(req, `Marked SOS ${incident._id} as safe`, "emergency", incident._id);
+
+    // Notify neighbors that the user is safe
+    const nearbyUsers = await User.find({
+      _id: { $ne: req.user.id },
+      lastLocation: {
+        $near: {
+          $geometry: incident.locationPoint,
+          $maxDistance: 4000
+        }
       }
+    });
+
+    const tokens = nearbyUsers.flatMap(u => u.fcmTokens || []);
+    if (tokens.length > 0) {
+      await sendPushNotification(tokens, {
+        title: "✅ NEIGHBOR IS SAFE",
+        body: `${req.user.name} has marked themselves as safe. Thank you for your help!`,
+        data: {
+          type: "sos_alert",
+          incidentId: incident._id.toString(),
+          status: "problem solved",
+          latitude: incident.latitude.toString(),
+          longitude: incident.longitude.toString()
+        }
+      });
     }
-  });
 
-  const tokens = nearbyUsers.flatMap(u => u.fcmTokens || []);
-  if (tokens.length > 0) {
-    await sendPushNotification(tokens, {
-      title: "✅ NEIGHBOR IS SAFE",
-      body: `${req.user.name} has marked themselves as safe. Thank you for your help!`,
-      data: {
-        type: "sos_alert",
-        incidentId: incident._id.toString(),
-        status: "problem solved",
-        latitude: incident.latitude.toString(),
-        longitude: incident.longitude.toString()
-      }
-    });
+    // Create in-app notifications
+    for (const u of nearbyUsers) {
+      await Notification.create({
+        userId: u._id,
+        title: "✅ Neighbor is Safe",
+        message: `${req.user.name} is now safe. The emergency has been resolved.`,
+        type: "system_alert",
+        link: "/",
+        _skipPush: true
+      });
+    }
   }
 
-  // Create in-app notifications
-  for (const u of nearbyUsers) {
-    await Notification.create({
-      userId: u._id,
-      title: "✅ Neighbor is Safe",
-      message: `${req.user.name} is now safe. The emergency has been resolved.`,
-      type: "system_alert",
-      link: "/",
-      _skipPush: true
-    });
-  }
-
-  res.json({ message: "You have been marked as safe. Neighbors notified.", incident });
+  res.json({ message: "You have been marked as safe. Neighbors notified.", count: incidentsToResolve.length });
 }));
 
 // PATCH /sos/:id/location - Update live location of an active SOS
