@@ -424,3 +424,80 @@ SafetyWatch Security
   // Send with both plain text and HTML
   return await deliverEmail(email, subject, html, text);
 };
+
+/**
+ * Send an SOS Emergency Alert email to an emergency contact
+ */
+export const sendSOSEmergencyEmail = async (contactEmail, user, locationLink) => {
+  const subject = `🚨 URGENT: SOS Alert from ${user.name}`;
+  
+  const text = `
+EMERGENCY SOS ALERT
+
+User ${user.name} has triggered an SOS alert on the SafetyWatch Platform.
+Location: ${locationLink || 'Location not provided'}
+
+Please check on them immediately or contact emergency services if you cannot reach them.
+
+---
+SafetyWatch Emergency Alert System
+  `;
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
+      <div style="background-color: #ef4444; padding: 20px; text-align: center; color: white;">
+        <h1 style="margin: 0; font-size: 24px;">🚨 EMERGENCY SOS ALERT 🚨</h1>
+      </div>
+      <div style="padding: 20px; background-color: #fef2f2; border: 1px solid #fca5a5;">
+        <p style="font-size: 18px;"><strong>${user.name}</strong> has triggered an SOS alert.</p>
+        <p>You are receiving this message because you are listed as their emergency contact.</p>
+        
+        <div style="margin: 20px 0; padding: 15px; background-color: white; border-radius: 8px; border: 1px solid #e5e7eb;">
+          <strong>Location/Tracking Link:</strong><br/>
+          ${locationLink ? `<a href="${locationLink}" style="color: #2563eb; font-size: 16px;">Click here to view location</a>` : 'Location not provided'}
+        </div>
+        
+        <p style="color: #b91c1c; font-weight: bold;">Please check on them immediately or call emergency services if you cannot reach them!</p>
+      </div>
+      <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 20px;">
+        SafetyWatch Automated Emergency Alert System
+      </p>
+    </div>
+  `;
+
+  return await deliverEmail(contactEmail, subject, html, text);
+};
+
+/**
+ * Send an SOS Safe email to an emergency contact
+ */
+export const sendSOSSafeEmail = async (contactEmail, user) => {
+  const subject = `✅ RESOLVED: SOS Alert from ${user.name}`;
+  
+  const text = `
+SOS ALERT RESOLVED
+
+User ${user.name} has marked their previous SOS alert as SAFE.
+They no longer require immediate emergency assistance.
+
+---
+SafetyWatch Emergency Alert System
+  `;
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
+      <div style="background-color: #22c55e; padding: 20px; text-align: center; color: white;">
+        <h1 style="margin: 0; font-size: 24px;">✅ SOS RESOLVED ✅</h1>
+      </div>
+      <div style="padding: 20px; background-color: #f0fdf4; border: 1px solid #86efac;">
+        <p style="font-size: 18px;"><strong>${user.name}</strong> has marked their SOS alert as SAFE.</p>
+        <p>They no longer require immediate emergency assistance. You may contact them to confirm everything is okay.</p>
+      </div>
+      <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 20px;">
+        SafetyWatch Automated Emergency Alert System
+      </p>
+    </div>
+  `;
+
+  return await deliverEmail(contactEmail, subject, html, text);
+};

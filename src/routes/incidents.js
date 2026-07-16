@@ -14,6 +14,8 @@ import cloudinary from "../config/cloudinary.js";
 import Challenge from "../models/Challenge.js";
 import ChallengeParticipation from "../models/ChallengeParticipation.js";
 import { sendPushNotification } from "../services/pushNotificationService.js";
+import { sendSOSEmergencyEmail, sendSOSSafeEmail } from "../services/emailService.js";
+import { sendSOSMessage, sendSOSSafeMessage } from "../services/smsService.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -1127,10 +1129,23 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
   await logAudit(req, `Triggered SOS alert ${sosIncident._id}`, "emergency", sosIncident._id);
 
   res.status(201).json({
-    message: "SOS alert sent successfully. Nearby users and police have been notified.",
+    message: "SOS alert sent successfully. Nearby users, police, and emergency contacts have been notified.",
     incident: sosIncident,
     notifiedCount: usersToNotify.length
   });
+
+  // Notify Emergency Contacts in background
+  const emergencyContacts = user.emergencyContacts || [];
+  if (emergencyContacts.length > 0) {
+    const locationLink = `https://safetywatch.app/?sos=true&lat=${latitude}&lng=${longitude}&incidentId=${sosIncident._id}`;
+    
+    Promise.allSettled([
+      sendSOSMessage(emergencyContacts, user, locationLink),
+      ...emergencyContacts
+        .filter(c => c.email)
+        .map(c => sendSOSEmergencyEmail(c.email, user, locationLink))
+    ]).catch(e => console.error("[SOS_CONTACTS] Error dispatching alerts:", e));
+  }
 }));
 
 // POST /sos/safe - Mark an SOS as resolved/safe
@@ -1193,7 +1208,18 @@ router.post("/sos/safe", authMiddleware, catchAsync(async (req, res) => {
     }
   }
 
-  res.json({ message: "You have been marked as safe. Neighbors notified.", count: incidentsToResolve.length });
+  const user = await User.findById(req.user.id);
+  const emergencyContacts = user ? (user.emergencyContacts || []) : [];
+  if (emergencyContacts.length > 0) {
+    Promise.allSettled([
+      sendSOSSafeMessage(emergencyContacts, user),
+      ...emergencyContacts
+        .filter(c => c.email)
+        .map(c => sendSOSSafeEmail(c.email, user))
+    ]).catch(e => console.error("[SOS_CONTACTS] Error dispatching safe alerts:", e));
+  }
+
+  res.json({ message: "You have been marked as safe. Neighbors and emergency contacts notified.", count: incidentsToResolve.length });
 }));
 
 // PATCH /sos/:id/location - Update live location of an active SOS

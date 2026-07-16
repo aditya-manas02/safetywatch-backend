@@ -7,6 +7,12 @@ const userSchema = new mongoose.Schema({
   passwordHash: { type: String },
   googleId: { type: String },
   profilePicture: { type: String },
+  emergencyContacts: [{
+    name: { type: String, required: true },
+    phone: { type: String, required: true },
+    email: { type: String }, // Optional fallback
+    addedAt: { type: Date, default: Date.now }
+  }],
   createdAt: { type: Date, default: Date.now },
   isVerified: { type: Boolean, default: false },
   otp: { type: String },

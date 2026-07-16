@@ -62,8 +62,49 @@ router.patch("/profile", authMiddleware, catchAsync(async (req, res) => {
       createdAt: user.createdAt,
       isVerified: user.isVerified,
       rewardPoints: user.rewardPoints,
-      badges: user.badges
+      badges: user.badges,
+      emergencyContacts: user.emergencyContacts
     },
+  });
+}));
+
+/* ADD EMERGENCY CONTACT (Self) */
+router.post("/profile/emergency-contacts", authMiddleware, catchAsync(async (req, res) => {
+  const { name, phone, email } = req.body;
+  if (!name || !phone) {
+    return res.status(400).json({ message: "Name and phone are required for emergency contacts." });
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  if (user.emergencyContacts.length >= 5) {
+    return res.status(400).json({ message: "Maximum limit of 5 emergency contacts reached." });
+  }
+
+  user.emergencyContacts.push({ name, phone, email });
+  await user.save();
+
+  res.json({
+    message: "Emergency contact added successfully.",
+    emergencyContacts: user.emergencyContacts
+  });
+}));
+
+/* DELETE EMERGENCY CONTACT (Self) */
+router.delete("/profile/emergency-contacts/:contactId", authMiddleware, catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  user.emergencyContacts = user.emergencyContacts.filter(
+    (c) => c._id.toString() !== req.params.contactId
+  );
+
+  await user.save();
+
+  res.json({
+    message: "Emergency contact removed.",
+    emergencyContacts: user.emergencyContacts
   });
 }));
 
