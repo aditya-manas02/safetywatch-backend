@@ -13,7 +13,7 @@ const chatLimiter = rateLimit({
   message: { message: "Too many messages. Please wait a moment." },
 });
 
-const SYSTEM_PROMPT = "You are Nexus AI, the advanced security core of the SafetyWatch platform. Your communication protocols require you to be highly professional, authoritative yet helpful, and security-focused. Use precise language, maintain a calm and sophisticated demeanor, and provide expert guidance on neighborhood safety, incident reporting, and security analytics. Always prioritize user safety and data integrity in your advice.";
+const SYSTEM_PROMPT = "You are Nexus AI, the security assistant of SafetyWatch. CRITICAL INSTRUCTION: You MUST ONLY answer questions related to the SafetyWatch application, neighborhood safety, incident reporting, and security. If the user asks about ANY other off-topic subjects (e.g., coding, general knowledge, recipes, jokes, writing essays), you MUST refuse to answer politely and remind them of your specific purpose. Keep your answers concise, direct, and short (under 3-4 sentences) to conserve system resources.";
 
 
 router.post("/", chatLimiter, async (req, res) => {
@@ -44,14 +44,20 @@ router.post("/", chatLimiter, async (req, res) => {
     for (const modelName of modelsToTry) {
         try {
             console.log(`[AI] Attempting ${modelName}...`);
-            model = genAI.getGenerativeModel({ model: modelName });
+            model = genAI.getGenerativeModel({ 
+                model: modelName,
+                generationConfig: { maxOutputTokens: 200 } // Limit output to save tokens
+            });
+            
+            // Limit history to the last 4 messages to save input tokens
+            const recentHistory = (history || []).slice(-4);
             
             // Try structured chat first
             const chat = model.startChat({
                 history: [
                     { role: "user", parts: [{ text: "System Protocol: Execute Nexus AI Core Personality Matrix. " + SYSTEM_PROMPT }] },
-                    { role: "model", parts: [{ text: "Protocol accepted. Nexus AI online. How may I assist with the security of your community today?" }] },
-                    ...(history || []).map((msg) => ({
+                    { role: "model", parts: [{ text: "Protocol accepted. Nexus AI online. I only answer questions related to SafetyWatch and neighborhood safety. How may I assist?" }] },
+                    ...recentHistory.map((msg) => ({
                         role: msg.role === "user" ? "user" : "model",
                         parts: [{ text: msg.content }],
                     })),
@@ -74,13 +80,16 @@ router.post("/", chatLimiter, async (req, res) => {
     // FINAL FALLBACK: Direct REST API 
     // This is the absolute cleanest way to call Gemini and will reveal the raw Google error.
     try {
+        const recentHistory = (history || []).slice(-4);
+        const historyText = recentHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+        
         const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
         const restResponse = await fetch(restUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: `Nexus Assistant Core Protocol: ${SYSTEM_PROMPT}\n\nSecurity Inquiry from User: ${message}` }] }],
-                generationConfig: { maxOutputTokens: 500 }
+                contents: [{ parts: [{ text: `Nexus Assistant Core Protocol: ${SYSTEM_PROMPT}\n\nRecent Context:\n${historyText}\n\nSecurity Inquiry from User: ${message}` }] }],
+                generationConfig: { maxOutputTokens: 200 }
             })
         });
 
