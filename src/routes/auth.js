@@ -440,28 +440,21 @@ router.post("/signup", catchAsync(async (req, res) => {
   // ... (rest of signup logic handled below with req.rateLimitInfo)
 
 
-  // CRITICAL FIX: Await email sending and handle errors properly
   console.log(`[SIGNUP] Attempting to send OTP to: ${email}`);
-  const { success, error: emailError } = await sendOTPEmail(email, otp);
   
-  if (!success) {
-    console.error("[SIGNUP] Email delivery failed:", emailError);
-    
-    // Cleanup: If this was a new user, remove them so they can try again with a corrected email
-    // If it was an existing unverified user, we keep them but still report the failure
-    const isNewUser = user.createdAt && (new Date() - user.createdAt < 5000); // Created in last 5s
-    if (isNewUser && !user.isVerified) {
-      await User.deleteOne({ _id: user._id });
+  // Fire asynchronously to prevent navigation delay
+  sendOTPEmail(email, otp).then(async ({ success, error: emailError }) => {
+    if (!success) {
+      console.error("[SIGNUP] Email delivery failed:", emailError);
+      const isNewUser = user.createdAt && (new Date() - user.createdAt < 5000); 
+      if (isNewUser && !user.isVerified) {
+        await User.deleteOne({ _id: user._id });
+      }
+    } else {
+      console.log(`[SIGNUP] ✅ OTP sent successfully to: ${email}`);
     }
+  });
 
-    return res.status(500).json({
-      message: "Registration semi-successful. User account created, but the verification email could not be delivered. This usually happens if the email service API key is invalid or the sender is unverified.",
-      error: emailError?.message || "All delivery methods failed",
-      details: emailError
-    });
-  }
-
-  console.log(`[SIGNUP] ✅ OTP sent successfully to: ${email}`);
   res.status(201).json({
     message: "Registration successful! Verification code sent to your email.",
     rateLimit: req.rateLimitInfo,
@@ -1013,14 +1006,19 @@ router.post("/assign-area-code", authMiddleware, async (req, res) => {
     // Import AreaCode model
     const AreaCode = (await import("../models/AreaCode.js")).default;
 
-    // Verify area code exists and is active
-    const validAreaCode = await AreaCode.findOne({ 
-      code: areaCode.toUpperCase(), 
-      isActive: true 
-    });
+    // Verify area code exists and is active (unless it's the universal code)
+    const isUniversal = areaCode.toUpperCase() === "GLOBAL" || areaCode.toUpperCase() === "UNIVERSAL";
+    let validAreaCode = null;
+    
+    if (!isUniversal) {
+      validAreaCode = await AreaCode.findOne({ 
+        code: areaCode.toUpperCase(), 
+        isActive: true 
+      });
 
-    if (!validAreaCode) {
-      return res.status(404).json({ message: "Invalid or inactive area code" });
+      if (!validAreaCode) {
+        return res.status(404).json({ message: "Invalid or inactive area code" });
+      }
     }
 
     // Find user
@@ -1044,8 +1042,10 @@ router.post("/assign-area-code", authMiddleware, async (req, res) => {
     await user.save();
 
     // Update area code statistics
-    validAreaCode.totalUsers = await User.countDocuments({ areaCode: areaCode.toUpperCase() });
-    await validAreaCode.save();
+    if (validAreaCode) {
+      validAreaCode.totalUsers = await User.countDocuments({ areaCode: areaCode.toUpperCase() });
+      await validAreaCode.save();
+    }
 
     res.json({
       message: "Area code assigned successfully",
@@ -1106,27 +1106,43 @@ router.post("/verify-area-code", async (req, res) => {
 
     // Import AreaCode model
     const AreaCode = (await import("../models/AreaCode.js")).default;
+    const isUniversal = areaCode.toUpperCase() === "GLOBAL" || areaCode.toUpperCase() === "UNIVERSAL";
 
-    const validAreaCode = await AreaCode.findOne({ 
-      code: areaCode.toUpperCase(), 
-      isActive: true 
-    });
-
-    if (!validAreaCode) {
-      return res.status(404).json({ 
-        valid: false,
-        message: "Invalid or inactive area code" 
+    let validAreaCode = null;
+    
+    if (!isUniversal) {
+      validAreaCode = await AreaCode.findOne({ 
+        code: areaCode.toUpperCase(), 
+        isActive: true 
       });
+
+      if (!validAreaCode) {
+        return res.status(404).json({ 
+          valid: false,
+          message: "Invalid or inactive area code" 
+        });
+      }
     }
 
-    res.json({
-      valid: true,
-      areaCode: {
-        code: validAreaCode.code,
-        name: validAreaCode.name,
-        description: validAreaCode.description
-      }
-    });
+    if (isUniversal) {
+      res.json({
+        valid: true,
+        areaCode: {
+          code: areaCode.toUpperCase(),
+          name: "Global Community",
+          description: "Universal access code for everyone"
+        }
+      });
+    } else {
+      res.json({
+        valid: true,
+        areaCode: {
+          code: validAreaCode.code,
+          name: validAreaCode.name,
+          description: validAreaCode.description
+        }
+      });
+    }
   } catch (err) {
     console.error("Verify Area Code Error:", err);
     res.status(500).json({ message: "Server error during area code verification" });
