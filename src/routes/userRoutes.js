@@ -40,6 +40,20 @@ router.get("/profile", catchAsync(async (req, res) => {
   res.json(user);
 }));
 
+/* UPDATE USER ACTIVITY (Self) */
+router.patch("/activity", authMiddleware, catchAsync(async (req, res) => {
+  const { platform } = req.body;
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  user.lastUsedAt = new Date();
+  if (platform) {
+    user.lastUsedPlatform = platform;
+  }
+  await user.save();
+  res.json({ success: true });
+}));
+
 /* UPDATE USER PROFILE (Self) */
 router.patch("/profile", authMiddleware, catchAsync(async (req, res) => {
   const { name, phone, profilePicture } = req.body;
