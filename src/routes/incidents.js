@@ -16,6 +16,7 @@ import ChallengeParticipation from "../models/ChallengeParticipation.js";
 import { sendPushNotification } from "../services/pushNotificationService.js";
 import { sendSOSEmergencyEmail, sendSOSSafeEmail } from "../services/emailService.js";
 import { sendSOSMessage, sendSOSSafeMessage } from "../services/smsService.js";
+import { sendTelegramMessage } from "../services/telegramService.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -1143,7 +1144,10 @@ router.post("/sos", authMiddleware, catchAsync(async (req, res) => {
       sendSOSMessage(emergencyContacts, user, locationLink),
       ...emergencyContacts
         .filter(c => c.email)
-        .map(c => sendSOSEmergencyEmail(c.email, user, locationLink))
+        .map(c => sendSOSEmergencyEmail(c.email, user, locationLink)),
+      ...emergencyContacts
+        .filter(c => c.telegramChatId)
+        .map(c => sendTelegramMessage(c.telegramChatId, `🚨 <b>EMERGENCY SOS</b> 🚨\n\nUser <b>${user.name}</b> has triggered an SOS alert!\n<a href="${locationLink}">View Live Location</a>\n\nPlease check on them immediately or call emergency services if required.`))
     ]).catch(e => console.error("[SOS_CONTACTS] Error dispatching alerts:", e));
   }
 }));
@@ -1215,7 +1219,10 @@ router.post("/sos/safe", authMiddleware, catchAsync(async (req, res) => {
       sendSOSSafeMessage(emergencyContacts, user),
       ...emergencyContacts
         .filter(c => c.email)
-        .map(c => sendSOSSafeEmail(c.email, user))
+        .map(c => sendSOSSafeEmail(c.email, user)),
+      ...emergencyContacts
+        .filter(c => c.telegramChatId)
+        .map(c => sendTelegramMessage(c.telegramChatId, `✅ <b>SOS RESOLVED</b> ✅\n\nUser <b>${user.name}</b> has marked their SOS alert as SAFE.\nThey no longer require immediate assistance.`))
     ]).catch(e => console.error("[SOS_CONTACTS] Error dispatching safe alerts:", e));
   }
 

@@ -10,7 +10,9 @@ const userSchema = new mongoose.Schema({
   emergencyContacts: [{
     name: { type: String, required: true },
     phone: { type: String, required: true },
-    email: { type: String }, // Optional fallback
+    email: { type: String, required: true },
+    telegramChatId: { type: String }, // Populated when they link the bot
+    telegramLinkCode: { type: String }, // Unique code for the link
     addedAt: { type: Date, default: Date.now }
   }],
   createdAt: { type: Date, default: Date.now },

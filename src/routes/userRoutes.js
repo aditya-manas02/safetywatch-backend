@@ -1,4 +1,5 @@
 import express from "express";
+import crypto from "crypto";
 import User from "../models/User.js";
 import Incident from "../models/Incident.js";
 import {
@@ -71,8 +72,8 @@ router.patch("/profile", authMiddleware, catchAsync(async (req, res) => {
 /* ADD EMERGENCY CONTACT (Self) */
 router.post("/profile/emergency-contacts", authMiddleware, catchAsync(async (req, res) => {
   const { name, phone, email } = req.body;
-  if (!name || !phone) {
-    return res.status(400).json({ message: "Name and phone are required for emergency contacts." });
+  if (!name || !phone || !email) {
+    return res.status(400).json({ message: "Name, phone, and email are required for emergency contacts." });
   }
 
   const user = await User.findById(req.user.id);
@@ -82,7 +83,9 @@ router.post("/profile/emergency-contacts", authMiddleware, catchAsync(async (req
     return res.status(400).json({ message: "Maximum limit of 5 emergency contacts reached." });
   }
 
-  user.emergencyContacts.push({ name, phone, email });
+  const telegramLinkCode = "SW-" + crypto.randomBytes(3).toString("hex").toUpperCase();
+
+  user.emergencyContacts.push({ name, phone, email, telegramLinkCode });
   await user.save();
 
   res.json({
