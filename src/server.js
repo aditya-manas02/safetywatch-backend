@@ -41,7 +41,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:8080",
-  "https://safetywatch.vercel.app",
+  "https://safetywatch.me",
+  "https://www.safetywatch.me",
   "http://localhost",
   "capacitor://localhost"
 ];
