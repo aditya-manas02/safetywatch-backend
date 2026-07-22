@@ -14,7 +14,7 @@ const chatLimiter = rateLimit({
   message: { message: "Too many messages. Please wait a moment." },
 });
 
-const SYSTEM_PROMPT = "You are Nexus AI, the security assistant of SafetyWatch. CRITICAL INSTRUCTION: You MUST ONLY answer questions related to the SafetyWatch application, neighborhood safety, incident reporting, and security. If the user asks about ANY other off-topic subjects (e.g., coding, general knowledge, recipes, jokes, writing essays), you MUST refuse to answer politely and remind them of your specific purpose. Keep your answers concise and helpful.";
+const SYSTEM_PROMPT = "You are SafetyWatch Buddy, the security assistant of SafetyWatch. CRITICAL INSTRUCTION: You MUST ONLY answer questions related to the SafetyWatch application, neighborhood safety, incident reporting, and security. If the user asks about ANY other off-topic subjects (e.g., coding, general knowledge, recipes, jokes, writing essays), you MUST refuse to answer politely and remind them of your specific purpose. Keep your answers concise and helpful.";
 
 
 router.post("/", chatLimiter, async (req, res) => {
@@ -42,7 +42,7 @@ router.post("/", chatLimiter, async (req, res) => {
             });
             
             const openaiHistory = [
-                { role: "system", content: "System Protocol: Execute Nexus AI Core Personality Matrix. " + SYSTEM_PROMPT + "\nProtocol accepted. Nexus AI online. I only answer questions related to SafetyWatch and neighborhood safety. How may I assist?" }
+                { role: "system", content: "System Protocol: Execute SafetyWatch Buddy Personality Matrix. " + SYSTEM_PROMPT + "\nProtocol accepted. SafetyWatch Buddy online. I only answer questions related to SafetyWatch and neighborhood safety. How may I assist?" }
             ];
             
             const recentHistory = (history || []).slice(-4);
@@ -88,8 +88,8 @@ router.post("/", chatLimiter, async (req, res) => {
                 const recentHistory = (history || []).slice(-4);
                 const chat = model.startChat({
                     history: [
-                        { role: "user", parts: [{ text: "System Protocol: Execute Nexus AI Core Personality Matrix. " + SYSTEM_PROMPT }] },
-                        { role: "model", parts: [{ text: "Protocol accepted. Nexus AI online. I only answer questions related to SafetyWatch and neighborhood safety. How may I assist?" }] },
+                        { role: "user", parts: [{ text: "System Protocol: Execute SafetyWatch Buddy Personality Matrix. " + SYSTEM_PROMPT }] },
+                        { role: "model", parts: [{ text: "Protocol accepted. SafetyWatch Buddy online. I only answer questions related to SafetyWatch and neighborhood safety. How may I assist?" }] },
                         ...recentHistory.map((msg) => ({
                             role: msg.role === "user" ? "user" : "model",
                             parts: [{ text: msg.content }],
@@ -117,7 +117,7 @@ router.post("/", chatLimiter, async (req, res) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: `Nexus Assistant Core Protocol: ${SYSTEM_PROMPT}\n\nRecent Context:\n${historyText}\n\nSecurity Inquiry from User: ${message}` }] }],
+                    contents: [{ parts: [{ text: `SafetyWatch Buddy Protocol: ${SYSTEM_PROMPT}\n\nRecent Context:\n${historyText}\n\nSecurity Inquiry from User: ${message}` }] }],
                     generationConfig: { maxOutputTokens: 1000 }
                 })
             });
@@ -143,12 +143,12 @@ router.post("/", chatLimiter, async (req, res) => {
 
     // --- COMPLETE FAILURE ---
     res.status(500).json({ 
-        message: "AI Maintenance: The Nexus AI core is temporarily offline for security updates. Please try again later." 
+        message: "AI Maintenance: SafetyWatch Buddy is temporarily offline for security updates. Please try again later." 
     });
   } catch (error) {
     console.error("General AI Route Error:", error);
     res.status(500).json({ 
-        message: "Nexus AI Core Exception: A system error occurred. Our engineers have been notified." 
+        message: "SafetyWatch Buddy Exception: A system error occurred. Our engineers have been notified." 
     });
   }
 });
