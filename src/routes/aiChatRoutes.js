@@ -81,7 +81,7 @@ router.post("/", chatLimiter, async (req, res) => {
         const recentHistory = (history || []).slice(-4);
         const historyText = recentHistory.map(m => `${m.role}: ${m.content}`).join('\n');
         
-        const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
+        const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         const restResponse = await fetch(restUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -104,12 +104,13 @@ router.post("/", chatLimiter, async (req, res) => {
         // Log the full technical error to server console ONLY
         console.error("STABLE API ERROR (REST FALLBACK ALSO FAILED):", {
             message: restErr.message,
+            sdkError: lastError?.message,
             apiKeySuffix: apiKey.slice(-4)
         });
 
-        // Send a generic, professional message to the user
+        // Send a generic, professional message to the user, but include a hint of the actual error for debugging
         res.status(500).json({ 
-            message: "AI Maintenance: The Nexus AI core is temporarily offline for security updates. Please try again later." 
+            message: `AI Maintenance: The Nexus AI core is temporarily offline. Error hint: ${lastError?.message || restErr.message || 'Unknown'}. Please try again later.` 
         });
     }
   } catch (error) {
