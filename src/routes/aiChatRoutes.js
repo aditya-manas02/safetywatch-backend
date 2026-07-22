@@ -1,5 +1,6 @@
 import express from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 
@@ -22,97 +23,130 @@ router.post("/", chatLimiter, async (req, res) => {
   if (!message) return res.status(400).json({ message: "Message is required" });
 
   try {
-    const apiKey = process.env.GEMINI_API_KEY?.trim();
-    if (!apiKey) {
-      return res.status(500).json({ message: "AI disabled: API Key missing on Render." });
+    const geminiKey = process.env.GEMINI_API_KEY?.trim();
+    const grokKey = process.env.GROK_API_KEY?.trim();
+    
+    if (!geminiKey && !grokKey) {
+      return res.status(500).json({ message: "AI disabled: API Keys missing on Render." });
     }
 
-    // Use the latest stable 1.5 Flash model
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    let model;
-    // CONFIRMED STABLE MODELS
-    const modelsToTry = [
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-2.0-flash"
-    ];
     let lastError = null;
 
-    for (const modelName of modelsToTry) {
+    // --- PRIMARY AI: GROK ---
+    if (grokKey) {
         try {
-            console.log(`[AI] Attempting ${modelName}...`);
-            model = genAI.getGenerativeModel({ 
-                model: modelName,
-                generationConfig: { maxOutputTokens: 1000 } // Limit output to save tokens
+            console.log("[AI] Attempting Grok API (Primary)...");
+            const openai = new OpenAI({
+                apiKey: grokKey,
+                baseURL: "https://api.x.ai/v1",
             });
             
-            // Limit history to the last 4 messages to save input tokens
+            const openaiHistory = [
+                { role: "system", content: "System Protocol: Execute Nexus AI Core Personality Matrix. " + SYSTEM_PROMPT + "\nProtocol accepted. Nexus AI online. I only answer questions related to SafetyWatch and neighborhood safety. How may I assist?" }
+            ];
+            
             const recentHistory = (history || []).slice(-4);
+            for (const msg of recentHistory) {
+                 openaiHistory.push({
+                     role: msg.role === "user" ? "user" : "assistant",
+                     content: msg.content
+                 });
+            }
+            openaiHistory.push({ role: "user", content: message });
             
-            // Try structured chat first
-            const chat = model.startChat({
-                history: [
-                    { role: "user", parts: [{ text: "System Protocol: Execute Nexus AI Core Personality Matrix. " + SYSTEM_PROMPT }] },
-                    { role: "model", parts: [{ text: "Protocol accepted. Nexus AI online. I only answer questions related to SafetyWatch and neighborhood safety. How may I assist?" }] },
-                    ...recentHistory.map((msg) => ({
-                        role: msg.role === "user" ? "user" : "model",
-                        parts: [{ text: msg.content }],
-                    })),
-                ],
+            const completion = await openai.chat.completions.create({
+                model: "grok-2-latest",
+                messages: openaiHistory,
+                max_tokens: 1000
             });
-
-            const result = await chat.sendMessage(message);
-            const response = await result.response;
-            console.log(`[AI] SUCCESS with ${modelName}`);
-            return res.json({ reply: response.text() });
+            
+            console.log("[AI] SUCCESS with Grok");
+            return res.json({ reply: completion.choices[0].message.content });
         } catch (err) {
-            console.warn(`[AI] ${modelName} failed:`, err.message);
+            console.warn("[AI] Grok failed:", err.message);
             lastError = err;
         }
     }
 
-    // FINAL CONSOLE LOG FOR RENDER
-    console.warn("[AI] SDK Methods exhausted. Attempting Direct REST API Bypassing SDK...");
-
-    // FINAL FALLBACK: Direct REST API 
-    // This is the absolute cleanest way to call Gemini and will reveal the raw Google error.
-    try {
-        const recentHistory = (history || []).slice(-4);
-        const historyText = recentHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+    // --- FALLBACK AI: GEMINI ---
+    if (geminiKey) {
+        console.warn("[AI] Grok exhausted/unavailable. Switching to Gemini Fallback...");
+        const genAI = new GoogleGenerativeAI(geminiKey);
         
-        const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-        const restResponse = await fetch(restUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: `Nexus Assistant Core Protocol: ${SYSTEM_PROMPT}\n\nRecent Context:\n${historyText}\n\nSecurity Inquiry from User: ${message}` }] }],
-                generationConfig: { maxOutputTokens: 1000 }
-            })
-        });
+        const modelsToTry = [
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+            "gemini-2.0-flash"
+        ];
 
-        const restData = await restResponse.json();
-        
-        if (restResponse.ok && restData.candidates?.[0]?.content?.parts?.[0]?.text) {
-            console.log("[AI] REST API SUCCESS");
-            return res.json({ reply: restData.candidates[0].content.parts[0].text });
-        } else {
-            console.error("[AI] REST API FAILED:", restData);
-            throw new Error(restData.error?.message || "REST API returned empty response");
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`[AI] Attempting ${modelName}...`);
+                const model = genAI.getGenerativeModel({ 
+                    model: modelName,
+                    generationConfig: { maxOutputTokens: 1000 } 
+                });
+                
+                const recentHistory = (history || []).slice(-4);
+                const chat = model.startChat({
+                    history: [
+                        { role: "user", parts: [{ text: "System Protocol: Execute Nexus AI Core Personality Matrix. " + SYSTEM_PROMPT }] },
+                        { role: "model", parts: [{ text: "Protocol accepted. Nexus AI online. I only answer questions related to SafetyWatch and neighborhood safety. How may I assist?" }] },
+                        ...recentHistory.map((msg) => ({
+                            role: msg.role === "user" ? "user" : "model",
+                            parts: [{ text: msg.content }],
+                        })),
+                    ],
+                });
+
+                const result = await chat.sendMessage(message);
+                const response = await result.response;
+                console.log(`[AI] SUCCESS with ${modelName}`);
+                return res.json({ reply: response.text() });
+            } catch (err) {
+                console.warn(`[AI] Gemini ${modelName} failed:`, err.message);
+                lastError = err;
+            }
         }
-    } catch (restErr) {
-        // Log the full technical error to server console ONLY
-        console.error("STABLE API ERROR (REST FALLBACK ALSO FAILED):", {
-            message: restErr.message,
-            sdkError: lastError?.message,
-            apiKeySuffix: apiKey.slice(-4)
-        });
 
-        // Send a generic, professional message to the user, but include a hint of the actual error for debugging
-        res.status(500).json({ 
-            message: `AI Maintenance: The Nexus AI core is temporarily offline. Error hint: ${lastError?.message || restErr.message || 'Unknown'}. Please try again later.` 
-        });
+        console.warn("[AI] Gemini SDK Methods exhausted. Attempting Direct REST API Bypassing SDK...");
+        try {
+            const recentHistory = (history || []).slice(-4);
+            const historyText = recentHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+            
+            const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+            const restResponse = await fetch(restUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: `Nexus Assistant Core Protocol: ${SYSTEM_PROMPT}\n\nRecent Context:\n${historyText}\n\nSecurity Inquiry from User: ${message}` }] }],
+                    generationConfig: { maxOutputTokens: 1000 }
+                })
+            });
+
+            const restData = await restResponse.json();
+            
+            if (restResponse.ok && restData.candidates?.[0]?.content?.parts?.[0]?.text) {
+                console.log("[AI] REST API SUCCESS");
+                return res.json({ reply: restData.candidates[0].content.parts[0].text });
+            } else {
+                console.error("[AI] REST API FAILED:", restData);
+                throw new Error(restData.error?.message || "REST API returned empty response");
+            }
+        } catch (restErr) {
+            console.error("STABLE API ERROR (REST FALLBACK ALSO FAILED):", {
+                message: restErr.message,
+                sdkError: lastError?.message,
+                apiKeySuffix: geminiKey.slice(-4)
+            });
+            lastError = restErr;
+        }
     }
+
+    // --- COMPLETE FAILURE ---
+    res.status(500).json({ 
+        message: `AI Maintenance: The Nexus AI core is temporarily offline. Error hint: ${lastError?.message || 'Unknown'}. Please try again later.` 
+    });
   } catch (error) {
     console.error("General AI Route Error:", error);
     res.status(500).json({ 
