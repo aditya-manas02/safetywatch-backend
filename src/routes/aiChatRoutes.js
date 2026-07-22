@@ -13,7 +13,7 @@ const chatLimiter = rateLimit({
   message: { message: "Too many messages. Please wait a moment." },
 });
 
-const SYSTEM_PROMPT = "You are Nexus AI, the security assistant of SafetyWatch. CRITICAL INSTRUCTION: You MUST ONLY answer questions related to the SafetyWatch application, neighborhood safety, incident reporting, and security. If the user asks about ANY other off-topic subjects (e.g., coding, general knowledge, recipes, jokes, writing essays), you MUST refuse to answer politely and remind them of your specific purpose. Keep your answers concise, direct, and short (under 3-4 sentences) to conserve system resources.";
+const SYSTEM_PROMPT = "You are Nexus AI, the security assistant of SafetyWatch. CRITICAL INSTRUCTION: You MUST ONLY answer questions related to the SafetyWatch application, neighborhood safety, incident reporting, and security. If the user asks about ANY other off-topic subjects (e.g., coding, general knowledge, recipes, jokes, writing essays), you MUST refuse to answer politely and remind them of your specific purpose. Keep your answers concise and helpful.";
 
 
 router.post("/", chatLimiter, async (req, res) => {
@@ -31,13 +31,11 @@ router.post("/", chatLimiter, async (req, res) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     
     let model;
-    // CONFIRMED MODELS from user diagnostics: gemini-2.5-flash, gemini-2.0-flash, gemini-flash-latest
+    // CONFIRMED STABLE MODELS
     const modelsToTry = [
-        "models/gemini-2.0-flash-lite",
-        "models/gemini-2.0-flash",
-        "models/gemini-flash-latest",
-        "models/gemini-2.5-flash",
-        "models/gemini-pro-latest"
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-2.0-flash"
     ];
     let lastError = null;
 
@@ -46,7 +44,7 @@ router.post("/", chatLimiter, async (req, res) => {
             console.log(`[AI] Attempting ${modelName}...`);
             model = genAI.getGenerativeModel({ 
                 model: modelName,
-                generationConfig: { maxOutputTokens: 200 } // Limit output to save tokens
+                generationConfig: { maxOutputTokens: 1000 } // Limit output to save tokens
             });
             
             // Limit history to the last 4 messages to save input tokens
@@ -89,7 +87,7 @@ router.post("/", chatLimiter, async (req, res) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ parts: [{ text: `Nexus Assistant Core Protocol: ${SYSTEM_PROMPT}\n\nRecent Context:\n${historyText}\n\nSecurity Inquiry from User: ${message}` }] }],
-                generationConfig: { maxOutputTokens: 200 }
+                generationConfig: { maxOutputTokens: 1000 }
             })
         });
 
