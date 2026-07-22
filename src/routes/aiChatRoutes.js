@@ -143,7 +143,7 @@ router.post("/", chatLimiter, async (req, res) => {
 
     // --- COMPLETE FAILURE ---
     res.status(500).json({ 
-        message: `AI Maintenance: The Nexus AI core is temporarily offline. Error hint: ${lastError?.message || 'Unknown'}. Please try again later.` 
+        message: "AI Maintenance: The Nexus AI core is temporarily offline for security updates. Please try again later." 
     });
   } catch (error) {
     console.error("General AI Route Error:", error);
