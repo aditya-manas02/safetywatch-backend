@@ -17,7 +17,7 @@ const requireSuperAdmin = (req, res, next) => {
 // Generate new area code (SuperAdmin only)
 router.post("/generate", authMiddleware, requireSuperAdmin, async (req, res) => {
   try {
-    const { name, description, code } = req.body;
+    const { name, description, code, areaType } = req.body;
 
     if (!name || name.trim().length < 2) {
       return res.status(400).json({ error: "Area name is required (minimum 2 characters)" });
@@ -37,6 +37,7 @@ router.post("/generate", authMiddleware, requireSuperAdmin, async (req, res) => 
       code: code.toUpperCase(),
       name: name.trim(),
       description: description || "",
+      areaType: areaType || "default",
       createdBy: req.user.id,
       isActive: true
     });
@@ -50,6 +51,7 @@ router.post("/generate", authMiddleware, requireSuperAdmin, async (req, res) => 
         code: areaCode.code,
         name: areaCode.name,
         description: areaCode.description,
+        areaType: areaCode.areaType,
         isActive: areaCode.isActive,
         createdAt: areaCode.createdAt
       }
@@ -114,7 +116,8 @@ router.get("/validate/:code", async (req, res) => {
       areaCode: {
         code: areaCode.code,
         name: areaCode.name,
-        description: areaCode.description
+        description: areaCode.description,
+        areaType: areaCode.areaType
       }
     });
   } catch (error) {
@@ -201,6 +204,38 @@ router.patch("/:id/remove-admin", authMiddleware, requireSuperAdmin, async (req,
   } catch (error) {
     console.error("Error removing admin:", error);
     res.status(500).json({ error: "Failed to remove admin" });
+  }
+});
+
+// Update area code details (SuperAdmin only)
+router.patch("/:id/edit", authMiddleware, requireSuperAdmin, async (req, res) => {
+  try {
+    const { name, description, areaType } = req.body;
+    
+    const areaCode = await AreaCode.findById(req.params.id);
+    if (!areaCode) {
+      return res.status(404).json({ error: "Area code not found" });
+    }
+
+    if (name && name.trim().length >= 2) {
+      areaCode.name = name.trim();
+    }
+    if (description !== undefined) {
+      areaCode.description = description;
+    }
+    if (areaType) {
+      areaCode.areaType = areaType;
+    }
+
+    await areaCode.save();
+
+    res.json({
+      message: "Area code updated successfully",
+      areaCode
+    });
+  } catch (error) {
+    console.error("Error updating area code:", error);
+    res.status(500).json({ error: "Failed to update area code" });
   }
 });
 

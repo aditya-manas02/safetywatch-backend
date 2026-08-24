@@ -23,6 +23,11 @@ const areaCodeSchema = new mongoose.Schema({
     type: Boolean, 
     default: true 
   },
+  areaType: {
+    type: String,
+    enum: ["university", "society", "city", "ward", "default"],
+    default: "default"
+  },
   createdBy: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: "User", 
