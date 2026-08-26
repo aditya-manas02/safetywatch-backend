@@ -74,7 +74,7 @@ router.post("/", chatLimiter, async (req, res) => {
         const genAI = new GoogleGenerativeAI(geminiKey);
         
         const modelsToTry = [
-            "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest"
+            "gemini-3.5-flash"
         ];
 
         for (const modelName of modelsToTry) {
@@ -112,7 +112,7 @@ router.post("/", chatLimiter, async (req, res) => {
             const recentHistory = (history || []).slice(-4);
             const historyText = recentHistory.map(m => `${m.role}: ${m.content}`).join('\n');
             
-            const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiKey}`;
+            const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiKey}`;
             const restResponse = await fetch(restUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
