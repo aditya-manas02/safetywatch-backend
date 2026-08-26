@@ -55,7 +55,7 @@ router.post("/", chatLimiter, async (req, res) => {
             openaiHistory.push({ role: "user", content: message });
             
             const completion = await openai.chat.completions.create({
-                model: "grok-2-latest",
+                model: "grok-beta",
                 messages: openaiHistory,
                 max_tokens: 1000
             });
@@ -74,7 +74,7 @@ router.post("/", chatLimiter, async (req, res) => {
         const genAI = new GoogleGenerativeAI(geminiKey);
         
         const modelsToTry = [
-            "gemini-flash-latest"
+            "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest"
         ];
 
         for (const modelName of modelsToTry) {
@@ -112,7 +112,7 @@ router.post("/", chatLimiter, async (req, res) => {
             const recentHistory = (history || []).slice(-4);
             const historyText = recentHistory.map(m => `${m.role}: ${m.content}`).join('\n');
             
-            const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`;
+            const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
             const restResponse = await fetch(restUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
