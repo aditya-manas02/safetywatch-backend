@@ -145,7 +145,7 @@ app.use((req, res, next) => {
       currentBuild: appBuildId,
       requiredVersion: MIN_VERSION,
       requiredBuild: MIN_BUILD_ID,
-      downloadUrl: "https://safetywatch-backend.onrender.com/SafetyWatch.apk"
+      downloadUrl: "https://safetywatch-backend-zj3f.onrender.com/SafetyWatch.apk"
     });
   }
 
