@@ -62,4 +62,50 @@ router.post("/webhook", async (req, res) => {
   }
 });
 
+// Helper endpoint to check Telegram configuration and set webhook automatically
+router.get("/status", async (req, res) => {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    return res.status(400).json({ 
+      configured: false, 
+      message: "TELEGRAM_BOT_TOKEN is missing in Render environment variables." 
+    });
+  }
+
+  try {
+    const meRes = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    const meData = await meRes.json();
+    
+    const hookRes = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+    const hookData = await hookRes.json();
+
+    res.json({
+      configured: true,
+      bot: meData.result,
+      webhook: hookData.result
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Auto-register webhook with Telegram
+router.get("/set-webhook", async (req, res) => {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    return res.status(400).json({ 
+      error: "TELEGRAM_BOT_TOKEN is missing in Render environment variables." 
+    });
+  }
+
+  const webhookUrl = "https://api.safetywatch.me/api/telegram/webhook";
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
+    const data = await response.json();
+    res.json({ webhookUrl, result: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
