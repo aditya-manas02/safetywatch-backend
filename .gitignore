@@ -14,5 +14,4 @@ firebase-service-account.json
 google-services.json
 .DS_Store
 .vscode/
-.idea/
-node_modules/
+test_*.mjs
